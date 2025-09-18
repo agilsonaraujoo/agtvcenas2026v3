@@ -1,0 +1,172 @@
+/* Utility: se quiser bloquear seleção localmente, use a classe `.no-select` */
+.no-select, .no-select img {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+}
+
+/* Neon highlight for 'Ultra Economia' feature */
+.neon {
+  color: #7cffb2; /* mint neon */
+  font-weight: 700;
+  text-shadow: 0 0 6px rgba(124,255,178,0.6), 0 0 12px rgba(124,255,178,0.35);
+}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Estilos para o vídeo de fundo */
+video {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  object-fit: cover;
+  z-index: -1;
+  pointer-events: none;
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  opacity: 0.85;
+}
+
+.bg-video {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  object-fit: cover;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.bg-fallback {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background-size: cover;
+  background-position: center center;
+}
+
+/* Prevent horizontal overflow on small screens */
+html, body, #root {
+  overflow-x: hidden !important;
+}
+
+/* Seus estilos globais adicionais aqui */
+
+/* Navegação suave */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Melhorar a experiência de rolagem */
+:root {
+  scroll-padding-top: 60px;
+}
+
+/* Estilo para os links de navegação */
+nav a {
+  scroll-margin-top: 60px;
+}
+
+/* Remove the blue tap highlight on mobile browsers */
+* { -webkit-tap-highlight-color: transparent; }
+
+/* Active nav link styles (desktop) */
+.nav-link-active {
+  color: #fff !important;
+  background: linear-gradient(90deg, rgba(79,70,229,0.9), rgba(139,92,246,0.9));
+  box-shadow: 0 6px 18px rgba(99,102,241,0.15);
+}
+
+/* Active nav link styles (mobile bottom bar) */
+.nav-link-active-mobile {
+  color: #fff !important;
+  background: linear-gradient(90deg, rgba(79,70,229,0.95), rgba(139,92,246,0.95));
+  box-shadow: 0 8px 20px rgba(99,102,241,0.15);
+}
+
+/* Sliding indicator for desktop nav */
+.nav-slide-indicator {
+  position: absolute;
+  bottom: -8px;
+  height: 3px;
+  left: 0;
+  width: 0;
+  background: linear-gradient(90deg,#4f46e5,#8b5cf6);
+  border-radius: 4px;
+  transition: left 560ms cubic-bezier(.22,.9,.31,1), width 560ms cubic-bezier(.22,.9,.31,1), opacity 260ms ease;
+  opacity: 0;
+}
+
+/* Sliding indicator for mobile bottom nav */
+.mobile-nav-slide-indicator {
+  position: absolute;
+  top: -6px;
+  height: 3px;
+  left: 0;
+  width: 0;
+  background: linear-gradient(90deg,#4f46e5,#8b5cf6);
+  border-radius: 4px;
+  transition: left 220ms cubic-bezier(.22,.9,.31,1), width 220ms cubic-bezier(.22,.9,.31,1), opacity 160ms ease;
+  opacity: 0;
+}
+
+/* slow indicator state used for heavier sections like Planos */
+.slow-indicator {
+  transition-duration: 900ms !important;
+}
+
+/* Animações para o Hero Section */
+@keyframes fadeInSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInSlideUp 0.8s ease-out forwards;
+}
+
+.delay-200 {
+  animation-delay: 0.2s;
+}
+
+.delay-400 {
+  animation-delay: 0.4s;
+}
+
+/* Esconder a barra de rolagem mas manter a funcionalidade */
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari, Opera*/
+}
+
+/* Slow spin utility for rotating glow */
+@keyframes spinSlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.spin-slow {
+  animation: spinSlow 6s linear infinite;
+}
