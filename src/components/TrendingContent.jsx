@@ -15,6 +15,11 @@ const TrendingContent = () => {
   // Para produção, esta chave deve ser segura no servidor.
 const TMDB_API_KEY = API_CONFIG.TMDB.API_KEY;
 
+  // Detecta o tipo de conteúdo baseado no media_type do TMDB
+  const getContentType = (mediaType) => {
+    return mediaType === 'movie' ? 'filme' : 'série';
+  };
+
   const animateScroll = (timestamp) => {
     if (!lastScrollTimeRef.current) {
       lastScrollTimeRef.current = timestamp;
@@ -204,7 +209,26 @@ const TMDB_API_KEY = API_CONFIG.TMDB.API_KEY;
                       <h3 className="text-lg font-bold text-white mb-1 leading-tight">
                         {item.title || item.name}
                       </h3>
-                      <p className="text-gray-400 text-sm">{item.media_type === 'movie' ? 'Filme' : 'Série'}</p>
+                      <p className="text-gray-400 text-sm mb-3">{item.media_type === 'movie' ? 'Filme' : 'Série'}</p>
+                      <div className="flex justify-center">
+                        {(() => {
+                          const contentType = getContentType(item.media_type);
+                          const message = `Olá, vim pelo site AGTV CENAS e gostaria de um teste grátis para o ${contentType} ${item.title || item.name}`;
+                          const waLink = `https://wa.me/5583986913481?text=${encodeURIComponent(message)}`;
+                          return (
+                            <a
+                              href={waLink}
+                              data-analytics={`trending_assist_${item.id || index}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-3 rounded-full text-xs transition duration-200 shadow-sm"
+                              aria-label={`Solicitar teste grátis para ${item.title || item.name} via WhatsApp`}
+                            >
+                              Assistir
+                            </a>
+                          );
+                        })()}
+                      </div>
                     </div>
                   </div>
                 </div>

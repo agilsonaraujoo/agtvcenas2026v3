@@ -72,7 +72,7 @@ const AGTVDevicesCarousel = () => {
               className="flex-none w-full sm:w-56 md:w-64 lg:w-72 xl:w-80 mr-4 snap-center transform transition-transform hover:scale-105 duration-300"
               style={{ maxWidth: '100vw' }}
             >
-              <div className="bg-gray-800 rounded-lg shadow-xl overflow-hidden h-full flex flex-col items-center justify-center p-6">
+              <div data-analytics={`device_${device.name.replace(/\s+/g,'_').toLowerCase()}`} className="bg-gray-800 rounded-lg shadow-xl overflow-hidden h-full flex flex-col items-center justify-center p-6">
                 <div className="flex items-center justify-center w-full h-full min-h-[10rem]">
                   <img
                     src={device.img}

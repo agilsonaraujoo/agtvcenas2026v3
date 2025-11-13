@@ -33,8 +33,8 @@ const Hero = () => {
           transition={{ duration: 0.6, delay: 0.4 }}
           className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6 fade-in-up delay-2"
         >
-          <a href="#planos" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-10 rounded-full text-xl transition duration-300 shadow-lg transform hover:scale-105">
-            Contrate Agora!
+          <a href="#agtv-devices-carousel" data-analytics="cta_devices" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-10 rounded-full text-xl transition duration-300 shadow-lg transform hover:scale-105">
+            Aparelhos Compatíveis
           </a>
         </motion.div>
       </div>

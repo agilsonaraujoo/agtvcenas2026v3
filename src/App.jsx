@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import Header from './components/Header';
 import AGTVDevicesCarousel from './components/AGTVDevicesCarousel';
 import Hero from './components/Hero';
@@ -17,6 +17,26 @@ const App = () => {
   React.useEffect(() => {
     // Allow default browser actions (right-click, select, drag) so users can copy and inspect
     // Previously we blocked these actions as a deterrent; we've removed that restriction.
+  }, []);
+
+  useEffect(() => {
+    // Initialize analytics listeners to capture clicks/touches site-wide
+    let cleanup = null;
+    try {
+      // dynamic import so this doesn't break SSR (if any)
+      const analytics = require('./utils/analytics');
+      if (analytics && analytics.initAnalyticsListeners) {
+        cleanup = analytics.initAnalyticsListeners();
+        console.log('Analytics listeners initialized');
+      }
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error('Could not initialize analytics listeners', e);
+    }
+
+    return () => {
+      if (cleanup) cleanup();
+    };
   }, []);
   return (
     <div className="relative min-h-screen">

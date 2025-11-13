@@ -11,6 +11,32 @@ const RecommendationEngine = () => {
   const TMDB_API_KEY = process.env.REACT_APP_TMDB_API_KEY;
   const geminiApiKey = process.env.REACT_APP_GEMINI_API_KEY;
 
+  // Detecta o tipo de conteúdo baseado nas palavras-chave digitadas pelo usuário
+  const detectContentType = (text) => {
+    const lowerText = text.toLowerCase();
+    
+    // Palavras-chave para cada tipo
+    const keywords = {
+      'filme': ['filme', 'movie', 'cinemaático'],
+      'série': ['série', 'series', 'seriado', 'serie'],
+      'novela': ['novela', 'telenovela'],
+      'anime': ['anime', 'animação', 'animê'],
+      'documentário': ['documentário', 'documentario', 'documental'],
+      'reality': ['reality', 'reality show'],
+      'stand-up': ['stand-up', 'standup', 'comédia', 'comedia']
+    };
+
+    // Verifica qual tipo foi mencionado
+    for (const [type, words] of Object.entries(keywords)) {
+      if (words.some(word => lowerText.includes(word))) {
+        return type;
+      }
+    }
+
+    // Se não encontrar palavra-chave, retorna "conteúdo"
+    return 'conteúdo';
+  };
+
   const getRecommendations = async () => {
     setLoading(true);
     setError('');
@@ -149,6 +175,7 @@ const RecommendationEngine = () => {
           <textarea
             className="w-full p-4 rounded-lg bg-gray-700 text-white border border-gray-600 focus:ring-indigo-500 focus:border-indigo-500 resize-none min-h-[100px] relative z-10"
             placeholder="Ex: Quero um filme de ficção científica com muita ação e uma história envolvente..."
+            data-analytics="reco_textarea"
             value={preference}
             onChange={(e) => setPreference(e.target.value)}
             onKeyDown={(e) => {
@@ -163,6 +190,7 @@ const RecommendationEngine = () => {
           <button
             onClick={getRecommendations}
             disabled={loading || !preference.trim()}
+            data-analytics="reco_get"
             className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-full text-lg transition duration-300 shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Gerando Recomendações...' : 'Obter Recomendações ✨'}
@@ -201,6 +229,25 @@ const RecommendationEngine = () => {
                 <h3 className="text-2xl font-bold text-indigo-400 mb-2 relative z-10">{rec.title}</h3>
                 <p className="text-gray-400 text-sm mb-3">{rec.genre}</p>
                 <p className="text-gray-300 flex-grow">{rec.shortDescription}</p>
+                <div className="mt-4 flex justify-center">
+                  {(() => {
+                    const contentType = detectContentType(preference);
+                    const message = `Olá, vim pelo site AGTV CENAS e gostaria de um teste grátis para o ${contentType} ${rec.title}`;
+                    const waLink = `https://wa.me/5583986913481?text=${encodeURIComponent(message)}`;
+                    return (
+                      <a
+                        href={waLink}
+                        data-analytics={`reco_whatsapp_${index}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-4 rounded-full text-sm transition duration-200 shadow-sm"
+                        aria-label={`Solicitar teste grátis para ${rec.title} via WhatsApp`}
+                      >
+                        Solicitar e assistir gratuitamente
+                      </a>
+                    );
+                  })()}
+                </div>
               </div>
             ))}
           </div>
