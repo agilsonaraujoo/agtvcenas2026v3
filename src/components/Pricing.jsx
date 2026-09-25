@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { plans } from '../data/pricingPlans';
 import './pricing.css';
 import '../styles/animations.css';
@@ -7,42 +7,74 @@ const Pricing = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
 
+  useEffect(() => {
+    if (!modalOpen) return;
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    const previousBodyTouchAction = document.body.style.touchAction;
+    const previousHtmlTouchAction = document.documentElement.style.touchAction;
+    const previousBodyOverscroll = document.body.style.overscrollBehavior;
+    const previousHtmlOverscroll = document.documentElement.style.overscrollBehavior;
+    const previousBodyPosition = document.body.style.position;
+    const previousHtmlPosition = document.documentElement.style.position;
+
+    document.body.style.overflow = 'hidden';
+    document.body.style.touchAction = 'none';
+    document.body.style.overscrollBehavior = 'none';
+    document.body.style.position = 'fixed';
+    document.body.style.inset = '0';
+    document.body.style.width = '100%';
+    document.documentElement.style.overflow = 'hidden';
+    document.documentElement.style.touchAction = 'none';
+    document.documentElement.style.overscrollBehavior = 'none';
+    document.documentElement.style.position = 'fixed';
+    document.documentElement.style.inset = '0';
+    document.documentElement.style.width = '100%';
+
+    const preventScroll = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+    };
+
+    window.addEventListener('touchmove', preventScroll, { passive: false });
+    window.addEventListener('wheel', preventScroll, { passive: false });
+    window.addEventListener('scroll', preventScroll, { passive: false });
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.body.style.touchAction = previousBodyTouchAction;
+      document.body.style.overscrollBehavior = previousBodyOverscroll;
+      document.body.style.position = previousBodyPosition;
+      document.body.style.inset = '';
+      document.body.style.width = '';
+      document.documentElement.style.overflow = previousHtmlOverflow;
+      document.documentElement.style.touchAction = previousHtmlTouchAction;
+      document.documentElement.style.overscrollBehavior = previousHtmlOverscroll;
+      document.documentElement.style.position = previousHtmlPosition;
+      document.documentElement.style.inset = '';
+      document.documentElement.style.width = '';
+      window.removeEventListener('touchmove', preventScroll);
+      window.removeEventListener('wheel', preventScroll);
+      window.removeEventListener('scroll', preventScroll);
+    };
+  }, [modalOpen]);
   const openConfirm = (plan) => {
-    // Tracking: log quando o modal é aberto para confirmação
     try {
       console.log('pricing: openConfirm', { plan: plan.name, price: plan.price, time: new Date().toISOString() });
       if (window && window.dataLayer) {
         window.dataLayer.push({ event: 'pricing_open_confirm', plan: plan.name, price: plan.price });
       }
     } catch (e) {
-      // não bloquear a UX por erro de tracking
-      // eslint-disable-next-line no-console
       console.error('Tracking openConfirm error', e);
     }
-    setSelectedPlan(plan);
-    setModalOpen(true);
-  };
 
-  const confirmSubscription = () => {
-    if (!selectedPlan) return;
-    // Tracking: log quando o usuário confirma a assinatura
-    try {
-      console.log('pricing: confirmSubscription', { plan: selectedPlan.name, price: selectedPlan.price, time: new Date().toISOString() });
-      if (window && window.dataLayer) {
-        window.dataLayer.push({ event: 'pricing_confirm', plan: selectedPlan.name, price: selectedPlan.price });
-      }
-    } catch (e) {
-      // eslint-disable-next-line no-console
-      console.error('Tracking confirmSubscription error', e);
-    }
-
-    const priceDisplay = selectedPlan.price;
-    const message = `Olá, vim pelo site AGTV CENAS e gostaria de assinar o plano ${selectedPlan.name} pelo valor de R$ ${priceDisplay}`;
+    const priceDisplay = plan.price;
+    const message = `Olá, vim pelo site AGTV CENAS e gostaria de assinar o plano ${plan.name} pelo valor de R$ ${priceDisplay}`;
     const waLink = `https://wa.me/5583986913481?text=${encodeURIComponent(message)}`;
     window.open(waLink, '_blank', 'noopener');
-    setModalOpen(false);
-    setSelectedPlan(null);
   };
+
   return (
     <section 
       id="planos" 
@@ -65,32 +97,32 @@ const Pricing = () => {
         {plans.map((plan, index) => (
           <div
             key={index}
-            className={`bg-gray-800 rounded-lg shadow-xl p-8 flex flex-col plan-card relative ${plan.name === 'Anual' ? 'border-2 border-purple-500' : ''} fade-in-up delay-${index + 3}`}
+            className={`bg-gray-800 rounded-lg shadow-xl p-8 flex flex-col plan-card relative ${plan.name === 'Anual' ? 'border-2 border-yellow-400 shadow-[0_0_30px_rgba(250,204,21,0.25)]' : ''} fade-in-up delay-${index + 3}`}
           >
-            {plan.isPopular && (
-              <span className="absolute top-0 right-0 bg-yellow-500 text-gray-900 text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-lg">POPULAR</span>
+            {plan.isPopular && !plan.highlight && (
+              <span className="absolute top-0 right-0 bg-yellow-500 text-gray-900 text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-lg z-10">POPULAR</span>
             )}
             {plan.highlight && (
-              <span className={`absolute top-0 right-0 bg-purple-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-lg`}>{plan.highlight.text}</span>
+              <span className={`absolute top-0 right-0 bg-purple-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-lg z-10`}>{plan.highlight.text}</span>
             )}
 
             <h3 className="text-2xl font-bold text-indigo-400 mb-6">{plan.name}</h3>
             <div className="text-5xl font-extrabold text-white mb-2">
               R$ {plan.price.split(',')[0]}<span className="text-3xl text-gray-400">,{plan.price.split(',')[1]}</span>
             </div>
-            {/* Effective monthly price considering bonus months (hidden for Mensal) */}
-            {plan.name !== 'Plano Mensal' && (() => {
+            {plan.name !== 'Mensal' && plan.name !== 'Plano Mensal' && (() => {
               const numeric = parseFloat(plan.price.replace('.', '').replace(',', '.'));
-              const bonus = plan.bonusMonths || 0;
-              const billed = plan.billedMonths || (plan.name === 'Plano Quadrimestral' ? 4 : plan.name === 'Plano Semestral' ? 5 : plan.name === 'Anual' ? 10 : 1);
-              const effectiveMonths = billed + bonus;
-              const monthlyRaw = numeric / effectiveMonths;
-              // Floor to 2 decimals to meet request: 99,90 / 4 => 24,97
-              const monthlyFloored = Math.floor(monthlyRaw * 100) / 100;
-              const monthlyStr = monthlyFloored.toFixed(2).replace('.', ',');
+              const billed = plan.billedMonths || (
+                plan.name === 'Trimestral' ? 3 :
+                plan.name === 'Semestral' ? 6 :
+                plan.name === 'Anual' ? 12 :
+                1
+              );
+              const monthlyRaw = numeric / billed;
+              const monthlyStr = monthlyRaw.toFixed(2).replace('.', ',');
               return (
                 <div className="text-sm text-gray-300 mb-4">
-                  Valor médio: <b className="text-white">R$ {monthlyStr}</b> <span className="text-xs text-gray-400">/mês</span>
+                  Média mensal: <b className="text-white">R$ {monthlyStr}</b>
                 </div>
               );
             })()}
@@ -119,20 +151,7 @@ const Pricing = () => {
           </div>
         ))}
       </div>
-      {modalOpen && selectedPlan && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setModalOpen(false)}></div>
-          <div className="relative bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
-            <h3 className="text-2xl font-bold text-white mb-4">Confirmar Assinatura</h3>
-            <p className="text-gray-300 mb-4">Você está prestes a assinar o plano <b className="text-white">{selectedPlan.name}</b> pelo valor de <b className="text-white">R$ {selectedPlan.price}</b>.</p>
-            <p className="text-gray-400 mb-6">Deseja confirmar e abrir o WhatsApp para finalizar a solicitação?</p>
-            <div className="flex justify-end gap-3">
-              <button data-analytics="pricing_cancel" onClick={() => { setModalOpen(false); setSelectedPlan(null); }} className="bg-gray-600 hover:bg-gray-500 text-white font-semibold py-2 px-4 rounded">Cancelar</button>
-              <button data-analytics={`pricing_confirm_${selectedPlan && selectedPlan.name}`} onClick={confirmSubscription} className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded">Confirmar</button>
-            </div>
-          </div>
-        </div>
-      )}
+
     </section>
   );
 };

@@ -1,8 +1,10 @@
 export const plans = [
   {
-    name: "Plano Mensal",
+    name: "Mensal",
     price: "34,90",
     description: "Comece sua experiência sem compromisso.",
+    bonusMonths: 0,
+    billedMonths: 1,
     features: [
       "+22 Mil Conteúdos",
       "Suporte Via WhatsApp",
@@ -14,27 +16,27 @@ export const plans = [
     paymentUrl: "https://loja.infinitepay.io/agtv_streaming/neg6862-agtv-streaming"
   },
   {
-    name: "Plano Quadrimestral",
+    name: "Trimestral",
     price: "99,90",
-    description: "Pacote de 4 meses com preço especial",
+    description: "Economia ao pagar 3 meses de uma vez.",
     bonusMonths: 0,
-    billedMonths: 4,
+    billedMonths: 3,
     features: [
       "+22 Mil Conteúdos",
       "Suporte Via WhatsApp",
       "Qualidade HD/Full HD/4K",
       "Filmes e Séries On Demand",
-  "Suporte Técnico 7 Dias por Semana",
+      "Suporte Técnico 7 Dias por Semana",
     ],
     isPopular: false,
     paymentUrl: "https://loja.infinitepay.io/agtv_streaming/zwi3030-agtv-plano-mensal"
   },
   {
-    name: "Plano Semestral",
-    price: "139,90",
-    description: "Assine 5 meses e leve 1 grátis!",
-    bonusMonths: 1,
-    billedMonths: 5,
+    name: "Semestral",
+    price: "159,90",
+    description: "Mais economia com pagamento semestral.",
+    bonusMonths: 0,
+    billedMonths: 6,
     features: [
       "+22 Mil Conteúdos",
       "Suporte Via WhatsApp",
@@ -48,10 +50,10 @@ export const plans = [
   },
   {
     name: "Anual",
-    price: "259,90",
-    description: "Assine 10 meses e leve 2 grátis!",
-    bonusMonths: 2,
-    billedMonths: 10,
+    price: "249,90",
+    description: "A melhor economia para o ano completo.",
+    bonusMonths: 0,
+    billedMonths: 12,
     features: [
       "+22 Mil Conteúdos",
       "Suporte Via WhatsApp",
@@ -61,8 +63,8 @@ export const plans = [
       "Ultra Economia",
     ],
     highlight: {
-      text: "SUPER PROMO",
-      color: "bg-green-500 text-white"
+      text: "⭐ Melhor custo",
+      color: "bg-yellow-500 text-gray-900"
     },
     isPopular: true,
     paymentUrl: "https://loja.infinitepay.io/agtv_streaming/wox2479-agtv-plano-anual"

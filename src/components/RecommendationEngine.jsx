@@ -6,35 +6,62 @@ const RecommendationEngine = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // !!! IMPORTANTE: Use variáveis de ambiente para suas chaves de API.
-  // Para produção, estas chaves devem ser seguras no servidor.
   const TMDB_API_KEY = process.env.REACT_APP_TMDB_API_KEY;
   const geminiApiKey = process.env.REACT_APP_GEMINI_API_KEY;
 
-  // Detecta o tipo de conteúdo baseado nas palavras-chave digitadas pelo usuário
   const detectContentType = (text) => {
     const lowerText = text.toLowerCase();
-    
-    // Palavras-chave para cada tipo
     const keywords = {
-      'filme': ['filme', 'movie', 'cinemaático'],
-      'série': ['série', 'series', 'seriado', 'serie'],
-      'novela': ['novela', 'telenovela'],
-      'anime': ['anime', 'animação', 'animê'],
-      'documentário': ['documentário', 'documentario', 'documental'],
-      'reality': ['reality', 'reality show'],
-      'stand-up': ['stand-up', 'standup', 'comédia', 'comedia']
+      filme: ['filme', 'movie', 'cinema', 'cinematográfico'],
+      série: ['série', 'serie', 'series', 'seriado', 'show'],
+      anima: ['anime', 'animação', 'animê', 'animation'],
+      documentário: ['documentário', 'documentario', 'documental'],
+      reality: ['reality', 'reality show'],
+      comedy: ['comédia', 'comedia', 'stand-up', 'standup'],
+      terror: ['terror', 'horror'],
+      ação: ['ação', 'acao', 'action', 'aventura']
     };
 
-    // Verifica qual tipo foi mencionado
     for (const [type, words] of Object.entries(keywords)) {
       if (words.some(word => lowerText.includes(word))) {
         return type;
       }
     }
 
-    // Se não encontrar palavra-chave, retorna "conteúdo"
     return 'conteúdo';
+  };
+
+  const parseGeminiJson = (rawText) => {
+    if (!rawText) return [];
+
+    const cleaned = rawText
+      .replace(/```json\s*/gi, '')
+      .replace(/```/g, '')
+      .trim();
+
+    return JSON.parse(cleaned);
+  };
+
+  const searchTmdbForTitle = async (title, mediaType) => {
+    if (!TMDB_API_KEY) return null;
+
+    const query = encodeURIComponent(`${title} ${mediaType === 'tv' ? 'series' : 'movie'}`);
+    const url = `https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&query=${query}&language=pt-BR&include_adult=false&page=1`;
+
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`TMDB fetch failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const results = data.results || [];
+    const result = results.find((item) => {
+      if (!item.poster_path) return false;
+      const matchesType = mediaType ? item.media_type === mediaType : item.media_type === 'movie' || item.media_type === 'tv';
+      return matchesType;
+    });
+
+    return result ? `https://image.tmdb.org/t/p/w500${result.poster_path}` : null;
   };
 
   const getRecommendations = async () => {
@@ -54,84 +81,69 @@ const RecommendationEngine = () => {
     }
 
     try {
-      // Chamada para a API Gemini
-      let chatHistory = [];
-      const prompt = `Dada a preferência do usuário: "${preference}", sugira 3-5 títulos de filmes ou séries que estariam disponíveis no catálogo da AGTV. Para cada sugestão, forneça um 'title' (título), 'genre' (gênero) e uma 'shortDescription' (breve descrição). Responda apenas com um array JSON desses objetos.`;
-      chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+      const prompt = `Você é um curador de catálogo de streaming. Com base nesta preferência do usuário: "${preference}". Sugira 4 recomendações de filmes ou séries. Responda APENAS com um array JSON, sem markdown, no formato abaixo: [{"title":"Nome do título","mediaType":"movie" ou "tv","genre":"Gênero principal","shortDescription":"descrição curta em até 2 linhas"}]`;
 
-      const geminiPayload = {
-        contents: chatHistory,
+      const payload = {
+        contents: [{
+          role: 'user',
+          parts: [{ text: prompt }]
+        }],
         generationConfig: {
-          responseMimeType: "application/json",
+          responseMimeType: 'application/json',
           responseSchema: {
-            type: "ARRAY",
+            type: 'ARRAY',
             items: {
-              type: "OBJECT",
+              type: 'OBJECT',
               properties: {
-                "title": { "type": "STRING" },
-                "genre": { "type": "STRING" },
-                "shortDescription": { "type": "STRING" }
+                title: { type: 'STRING' },
+                mediaType: { type: 'STRING', enum: ['movie', 'tv'] },
+                genre: { type: 'STRING' },
+                shortDescription: { type: 'STRING' }
               },
-              "propertyOrdering": ["title", "genre", "shortDescription"]
+              required: ['title', 'mediaType', 'genre', 'shortDescription']
             }
           }
         }
       };
 
-      const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
-
+      const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
       const geminiResponse = await fetch(geminiApiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(geminiPayload)
+        body: JSON.stringify(payload)
       });
 
-      const geminiResult = await geminiResponse.json();
-      let parsedRecommendations = [];
-
-      if (geminiResult.candidates && geminiResult.candidates.length > 0 &&
-          geminiResult.candidates[0].content && geminiResult.candidates[0].content.parts &&
-          geminiResult.candidates[0].content.parts.length > 0) {
-        const json = geminiResult.candidates[0].content.parts[0].text;
-        parsedRecommendations = JSON.parse(json);
-      } else {
-        setError('Não foi possível obter recomendações de texto. Tente novamente.');
-        console.error('Estrutura de resposta inesperada para texto:', geminiResult);
-        setLoading(false);
-        return;
+      if (!geminiResponse.ok) {
+        const errorPayload = await geminiResponse.json().catch(() => ({}));
+        throw new Error(errorPayload?.error?.message || 'Erro na API do Gemini.');
       }
 
-      // Chamada para a API TMDB para buscar imagens
+      const geminiResult = await geminiResponse.json();
+      const rawText = geminiResult?.candidates?.[0]?.content?.parts?.map((part) => part.text).join('') || '';
+
+      if (!rawText) {
+        throw new Error('Resposta vazia da API Gemini.');
+      }
+
+      const parsedRecommendations = parseGeminiJson(rawText);
+
       const recommendationsWithImages = await Promise.all(
         parsedRecommendations.map(async (rec) => {
-          let imageUrl = `https://placehold.co/400x225/000000/FFFFFF?text=${encodeURIComponent(rec.title)}`;
+          const imageUrl = await searchTmdbForTitle(rec.title, rec.mediaType || 'movie')
+            .catch(() => null) || `https://placehold.co/400x225/000000/FFFFFF?text=${encodeURIComponent(rec.title)}`;
 
-          try {
-            const tmdbSearchUrl = `https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(rec.title)}&language=pt-BR`;
-            const tmdbResponse = await fetch(tmdbSearchUrl);
-            const tmdbData = await tmdbResponse.json();
-
-            if (tmdbData.results && tmdbData.results.length > 0) {
-              const relevantResult = tmdbData.results.find(item =>
-                item.poster_path && (item.media_type === 'movie' || item.media_type === 'tv')
-              );
-              if (relevantResult && relevantResult.poster_path) {
-                imageUrl = `https://image.tmdb.org/t/p/w500${relevantResult.poster_path}`;
-              }
-            }
-          } catch (tmdbError) {
-            console.error(`Erro ao buscar imagem TMDB para ${rec.title}:`, tmdbError);
-          }
-
-          return { ...rec, imageUrl };
+          return {
+            ...rec,
+            imageUrl,
+            genre: rec.genre || 'Geral'
+          };
         })
       );
 
       setRecommendations(recommendationsWithImages);
-
     } catch (err) {
-      setError('Erro ao buscar recomendações. Verifique sua conexão ou tente mais tarde.');
       console.error('Erro na API Gemini ou TMDB:', err);
+      setError(err.message || 'Erro ao buscar recomendações. Verifique sua conexão ou tente mais tarde.');
     } finally {
       setLoading(false);
     }
