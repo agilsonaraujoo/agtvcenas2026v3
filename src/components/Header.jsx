@@ -330,7 +330,7 @@ const Header = () => {
         <nav
           id="mobile-navigation"
           aria-label="Navegação principal"
-          className={`${isOpen ? 'grid' : 'hidden'} grid-cols-2 gap-2 border-t border-white/10 bg-[#0b0c11]/95 p-3`}
+          className={`${isOpen ? 'flex' : 'hidden'} absolute inset-x-0 top-full max-h-[calc(100svh-4rem)] flex-col gap-1 overflow-y-auto border-t border-white/10 bg-[#0b0c11]/[0.98] p-3 shadow-2xl backdrop-blur-xl`}
         >
           {menuItems.map((item) => {
             const isActive = activeId === item.href;
@@ -340,7 +340,7 @@ const Header = () => {
                 href={item.href}
                 onClick={() => handleNavClick(item.href)}
                 aria-current={isActive ? 'location' : undefined}
-                className={`flex min-h-12 items-center gap-3 rounded-xl border px-3 py-2.5 text-sm font-semibold transition ${
+                className={`flex min-h-12 w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left text-sm font-semibold transition ${
                   isActive
                     ? 'nav-link-active-mobile border-[#b7ff4a]/25 text-white'
                     : 'border-white/[0.06] bg-white/[0.025] text-gray-200 hover:border-[#9a7bff]/35 hover:bg-white/[0.06]'

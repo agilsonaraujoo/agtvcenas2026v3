@@ -105,7 +105,7 @@ const Hero = () => {
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/25 via-black/15 to-[#07080b]/90" />
 
       <div className="container relative z-10 mx-auto grid max-w-7xl items-center gap-8 py-4 sm:gap-10 sm:py-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
-        <div className="text-center lg:text-left">
+        <div className="relative z-10 text-center lg:text-left">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -230,17 +230,17 @@ const Hero = () => {
           initial={{ opacity: 0, scale: 0.96, y: 18 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.75, delay: 0.25 }}
-          className="relative mx-auto w-full max-w-[300px] sm:max-w-[390px] lg:max-w-[470px]"
+          className="absolute -right-20 top-24 z-0 w-[min(72vw,270px)] opacity-30 sm:right-0 sm:top-28 sm:w-[min(70vw,340px)] sm:opacity-45 lg:relative lg:right-auto lg:top-auto lg:z-auto lg:mx-auto lg:w-full lg:max-w-[470px] lg:opacity-100"
         >
-          <div className="absolute -inset-5 rounded-[2.5rem] bg-gradient-to-br from-[#9a7bff]/25 via-transparent to-[#b7ff4a]/20 blur-2xl" />
-          <div className="relative overflow-hidden rounded-[2rem] border border-white/15 bg-[#101116] p-2 shadow-[0_30px_100px_rgba(0,0,0,0.65)]">
+          <div className="absolute -inset-5 rounded-[2.5rem] bg-gradient-to-br from-[#9a7bff]/25 via-transparent to-[#b7ff4a]/20 blur-2xl lg:block" />
+          <div className="relative aspect-square overflow-hidden rounded-[1.5rem] border border-white/15 bg-[#101116] p-1.5 shadow-[0_30px_100px_rgba(0,0,0,0.65)] sm:rounded-[2rem] sm:p-2 lg:aspect-auto">
             <img
               src="/agtv-neon-logo.jpg"
               alt="Televisor AGTV com aro neon verde e roxo"
               className="aspect-square w-full rounded-[1.5rem] object-cover object-center"
             />
             {isPreviewPlaying && (
-              <div className="pointer-events-none absolute inset-2 z-10 flex items-center justify-center overflow-hidden rounded-[1.5rem] bg-[#07080b]/75 px-5 pb-24 pt-5 backdrop-blur-[3px] sm:px-8">
+              <div className="pointer-events-none absolute inset-1.5 z-10 flex items-center justify-center overflow-hidden rounded-[1.35rem] bg-[#07080b]/75 px-3 pb-5 pt-3 backdrop-blur-[3px] sm:inset-2 sm:rounded-[1.5rem] sm:px-8 lg:pb-24 lg:pt-5">
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_42%,rgba(154,123,255,0.2),transparent_55%)]" />
                 <motion.div
                   aria-hidden="true"
@@ -250,7 +250,7 @@ const Hero = () => {
                 />
 
                 <div className="relative z-10 w-full max-w-sm text-center">
-                  <div className="relative mx-auto mb-5 flex h-20 w-20 items-center justify-center">
+                  <div className="relative mx-auto mb-2 flex h-12 w-12 items-center justify-center sm:mb-5 sm:h-16 sm:w-16 lg:h-20 lg:w-20">
                     <motion.span
                       aria-hidden="true"
                       className="absolute inset-0 rounded-full border border-[#9a7bff]/70"
@@ -264,7 +264,7 @@ const Hero = () => {
                       transition={{ duration: 2.2, delay: 0.45, repeat: Infinity, ease: 'easeOut' }}
                     />
                     <motion.div
-                      className="flex h-14 w-14 items-center justify-center rounded-full border border-[#b7ff4a]/50 bg-[#b7ff4a]/10 text-[#c9ff83] shadow-[0_0_32px_rgba(183,255,74,0.2)]"
+                      className="flex h-9 w-9 items-center justify-center rounded-full border border-[#b7ff4a]/50 bg-[#b7ff4a]/10 text-[#c9ff83] shadow-[0_0_32px_rgba(183,255,74,0.2)] sm:h-12 sm:w-12 lg:h-14 lg:w-14"
                       animate={{ boxShadow: ['0 0 20px rgba(183,255,74,0.15)', '0 0 36px rgba(154,123,255,0.35)', '0 0 20px rgba(183,255,74,0.15)'] }}
                       transition={{ duration: 3, repeat: Infinity }}
                     >
@@ -281,19 +281,19 @@ const Hero = () => {
                       transition={{ duration: 0.45 }}
                       aria-live="polite"
                     >
-                      <p className="mb-2 text-[10px] font-bold tracking-[0.28em] text-[#b7ff4a] sm:text-xs">
+                      <p className="mb-1 text-[8px] font-bold tracking-[0.2em] text-[#b7ff4a] sm:mb-2 sm:text-[10px] sm:tracking-[0.28em] lg:text-xs">
                         {experienceHighlights[activeHighlight].label}
                       </p>
-                      <h3 className="text-2xl font-black text-white drop-shadow-[0_0_18px_rgba(154,123,255,0.5)] sm:text-3xl">
+                      <h3 className="text-sm font-black text-white drop-shadow-[0_0_18px_rgba(154,123,255,0.5)] sm:text-xl lg:text-3xl">
                         {experienceHighlights[activeHighlight].title}
                       </h3>
-                      <p className="mx-auto mt-2 max-w-xs text-sm leading-6 text-gray-200">
+                      <p className="mx-auto mt-1 max-w-xs text-[9px] leading-4 text-gray-200 sm:mt-2 sm:text-xs sm:leading-5 lg:text-sm lg:leading-6">
                         {experienceHighlights[activeHighlight].description}
                       </p>
                     </motion.div>
                   </AnimatePresence>
 
-                  <div className="pointer-events-auto mt-5 flex justify-center gap-2">
+                  <div className="pointer-events-none mt-2 hidden justify-center gap-2 sm:mt-4 lg:pointer-events-auto lg:mt-5 lg:flex">
                     {experienceHighlights.map((highlight, index) => (
                       <button
                         key={highlight.title}
@@ -308,7 +308,7 @@ const Hero = () => {
                 </div>
               </div>
             )}
-            <div className="absolute inset-x-2 bottom-2 z-20 rounded-b-[1.5rem] bg-gradient-to-t from-black/90 via-black/45 to-transparent px-5 pb-5 pt-16 sm:px-7 sm:pb-7">
+            <div className="absolute inset-x-2 bottom-2 z-20 hidden rounded-b-[1.5rem] bg-gradient-to-t from-black/90 via-black/45 to-transparent px-5 pb-5 pt-16 sm:px-7 sm:pb-7 lg:block">
               <div className="flex items-end justify-between gap-4">
                 <div>
                   <p className="mb-1 text-xs font-bold uppercase tracking-[0.24em] text-[#b7ff4a]">Sua próxima sessão</p>
