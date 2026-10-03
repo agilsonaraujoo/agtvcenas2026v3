@@ -78,26 +78,25 @@ const Pricing = () => {
   return (
     <section 
       id="planos" 
-      className="bg-gray-900 text-white py-16 px-4 pricing-section fade-in-up"
+      className="bg-gray-900 px-4 py-12 text-white pricing-section fade-in-up sm:py-16"
     >
-      <div className="container mx-auto text-center mb-12">
-        <h2 
-          className="text-4xl font-extrabold text-white sm:text-5xl lg:text-6xl mb-4 fade-in-up delay-1"
-        >
-          Escolha o Plano Ideal para Você
-        </h2>
-        <p 
-          className="text-xl text-gray-300 fade-in-up delay-2"
-        >
+      <div className="container mx-auto mb-8 text-center sm:mb-12">
+        <div className="agtv-section-heading">
+          <span className="agtv-section-kicker">DIVERSÃO DO SEU JEITO</span>
+          <h2 className="agtv-section-title fade-in-up delay-1">
+            Escolha o Plano <span>Ideal para Você</span>
+          </h2>
+        </div>
+        <p className="agtv-section-description fade-in-up delay-2">
           Diversão sem limites ao seu alcance.
         </p>
       </div>
 
-      <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div className="container mx-auto grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-4 lg:gap-8">
         {plans.map((plan, index) => (
           <div
             key={index}
-            className={`bg-gray-800 rounded-lg shadow-xl p-8 flex flex-col plan-card relative ${plan.name === 'Anual' ? 'border-2 border-yellow-400 shadow-[0_0_30px_rgba(250,204,21,0.25)]' : ''} fade-in-up delay-${index + 3}`}
+            className={`relative flex flex-col rounded-lg bg-gray-800 p-6 shadow-xl plan-card sm:p-8 ${plan.name === 'Anual' ? 'border-2 border-yellow-400 shadow-[0_0_30px_rgba(250,204,21,0.25)]' : ''} fade-in-up delay-${index + 3}`}
           >
             {plan.isPopular && !plan.highlight && (
               <span className="absolute top-0 right-0 bg-yellow-500 text-gray-900 text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-lg z-10">POPULAR</span>
@@ -107,8 +106,8 @@ const Pricing = () => {
             )}
 
             <h3 className="text-2xl font-bold text-indigo-400 mb-6">{plan.name}</h3>
-            <div className="text-5xl font-extrabold text-white mb-2">
-              R$ {plan.price.split(',')[0]}<span className="text-3xl text-gray-400">,{plan.price.split(',')[1]}</span>
+            <div className="mb-2 text-4xl font-extrabold text-white sm:text-5xl">
+              R$ {plan.price.split(',')[0]}<span className="text-2xl text-gray-400 sm:text-3xl">,{plan.price.split(',')[1]}</span>
             </div>
             {plan.name !== 'Mensal' && plan.name !== 'Plano Mensal' && (() => {
               const numeric = parseFloat(plan.price.replace('.', '').replace(',', '.'));
@@ -126,7 +125,7 @@ const Pricing = () => {
                 </div>
               );
             })()}
-            <ul className="text-lg text-gray-300 space-y-3 flex-grow mb-8">
+            <ul className="mb-8 flex-grow space-y-3 text-base text-gray-300 sm:text-lg">
               {plan.features.map((feature, idx) => (
                   <li key={idx} className="flex items-start">
                   <svg className="h-6 w-6 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">

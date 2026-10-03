@@ -1,13 +1,33 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { FiFilm, FiLoader, FiTv, FiZap } from 'react-icons/fi';
+import { API_CONFIG } from '../utils/api';
+
+const recommendationEyebrows = [
+  'SUA PRÓXIMA DESCOBERTA',
+  'FEITO PARA O SEU MOMENTO',
+  'FILMES E SÉRIES NO SEU CLIMA',
+  'UMA NOVA HISTÓRIA TE ESPERA',
+];
+const trialUrl = 'https://pagme.xyz/trial/eeebb22786aeac95e12e1b7bd37012a3d07f69721315fc2d';
 
 const RecommendationEngine = () => {
   const [preference, setPreference] = useState('');
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [activeEyebrow, setActiveEyebrow] = useState(0);
+  const prefersReducedMotion = useReducedMotion();
 
-  const TMDB_API_KEY = process.env.REACT_APP_TMDB_API_KEY;
-  const geminiApiKey = process.env.REACT_APP_GEMINI_API_KEY;
+  useEffect(() => {
+    if (prefersReducedMotion) return undefined;
+
+    const interval = window.setInterval(() => {
+      setActiveEyebrow((current) => (current + 1) % recommendationEyebrows.length);
+    }, 3000);
+
+    return () => window.clearInterval(interval);
+  }, [prefersReducedMotion]);
 
   const detectContentType = (text) => {
     const lowerText = text.toLowerCase();
@@ -31,37 +51,15 @@ const RecommendationEngine = () => {
     return 'conteúdo';
   };
 
-  const parseGeminiJson = (rawText) => {
-    if (!rawText) return [];
-
-    const cleaned = rawText
-      .replace(/```json\s*/gi, '')
-      .replace(/```/g, '')
-      .trim();
-
-    return JSON.parse(cleaned);
-  };
-
   const searchTmdbForTitle = async (title, mediaType) => {
-    if (!TMDB_API_KEY) return null;
-
-    const query = encodeURIComponent(`${title} ${mediaType === 'tv' ? 'series' : 'movie'}`);
-    const url = `https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&query=${query}&language=pt-BR&include_adult=false&page=1`;
-
-    const response = await fetch(url);
+    const params = new URLSearchParams({ query: title, mediaType });
+    const response = await fetch(`${API_CONFIG.TMDB.SEARCH_URL}?${params}`);
     if (!response.ok) {
       throw new Error(`TMDB fetch failed: ${response.status}`);
     }
 
     const data = await response.json();
-    const results = data.results || [];
-    const result = results.find((item) => {
-      if (!item.poster_path) return false;
-      const matchesType = mediaType ? item.media_type === mediaType : item.media_type === 'movie' || item.media_type === 'tv';
-      return matchesType;
-    });
-
-    return result ? `https://image.tmdb.org/t/p/w500${result.poster_path}` : null;
+    return data.posterUrl || null;
   };
 
   const getRecommendations = async () => {
@@ -69,48 +67,13 @@ const RecommendationEngine = () => {
     setError('');
     setRecommendations([]);
 
-    if (!TMDB_API_KEY) {
-      setError('A chave da API do TMDB não foi configurada. Verifique seu arquivo .env.');
-      setLoading(false);
-      return;
-    }
-    if (!geminiApiKey) {
-      setError('A chave da API Gemini não foi configurada. Verifique seu arquivo .env.');
-      setLoading(false);
-      return;
-    }
-
     try {
-      const prompt = `Você é um curador de catálogo de streaming. Com base nesta preferência do usuário: "${preference}". Sugira 4 recomendações de filmes ou séries. Responda APENAS com um array JSON, sem markdown, no formato abaixo: [{"title":"Nome do título","mediaType":"movie" ou "tv","genre":"Gênero principal","shortDescription":"descrição curta em até 2 linhas"}]`;
-
-      const payload = {
-        contents: [{
-          role: 'user',
-          parts: [{ text: prompt }]
-        }],
-        generationConfig: {
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: 'ARRAY',
-            items: {
-              type: 'OBJECT',
-              properties: {
-                title: { type: 'STRING' },
-                mediaType: { type: 'STRING', enum: ['movie', 'tv'] },
-                genre: { type: 'STRING' },
-                shortDescription: { type: 'STRING' }
-              },
-              required: ['title', 'mediaType', 'genre', 'shortDescription']
-            }
-          }
-        }
-      };
-
-      const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
-      const geminiResponse = await fetch(geminiApiUrl, {
+      const geminiResponse = await fetch(API_CONFIG.GEMINI.RECOMMENDATIONS_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ preference })
       });
 
       if (!geminiResponse.ok) {
@@ -118,19 +81,12 @@ const RecommendationEngine = () => {
         throw new Error(errorPayload?.error?.message || 'Erro na API do Gemini.');
       }
 
-      const geminiResult = await geminiResponse.json();
-      const rawText = geminiResult?.candidates?.[0]?.content?.parts?.map((part) => part.text).join('') || '';
-
-      if (!rawText) {
-        throw new Error('Resposta vazia da API Gemini.');
-      }
-
-      const parsedRecommendations = parseGeminiJson(rawText);
+      const { recommendations: parsedRecommendations } = await geminiResponse.json();
 
       const recommendationsWithImages = await Promise.all(
         parsedRecommendations.map(async (rec) => {
           const imageUrl = await searchTmdbForTitle(rec.title, rec.mediaType || 'movie')
-            .catch(() => null) || `https://placehold.co/400x225/000000/FFFFFF?text=${encodeURIComponent(rec.title)}`;
+            .catch(() => null) || `https://placehold.co/500x750/000000/FFFFFF?text=${encodeURIComponent(rec.title)}`;
 
           return {
             ...rec,
@@ -150,42 +106,95 @@ const RecommendationEngine = () => {
   };
 
   return (
-    <section id="recomendacoes" className="bg-gray-800 text-white py-16 px-4">
-      <div className="container mx-auto text-center mb-12">
-        <h2 className="text-4xl font-extrabold text-white sm:text-5xl lg:text-6xl mb-4 flex items-center justify-center gap-2 relative">
-          Recomendações Personalizadas
-          <span className="relative inline-block" style={{width:'2.5em',height:'2.5em'}}>
-            <span style={{fontSize:'2.2em',position:'relative',zIndex:2}}>✨</span>
-            {/* Brilhos infinitos sobre o emoji */}
-            <span className="absolute left-0 top-0 w-full h-full pointer-events-none" style={{zIndex:3}}>
-              {[...Array(14)].map((_, i) => (
-                <span
-                  key={i}
-                  className="absolute emoji-sparkle"
-                  style={{
-                    left: `${Math.random() * 90 + 5}%`,
-                    top: `-${Math.random() * 10 + 2}px`,
-                    animationDelay: `${Math.random() * 2}s`,
-                    animationDuration: `${1.8 + Math.random()}s`,
-                  }}
-                >
-                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="6" cy="6" r="2.5" fill="#fff8c6" fillOpacity="0.8" />
-                    <circle cx="6" cy="6" r="1" fill="#ffe066" fillOpacity="0.9" />
-                  </svg>
-                </span>
-              ))}
-            </span>
-          </span>
-        </h2>
-        <p className="text-xl text-gray-300 mb-8">
-          Descreva o que você gostaria de assistir e deixe a IA te surpreender!
-        </p>
+    <section id="recomendacoes" className="relative overflow-hidden bg-gray-800 px-4 py-14 text-white sm:py-20 lg:py-24">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_8%,rgba(154,123,255,0.15),transparent_42%),radial-gradient(ellipse_at_50%_48%,rgba(183,255,74,0.06),transparent_58%)]" />
+      <div className="container relative z-10 mx-auto">
+        <motion.div
+          initial={prefersReducedMotion ? false : { opacity: 0, y: 22 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.25 }}
+          transition={{ duration: 0.65 }}
+          className="mx-auto mb-8 max-w-3xl text-center sm:mb-12"
+        >
+          <div className="relative mx-auto mb-6 flex h-16 w-16 items-center justify-center">
+            {!prefersReducedMotion && (
+              <>
+                <motion.span
+                  aria-hidden="true"
+                  className="absolute inset-0 rounded-full border border-[#9a7bff]/60"
+                  animate={{ scale: [0.82, 1.28], opacity: [0.75, 0] }}
+                  transition={{ duration: 2.4, repeat: Infinity, ease: 'easeOut' }}
+                />
+                <motion.span
+                  aria-hidden="true"
+                  className="absolute inset-2 rounded-full border border-[#b7ff4a]/45"
+                  animate={{ scale: [1, 1.34], opacity: [0.6, 0] }}
+                  transition={{ duration: 2.4, delay: 0.55, repeat: Infinity, ease: 'easeOut' }}
+                />
+              </>
+            )}
+            <motion.div
+              className="relative flex h-12 w-12 items-center justify-center rounded-full border border-[#b7ff4a]/40 bg-[#b7ff4a]/10 text-[#c9ff83] shadow-[0_0_30px_rgba(183,255,74,0.16)]"
+              animate={prefersReducedMotion ? undefined : {
+                boxShadow: [
+                  '0 0 18px rgba(183,255,74,0.12)',
+                  '0 0 32px rgba(154,123,255,0.32)',
+                  '0 0 18px rgba(183,255,74,0.12)',
+                ],
+              }}
+              transition={{ duration: 3, repeat: Infinity }}
+            >
+              <FiZap aria-hidden="true" size={22} />
+            </motion.div>
+          </div>
 
-        <div className="max-w-2xl mx-auto mb-10 relative">
-          {/* Brilhos removidos da caixa de texto */}
+          <div className="mx-auto mb-5 inline-flex min-h-[38px] max-w-full items-center gap-2 rounded-full border border-[#b7ff4a]/25 bg-[#b7ff4a]/[0.07] px-4 py-2 text-[10px] font-bold tracking-[0.16em] text-[#c9ff83] sm:text-xs sm:tracking-[0.22em]">
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#b7ff4a] shadow-[0_0_12px_rgba(183,255,74,0.8)]" />
+            <span className="relative grid min-w-0 items-center">
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.span
+                  key={activeEyebrow}
+                  initial={prefersReducedMotion ? false : { opacity: 0, y: 7, filter: 'blur(4px)' }}
+                  animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                  exit={prefersReducedMotion ? undefined : { opacity: 0, y: -7, filter: 'blur(4px)' }}
+                  transition={{ duration: prefersReducedMotion ? 0 : 0.35 }}
+                  aria-live="polite"
+                  className="col-start-1 row-start-1"
+                >
+                  {recommendationEyebrows[activeEyebrow]}
+                </motion.span>
+              </AnimatePresence>
+            </span>
+          </div>
+
+          <h2 className="mb-4 text-3xl font-extrabold text-white sm:text-5xl lg:text-6xl">
+            Recomendações
+            <span className="mt-1 block bg-gradient-to-r from-[#b7ff4a] via-[#d1ff8e] to-[#a68aff] bg-clip-text text-transparent">
+              Personalizadas
+            </span>
+          </h2>
+          <p className="mx-auto max-w-2xl text-base leading-7 text-gray-300 sm:text-xl">
+            Conte o que combina com você e deixe a inteligência AGTV encontrar sua próxima história.
+          </p>
+        </motion.div>
+
+        <motion.div
+          initial={prefersReducedMotion ? false : { opacity: 0, y: 18 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.15 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="relative mx-auto mb-8 max-w-2xl overflow-hidden rounded-3xl border border-white/10 bg-[#101116]/90 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:mb-10 sm:p-8"
+        >
+          {!prefersReducedMotion && (
+            <motion.div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#b7ff4a]/80 to-transparent shadow-[0_0_18px_rgba(183,255,74,0.8)]"
+              animate={{ x: ['-55%', '55%', '-55%'], opacity: [0.25, 1, 0.25] }}
+              transition={{ duration: 5, repeat: Infinity, ease: 'linear' }}
+            />
+          )}
           <textarea
-            className="w-full p-4 rounded-lg bg-gray-700 text-white border border-gray-600 focus:ring-indigo-500 focus:border-indigo-500 resize-none min-h-[100px] relative z-10"
+            className="relative z-10 min-h-[120px] w-full resize-none rounded-2xl border border-white/10 bg-gray-700 p-4 text-white placeholder:text-gray-500 focus:border-[#b7ff4a] focus:ring-2 focus:ring-[#b7ff4a]/10"
             placeholder="Ex: Quero um filme de ficção científica com muita ação e uma história envolvente..."
             data-analytics="reco_textarea"
             value={preference}
@@ -203,66 +212,104 @@ const RecommendationEngine = () => {
             onClick={getRecommendations}
             disabled={loading || !preference.trim()}
             data-analytics="reco_get"
-            className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-full text-lg transition duration-300 shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[#b7ff4a] px-4 py-3 text-sm font-extrabold text-[#10130a] shadow-[0_0_24px_rgba(183,255,74,0.16)] transition duration-300 hover:scale-[1.03] hover:bg-[#ceff83] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:px-7 sm:text-lg"
           >
-            {loading ? 'Gerando Recomendações...' : 'Obter Recomendações ✨'}
+            {loading ? (
+              <>
+                <motion.span
+                  animate={prefersReducedMotion ? undefined : { rotate: 360 }}
+                  transition={{ duration: 1.1, repeat: Infinity, ease: 'linear' }}
+                  className="inline-flex"
+                >
+                  <FiLoader aria-hidden="true" />
+                </motion.span>
+                Encontrando sua próxima sessão...
+              </>
+            ) : (
+              <>
+                <FiZap aria-hidden="true" />
+                Obter Recomendações
+              </>
+            )}
           </button>
-          {/* Bottom sparkles removed to avoid overlapping result cards */}
-          {/* Estilos para brilhos animados */}
-          <style>{`
-            .emoji-sparkle {
-              animation: sparkle-fall 2.5s linear infinite;
-              opacity: 0.9;
-              filter: blur(0.5px) drop-shadow(0 0 4px #fff8c6);
-            }
-            @keyframes sparkle-fall {
-              0% { transform: translateY(0) scale(1); opacity: 0.9; }
-              80% { opacity: 1; }
-              100% { transform: translateY(120px) scale(0.7); opacity: 0; }
-            }
-          `}</style>
-        </div>
+          <p className="mt-4 flex items-center justify-center gap-2 text-xs text-gray-500">
+            <FiFilm aria-hidden="true" />
+            <span>Filmes</span>
+            <span className="text-[#9a7bff]">·</span>
+            <FiTv aria-hidden="true" />
+            <span>Séries</span>
+            <span className="text-[#9a7bff]">·</span>
+            <FiZap aria-hidden="true" className="text-[#b7ff4a]" />
+            <span>Do seu jeito</span>
+          </p>
+        </motion.div>
 
         {error && (
-          <p className="text-red-500 text-lg mb-4">{error}</p>
+          <motion.p
+            initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 text-center text-lg text-red-400"
+          >
+            {error}
+          </motion.p>
         )}
 
         {recommendations.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-10">
+          <motion.div
+            layout
+            className="mt-10 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3"
+          >
             {recommendations.map((rec, index) => (
-              <div key={index} className="bg-gray-900 rounded-lg shadow-xl p-6 text-left flex flex-col transform transition-transform hover:scale-105 duration-300 relative overflow-hidden">
+              <motion.div
+                key={`${rec.title}-${index}`}
+                initial={prefersReducedMotion ? false : { opacity: 0, y: 24, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.45, delay: prefersReducedMotion ? 0 : index * 0.09 }}
+                className="relative flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-gray-900 p-5 text-left shadow-xl"
+              >
                 <img
                   src={rec.imageUrl}
                   alt={`Capa de ${rec.title}`}
-                  className="w-full h-auto rounded-md mb-4 object-cover"
-                  onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/400x225/000000/FFFFFF?text=Imagem+Nao+Disponivel'; }}
+                  className="mb-4 aspect-[2/3] w-full rounded-xl object-cover"
+                  onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/500x750/000000/FFFFFF?text=Imagem+Nao+Disponivel'; }}
                 />
-                {/* Sparkles removed from result cards */}
-                <h3 className="text-2xl font-bold text-indigo-400 mb-2 relative z-10">{rec.title}</h3>
+                <h3 className="relative z-10 mb-2 text-2xl font-bold text-indigo-400">{rec.title}</h3>
                 <p className="text-gray-400 text-sm mb-3">{rec.genre}</p>
                 <p className="text-gray-300 flex-grow">{rec.shortDescription}</p>
-                <div className="mt-4 flex justify-center">
+                <div className="mt-5 grid gap-2.5">
                   {(() => {
                     const contentType = detectContentType(preference);
                     const message = `Olá, vim pelo site AGTV CENAS e gostaria de um teste grátis para o ${contentType} ${rec.title}`;
                     const waLink = `https://wa.me/5583986913481?text=${encodeURIComponent(message)}`;
                     return (
-                      <a
-                        href={waLink}
-                        data-analytics={`reco_whatsapp_${index}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-4 rounded-full text-sm transition duration-200 shadow-sm"
-                        aria-label={`Solicitar teste grátis para ${rec.title} via WhatsApp`}
-                      >
-                        Solicitar e assistir gratuitamente
-                      </a>
+                      <>
+                        <a
+                          href={trialUrl}
+                          data-analytics={`reco_trial_${index}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex min-h-11 items-center justify-center rounded-full bg-[#b7ff4a] px-4 py-2 text-center text-sm font-bold text-[#10130a] shadow-[0_0_20px_rgba(183,255,74,0.12)] transition hover:scale-[1.02] hover:bg-[#ceff83]"
+                          aria-label={`Iniciar teste grátis para ${rec.title}`}
+                        >
+                          Iniciar teste grátis
+                        </a>
+                        <a
+                          href={waLink}
+                          data-analytics={`reco_whatsapp_${index}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex min-h-11 items-center justify-center rounded-full border border-[#9a7bff]/40 bg-[#9a7bff]/10 px-4 py-2 text-center text-sm font-semibold text-white transition hover:border-[#9a7bff]/70 hover:bg-[#9a7bff]/20"
+                          aria-label={`Solicitar teste grátis para ${rec.title} pelo WhatsApp`}
+                        >
+                          Solicitar pelo WhatsApp
+                        </a>
+                      </>
                     );
                   })()}
                 </div>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
       </div>
     </section>

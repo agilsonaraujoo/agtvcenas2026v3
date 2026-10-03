@@ -18,13 +18,13 @@ const Header = () => {
   }, []);
 
   const menuItems = [
-  { id: 1, text: 'Início', textMobile: 'Início', icon: <FiHome className="w-5 h-5" />, href: '#home', mobileHidden: true },
-  { id: 2, text: 'Serviços', textMobile: 'Serviços', icon: <FiTv className="w-5 h-5" />, href: '#servicos' },
-  { id: 3, text: 'Em Alta 🔥', textMobile: 'Alta', icon: <FiTrendingUp className="w-5 h-5" />, href: '#trending' },
-  { id: 4, text: 'Recomendações ✨', textMobile: 'Recom.', icon: <FiStar className="w-5 h-5" />, href: '#recomendacoes' },
-  { id: 5, text: 'Planos', textMobile: 'Planos', icon: <FiDollarSign className="w-5 h-5" />, href: '#planos' },
-  { id: 6, text: 'Depoimentos', textMobile: 'Clientes', icon: <FiStar className="w-5 h-5" />, href: '#depoimentos' },
-  { id: 7, text: 'FAQ', textMobile: 'FAQ', icon: <FiHelpCircle className="w-5 h-5" />, href: '#faq' }
+    { id: 1, text: 'Início', icon: <FiHome className="h-5 w-5" />, href: '#home' },
+    { id: 2, text: 'Serviços', icon: <FiTv className="h-5 w-5" />, href: '#servicos' },
+    { id: 3, text: 'Em Alta 🔥', icon: <FiTrendingUp className="h-5 w-5" />, href: '#trending' },
+    { id: 4, text: 'Recomendações ✨', icon: <FiStar className="h-5 w-5" />, href: '#recomendacoes' },
+    { id: 5, text: 'Planos', icon: <FiDollarSign className="h-5 w-5" />, href: '#planos' },
+    { id: 6, text: 'Depoimentos', icon: <FiStar className="h-5 w-5" />, href: '#depoimentos' },
+    { id: 7, text: 'FAQ', icon: <FiHelpCircle className="h-5 w-5" />, href: '#faq' },
   ];
   const [activeId, setActiveId] = useState('#home');
   const observerRef = useRef(null);
@@ -32,7 +32,6 @@ const Header = () => {
   const showInicioRef = useRef(false);
   const desktopNavRef = useRef(null);
   const desktopIndicatorRef = useRef(null);
-  const mobileIndicatorRef = useRef(null);
   const updateIndicatorRef = useRef(null);
   const sectionObjsRef = useRef([]);
 
@@ -162,41 +161,6 @@ const Header = () => {
           }
         }
 
-        // mobile - show indicator only after passing the first non-home section
-  const mobileNav = document.querySelector('nav.fixed.bottom-0');
-        const minfo = mobileIndicatorRef.current;
-        if (mobileNav && minfo) {
-          // find first non-home section top
-          const sectionObjs = sectionObjsRef.current || [];
-          const firstNonHome = sectionObjs.find(s => s.id !== '#home');
-          const shouldShow = firstNonHome ? (viewportCenter >= (firstNonHome.top - window.innerHeight * 0.25)) : (activeId !== '#home');
-          if (!shouldShow) {
-            minfo.style.opacity = '0';
-          } else {
-              const activeA = findAnchorInNav(mobileNav, activeIdRef.current);
-              if (activeA) {
-                const ar = activeA.getBoundingClientRect();
-                const navRect = mobileNav.getBoundingClientRect();
-                minfo.style.width = `${ar.width}px`;
-                minfo.style.left = `${ar.left - navRect.left}px`;
-                minfo.style.opacity = '1';
-              } else {
-                const lowerA = findAnchorInNav(mobileNav, lower.id);
-                const upperA = findAnchorInNav(mobileNav, upper.id);
-                if (lowerA && upperA) {
-                  const la = lowerA.getBoundingClientRect();
-                  const ua = upperA.getBoundingClientRect();
-                  const navRect = mobileNav.getBoundingClientRect();
-                  const left = (la.left - navRect.left) * (1 - t) + (ua.left - navRect.left) * t;
-                  const width = la.width * (1 - t) + ua.width * t;
-                  minfo.style.left = `${left}px`;
-                  minfo.style.width = `${width}px`;
-                  minfo.style.opacity = '1';
-                }
-              }
-          }
-        }
-
         raf = null;
       });
     };
@@ -218,6 +182,17 @@ const Header = () => {
   // Keep refs in sync with current state for the scroll handler
   useEffect(() => { activeIdRef.current = activeId; }, [activeId]);
   useEffect(() => { showInicioRef.current = showInicio; }, [showInicio]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') setIsOpen(false);
+    };
+
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, [isOpen]);
 
   const handleNavClick = (href) => {
     setActiveId(href);
@@ -242,35 +217,12 @@ const Header = () => {
       }
     };
 
-    const updateMobileIndicator = () => {
-      const mobileNav = document.querySelector('nav.fixed.bottom-0');
-      const indicator = mobileIndicatorRef.current;
-      if (!mobileNav || !indicator) return;
-      const activeLink = mobileNav.querySelector(`a[href="${activeId}"]`);
-      if (activeLink) {
-        const rect = activeLink.getBoundingClientRect();
-        const navRect = mobileNav.getBoundingClientRect();
-        indicator.style.width = `${rect.width}px`;
-        indicator.style.left = `${rect.left - navRect.left}px`;
-        indicator.style.opacity = '1';
-      } else {
-        indicator.style.opacity = '0';
-      }
-    };
-
-    // expose for other effects
-    updateIndicatorRef.current = () => {
-      updateDesktopIndicator();
-      updateMobileIndicator();
-    };
+    updateIndicatorRef.current = updateDesktopIndicator;
 
     updateDesktopIndicator();
-    updateMobileIndicator();
     window.addEventListener('resize', updateDesktopIndicator);
-    window.addEventListener('resize', updateMobileIndicator);
     return () => {
       window.removeEventListener('resize', updateDesktopIndicator);
-      window.removeEventListener('resize', updateMobileIndicator);
     };
   }, [activeId]);
 
@@ -288,15 +240,10 @@ const Header = () => {
   // Slow down indicator transitions when viewing the Planos section
   useEffect(() => {
     const desktopInd = desktopIndicatorRef.current;
-    const mobileInd = mobileIndicatorRef.current;
     const isPlanos = activeId === '#planos';
     if (desktopInd) {
       if (isPlanos) desktopInd.classList.add('slow-indicator');
       else desktopInd.classList.remove('slow-indicator');
-    }
-    if (mobileInd) {
-      if (isPlanos) mobileInd.classList.add('slow-indicator');
-      else mobileInd.classList.remove('slow-indicator');
     }
   }, [activeId]);
 
@@ -305,15 +252,18 @@ const Header = () => {
       {/* Desktop Navbar (top) */}
       <header className="bg-gradient-to-r from-gray-900 to-black text-white fixed w-full z-50 shadow-lg border-b border-gray-800 hidden md:block">
         <nav className="max-w-7xl mx-auto px-6 py-3 flex justify-between items-center">
-          <a href="#home" className="flex items-center">
-            <div className="relative w-14 h-14">
-              <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full shadow-lg"></div>
+          <a href="#home" className="flex items-center gap-3" aria-label="AGTV - Início">
+            <div className="relative h-12 w-12 overflow-hidden rounded-xl ring-1 ring-white/20 shadow-[0_0_24px_rgba(154,123,255,0.24)]">
               <img
-                src="/AGTV.jpg"
+                src="/agtv-neon-logo.jpg"
                 alt="Logo AGTV"
-                className="relative w-14 h-14 rounded-full border-2 border-white shadow-lg hover:shadow-xl transition-shadow duration-300"
+                className="h-full w-full object-cover"
               />
             </div>
+            <span className="brand-copy hidden flex-col sm:flex">
+              <strong>AGTV</strong>
+              <small>ENTRETENIMENTO</small>
+            </span>
           </a>
           <div className="relative flex gap-2 lg:gap-6 xl:gap-8" ref={desktopNavRef}>
             <div ref={desktopIndicatorRef} className="nav-slide-indicator" aria-hidden="true" />
@@ -337,65 +287,72 @@ const Header = () => {
         </nav>
       </header>
 
-      {/* Mobile Navbar (bottom) */}
-      <nav className="fixed bottom-0 left-0 w-full bg-gradient-to-r from-gray-900 to-black text-white z-50 shadow-t border-t border-gray-800 flex md:hidden justify-between items-center py-2 px-2">
-        <div ref={mobileIndicatorRef} className="mobile-nav-slide-indicator" aria-hidden="true" />
-        {/* Menu esquerdo */}
-        <div className="flex flex-1 justify-evenly">
-          {menuItems.filter(item => !item.mobileHidden && item.id < 5).map((item) => {
-            const isActive = activeId === item.href;
-            return (
-              <a
-                key={item.id}
-                href={item.href}
-                onClick={() => handleNavClick(item.href)}
-                className={`flex flex-col items-center justify-center px-1 py-1 text-xs font-medium transition rounded ${isActive ? 'nav-link-active-mobile' : 'text-gray-200 hover:text-white hover:bg-indigo-600'}`}
-                style={{ minWidth: '40px' }}
-              >
-                {item.icon}
-                <span className="mt-1">{item.textMobile}</span>
-              </a>
-            );
-          })}
-        </div>
-        {/* Logo centralizada no menu inferior com brilho giratório (mobile) */}
-        <a href="#home" className="flex flex-col items-center justify-center mx-2">
-          <div className="relative w-10 h-10">
-            {/* Anel de brilho giratório */}
-            <span aria-hidden="true" className="pointer-events-none absolute -inset-1 flex items-center justify-center">
-              <span className="relative block w-14 h-14 rounded-full">
-                <span className="absolute inset-0 rounded-full bg-gradient-to-tr from-indigo-500 via-fuchsia-500 to-purple-500 opacity-70 blur-[6px] spin-slow"></span>
-                <span className="absolute inset-0 rounded-full ring-2 ring-white/20"></span>
-              </span>
-            </span>
-            {/* Disco base */}
-            <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full shadow-lg"></div>
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#090a0e]/90 text-white shadow-lg backdrop-blur-xl md:hidden">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4">
+          <a
+            href="#home"
+            aria-label="AGTV - Início"
+            onClick={() => handleNavClick('#home')}
+            className="flex min-w-0 items-center gap-2.5"
+          >
             <img
-              src="/AGTV.jpg"
-              alt="Logo AGTV"
-              className="relative w-10 h-10 rounded-full border-2 border-white shadow-lg hover:shadow-xl transition-shadow duration-300"
+              src="/agtv-neon-logo.jpg"
+              alt=""
+              className="h-10 w-10 shrink-0 rounded-xl border border-white/15 object-cover shadow-[0_0_18px_rgba(154,123,255,0.2)]"
             />
+            <span className="brand-copy flex min-w-0 flex-col">
+              <strong>AGTV</strong>
+              <small>ENTRETENIMENTO</small>
+            </span>
+          </a>
+          <div className="flex shrink-0 items-center gap-2">
+            <a
+              href="https://pagme.xyz/trial/eeebb22786aeac95e12e1b7bd37012a3d07f69721315fc2d"
+              target="_blank"
+              rel="noreferrer"
+              data-analytics="cta_trial_mobile"
+              className="inline-flex min-h-10 items-center justify-center rounded-full bg-[#b7ff4a] px-3.5 text-xs font-extrabold text-[#10130a] shadow-[0_0_18px_rgba(183,255,74,0.14)] transition hover:bg-[#ceff83] sm:px-4 sm:text-sm"
+            >
+              Teste grátis
+            </a>
+            <button
+              type="button"
+              aria-label={isOpen ? 'Fechar menu' : 'Abrir menu'}
+              aria-expanded={isOpen}
+              aria-controls="mobile-navigation"
+              onClick={() => setIsOpen((open) => !open)}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-white transition hover:border-[#9a7bff]/50 hover:bg-[#9a7bff]/10 focus-visible:outline-none"
+            >
+              {isOpen ? <FiX aria-hidden="true" size={20} /> : <FiMenu aria-hidden="true" size={20} />}
+            </button>
           </div>
-        </a>
-        {/* Menu direito */}
-        <div className="flex flex-1 justify-evenly">
-          {menuItems.filter(item => !item.mobileHidden && item.id >= 5).map((item) => {
+        </div>
+        <nav
+          id="mobile-navigation"
+          aria-label="Navegação principal"
+          className={`${isOpen ? 'grid' : 'hidden'} grid-cols-2 gap-2 border-t border-white/10 bg-[#0b0c11]/95 p-3`}
+        >
+          {menuItems.map((item) => {
             const isActive = activeId === item.href;
             return (
               <a
                 key={item.id}
                 href={item.href}
                 onClick={() => handleNavClick(item.href)}
-                className={`flex flex-col items-center justify-center px-1 py-1 text-xs font-medium transition rounded ${isActive ? 'nav-link-active-mobile' : 'text-gray-200 hover:text-white hover:bg-indigo-600'}`}
-                style={{ minWidth: '40px' }}
+                aria-current={isActive ? 'location' : undefined}
+                className={`flex min-h-12 items-center gap-3 rounded-xl border px-3 py-2.5 text-sm font-semibold transition ${
+                  isActive
+                    ? 'nav-link-active-mobile border-[#b7ff4a]/25 text-white'
+                    : 'border-white/[0.06] bg-white/[0.025] text-gray-200 hover:border-[#9a7bff]/35 hover:bg-white/[0.06]'
+                }`}
               >
-                {item.icon}
-                <span className="mt-1">{item.textMobile}</span>
+                <span className="shrink-0">{item.icon}</span>
+                <span>{item.text.replace(/(🔥|✨)/g, '')}</span>
               </a>
             );
           })}
-        </div>
-      </nav>
+        </nav>
+      </header>
     </>
   );
 };

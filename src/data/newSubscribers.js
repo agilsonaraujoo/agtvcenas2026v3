@@ -66,7 +66,7 @@ export const subscriptionMessages = [
     id: 9,
     name: generateUniqueName('female'),
     plan: "Básico",
-    message: "acabou de assinar o plano Básico e já está assistindo seus canais favoritos!"
+    message: "acabou de assinar o plano Básico e já está curtindo seus conteúdos favoritos!"
   },
   {
     id: 10,
@@ -96,7 +96,7 @@ export const subscriptionMessages = [
     id: 14,
     name: generateUniqueName('male'),
     plan: "Básico",
-    message: "acabou de assinar o plano Básico e já está assistindo seus canais favoritos!"
+    message: "acabou de assinar o plano Básico e já está curtindo seus conteúdos favoritos!"
   },
   {
     id: 15,

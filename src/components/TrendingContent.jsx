@@ -11,10 +11,6 @@ const TrendingContent = () => {
   const scrollSpeed = 0.1;
   const isInteractingRef = useRef(false);
 
-  // !!! IMPORTANTE: Use a variável de ambiente para sua chave da API do TMDB.
-  // Para produção, esta chave deve ser segura no servidor.
-const TMDB_API_KEY = API_CONFIG.TMDB.API_KEY;
-
   // Detecta o tipo de conteúdo baseado no media_type do TMDB
   const getContentType = (mediaType) => {
     return mediaType === 'movie' ? 'filme' : 'série';
@@ -41,7 +37,7 @@ const TMDB_API_KEY = API_CONFIG.TMDB.API_KEY;
   };
 
   const startAutoScroll = () => {
-    if (scrollContainerRef.current) {
+    if (scrollContainerRef.current && window.matchMedia('(min-width: 768px) and (hover: hover) and (pointer: fine)').matches) {
       stopAutoScroll();
       lastScrollTimeRef.current = 0;
       scrollAnimationRef.current = requestAnimationFrame(animateScroll);
@@ -57,14 +53,8 @@ const TMDB_API_KEY = API_CONFIG.TMDB.API_KEY;
 
   useEffect(() => {
     const fetchTrending = async () => {
-      if (!TMDB_API_KEY) {
-        setError('A chave da API do TMDB não foi configurada. Verifique seu arquivo .env.');
-        setLoading(false);
-        return;
-      }
-
       try {
-        const response = await fetch(`https://api.themoviedb.org/3/trending/all/day?api_key=${TMDB_API_KEY}&language=pt-BR`);
+        const response = await fetch(API_CONFIG.TMDB.TRENDING_URL);
         if (!response.ok) {
           throw new Error(`Erro HTTP: ${response.status}`);
         }
@@ -80,7 +70,7 @@ const TMDB_API_KEY = API_CONFIG.TMDB.API_KEY;
           setError('Não foi possível carregar o conteúdo em alta.');
         }
       } catch (err) {
-        setError('Erro ao buscar conteúdo em alta. Verifique sua conexão ou a chave da API.');
+        setError('Erro ao buscar conteúdo em alta. Verifique sua conexão ou tente novamente mais tarde.');
         console.error('Erro ao buscar trending do TMDB:', err);
       } finally {
         setLoading(false);
@@ -92,7 +82,7 @@ const TMDB_API_KEY = API_CONFIG.TMDB.API_KEY;
     return () => {
       stopAutoScroll();
     };
-  }, [TMDB_API_KEY]);
+  }, []);
 
   useEffect(() => {
     if (trendingItems.length > 0 && !loading && !error) {
@@ -157,13 +147,16 @@ const TMDB_API_KEY = API_CONFIG.TMDB.API_KEY;
   };
 
   return (
-    <section id="trending" className="bg-gray-900 text-white py-16 px-4 relative">
-      <div className="container mx-auto mb-12">
-        <h2 className="text-4xl font-extrabold text-white text-center sm:text-5xl lg:text-6xl mb-4">
-          Filmes e Séries do Momento 🔥
-        </h2>
-        <p className="text-xl text-gray-300 text-center mb-8">
-          Os títulos mais assistidos de 2025 (e além)!
+    <section id="trending" className="relative bg-gray-900 px-4 py-12 text-white sm:py-16">
+      <div className="container mx-auto mb-8 sm:mb-12">
+        <div className="agtv-section-heading">
+          <span className="agtv-section-kicker">EM ALTA NA AGTV</span>
+          <h2 className="agtv-section-title">
+            Filmes e Séries <span>do Momento</span> <span aria-hidden="true">🔥</span>
+          </h2>
+        </div>
+        <p className="agtv-section-description text-center mb-8">
+          Os títulos mais assistidos de 2026 (e além)!
         </p>
 
         {loading && <p className="text-center text-indigo-400">Carregando conteúdo em alta...</p>}
@@ -183,7 +176,7 @@ const TMDB_API_KEY = API_CONFIG.TMDB.API_KEY;
 
             <div
               ref={scrollContainerRef}
-              className="flex overflow-x-scroll pb-4 hide-scrollbar cursor-grab active:cursor-grabbing"
+              className="flex snap-x snap-mandatory touch-pan-x overflow-x-auto pb-4 hide-scrollbar cursor-grab active:cursor-grabbing md:snap-none"
               style={{ WebkitOverflowScrolling: 'touch' }}
               onMouseEnter={handleInteractionStart}
               onMouseLeave={handleInteractionEnd}
@@ -196,7 +189,7 @@ const TMDB_API_KEY = API_CONFIG.TMDB.API_KEY;
               {trendingItems.map((item, index) => (
                 <div
                   key={`${item.id}-${index}`}
-                  className="flex-none w-48 sm:w-56 md:w-64 lg:w-72 xl:w-80 mr-4 snap-center transform transition-transform hover:scale-105 duration-300"
+                  className="flex-none w-48 snap-start pr-4 transition-transform duration-300 sm:w-56 md:w-64 md:snap-center md:pr-0 lg:w-72 xl:w-80 md:mr-4 md:hover:scale-105"
                 >
                   <div className="bg-gray-800 rounded-lg shadow-xl overflow-hidden h-full flex flex-col">
                     <img

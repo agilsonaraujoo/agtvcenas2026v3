@@ -10,12 +10,15 @@ const FAQ = () => {
   };
 
   return (
-    <section id="faq" className="bg-gray-900 text-white py-16 px-4">
-      <div className="container mx-auto text-center mb-12">
-        <h2 className="text-4xl font-extrabold text-white sm:text-5xl lg:text-6xl mb-4">
-          Perguntas Frequentes
-        </h2>
-        <p className="text-xl text-gray-300">
+    <section id="faq" className="bg-gray-900 px-4 py-12 text-white sm:py-16">
+      <div className="container mx-auto mb-8 text-center sm:mb-12">
+        <div className="agtv-section-heading">
+          <span className="agtv-section-kicker">ESTAMOS AQUI PARA AJUDAR</span>
+          <h2 className="agtv-section-title">
+            Perguntas <span>Frequentes</span>
+          </h2>
+        </div>
+        <p className="agtv-section-description">
           Tire suas dúvidas e saiba mais sobre a AGTV.
         </p>
       </div>
@@ -24,7 +27,8 @@ const FAQ = () => {
         {faqs.map((faq, index) => (
           <div key={index} className="bg-gray-800 rounded-lg mb-3 overflow-hidden">
             <button
-              className="w-full text-left p-6 flex justify-between items-center text-xl font-semibold text-white hover:bg-gray-700 transition duration-300 focus:outline-none"
+              aria-expanded={openIndex === index}
+              className="flex min-h-14 w-full items-center justify-between gap-4 p-4 text-left text-base font-semibold text-white transition duration-300 hover:bg-gray-700 focus:outline-none sm:p-6 sm:text-xl"
               onClick={() => toggleFAQ(index)}
             >
               {faq.question}

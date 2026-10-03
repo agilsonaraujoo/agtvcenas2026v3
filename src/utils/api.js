@@ -1,10 +1,9 @@
 export const API_CONFIG = {
   TMDB: {
-    BASE_URL: 'https://api.themoviedb.org/3',
-    API_KEY: process.env.REACT_APP_TMDB_API_KEY,
+    TRENDING_URL: '/api/trending',
+    SEARCH_URL: '/api/search',
   },
   GEMINI: {
-    BASE_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
-    API_KEY: process.env.REACT_APP_GEMINI_API_KEY,
+    RECOMMENDATIONS_URL: '/api/recommendations',
   }
 };

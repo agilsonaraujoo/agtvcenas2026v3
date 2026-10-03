@@ -1,46 +1,45 @@
 import React from 'react';
 import { FaTv, FaHeadphones, FaShieldAlt } from 'react-icons/fa';
-import { FiSettings } from 'react-icons/fi';
 
 const Features = () => {
   return (
-    <section id="servicos" className="bg-gray-800 text-white py-16 px-4">
+    <section id="servicos" className="bg-gray-800 px-4 py-12 text-white sm:py-16">
       <div className="container mx-auto text-center">
-        <h2 className="text-4xl font-extrabold text-white mb-12">
-          Cansado(a) de pagar caro por streaming e só travar?<br />
+        <h2 className="mx-auto mb-8 max-w-4xl text-3xl font-extrabold leading-tight text-white sm:mb-12 sm:text-4xl">
+          Cansado(a) de pagar caro por streaming e só travar?<br className="hidden sm:block" />
           Conheça a AGTV Streaming
         </h2>
-        <p className="text-xl text-gray-300 mb-12">
+        <p className="mb-8 text-base text-gray-300 sm:mb-12 sm:text-xl">
           A única plataforma que oferece qualidade e suporte sem igual
         </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+        <div className="grid grid-cols-1 gap-5 sm:gap-8 md:grid-cols-3 md:gap-12">
           {/* Feature 1 */}
-          <div className="bg-gray-900 rounded-lg shadow-xl p-8 transform transition-transform hover:scale-105 duration-300">
-            <div className="text-indigo-400 mb-6">
-              <FaTv className="h-16 w-16 mx-auto" />
+          <div className="transform rounded-lg bg-gray-900 p-6 shadow-xl transition-transform duration-300 hover:scale-105 sm:p-8">
+            <div className="mb-4 text-indigo-400 sm:mb-6">
+              <FaTv className="mx-auto h-12 w-12 sm:h-16 sm:w-16" />
             </div>
-            <h3 className="text-2xl font-bold mb-4">Qualidade Impecável</h3>
-            <p className="text-gray-300">
-              Experiência de streaming em 4K, Full HD e HD sem travamentos. A melhor qualidade para você assistir.
+            <h3 className="mb-3 text-xl font-bold sm:mb-4 sm:text-2xl">Qualidade Impecável</h3>
+            <p className="text-sm leading-6 text-gray-300 sm:text-base">
+              Escolha entre SD, HD, Full HD e 4K, conforme seu plano, aparelho e conexão. A melhor experiência para assistir do seu jeito.
             </p>
           </div>
           {/* Feature 2 */}
-          <div className="bg-gray-900 rounded-lg shadow-xl p-8 transform transition-transform hover:scale-105 duration-300">
-            <div className="text-indigo-400 mb-6">
-              <FaHeadphones className="h-16 w-16 mx-auto" />
+          <div className="transform rounded-lg bg-gray-900 p-6 shadow-xl transition-transform duration-300 hover:scale-105 sm:p-8">
+            <div className="mb-4 text-indigo-400 sm:mb-6">
+              <FaHeadphones className="mx-auto h-12 w-12 sm:h-16 sm:w-16" />
             </div>
-            <h3 className="text-2xl font-bold mb-4">Suporte 24/7</h3>
-            <p className="text-gray-300">
-              Suporte dedicado 24/7 para resolver qualquer problema rapidamente e garantir sua experiência.
+            <h3 className="mb-3 text-xl font-bold sm:mb-4 sm:text-2xl">Suporte 24/7</h3>
+            <p className="text-sm leading-6 text-gray-300 sm:text-base">
+              Atendimento dedicado e rápido pelo WhatsApp, todos os dias da semana, para ajudar você sempre que precisar.
             </p>
           </div>
           {/* Feature 3 */}
-          <div className="bg-gray-900 rounded-lg shadow-xl p-8 transform transition-transform hover:scale-105 duration-300">
-            <div className="text-indigo-400 mb-6">
-              <FaShieldAlt className="h-16 w-16 mx-auto" />
+          <div className="transform rounded-lg bg-gray-900 p-6 shadow-xl transition-transform duration-300 hover:scale-105 sm:p-8">
+            <div className="mb-4 text-indigo-400 sm:mb-6">
+              <FaShieldAlt className="mx-auto h-12 w-12 sm:h-16 sm:w-16" />
             </div>
-            <h3 className="text-2xl font-bold mb-4">Tecnologia Avançada</h3>
-            <p className="text-gray-300">
+            <h3 className="mb-3 text-xl font-bold sm:mb-4 sm:text-2xl">Tecnologia Avançada</h3>
+            <p className="text-sm leading-6 text-gray-300 sm:text-base">
               Trabalhamos com a mais moderna tecnologia de transmissão, com alta definição e sem travamentos.
             </p>
           </div>
