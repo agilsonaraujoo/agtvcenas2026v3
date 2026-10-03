@@ -104,8 +104,8 @@ const Hero = () => {
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_18%_48%,rgba(154,123,255,0.14),transparent_42%),radial-gradient(ellipse_at_78%_52%,rgba(183,255,74,0.08),transparent_35%)]" />
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/25 via-black/15 to-[#07080b]/90" />
 
-      <div className="container relative z-10 mx-auto grid max-w-7xl items-center gap-8 py-4 sm:gap-10 sm:py-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
-        <div className="relative z-10 text-center lg:text-left">
+      <div className="container relative z-10 mx-auto grid max-w-7xl items-center gap-6 py-4 sm:gap-10 sm:py-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
+        <div className="relative z-10 order-2 text-center lg:order-1 lg:text-left">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -230,7 +230,7 @@ const Hero = () => {
           initial={{ opacity: 0, scale: 0.96, y: 18 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.75, delay: 0.25 }}
-          className="absolute -right-20 top-24 z-0 w-[min(72vw,270px)] opacity-30 sm:right-0 sm:top-28 sm:w-[min(70vw,340px)] sm:opacity-45 lg:relative lg:right-auto lg:top-auto lg:z-auto lg:mx-auto lg:w-full lg:max-w-[470px] lg:opacity-100"
+          className="relative z-0 order-1 mx-auto w-[min(88vw,420px)] sm:w-[min(82vw,520px)] lg:order-2 lg:w-full lg:max-w-[470px]"
         >
           <div className="absolute -inset-5 rounded-[2.5rem] bg-gradient-to-br from-[#9a7bff]/25 via-transparent to-[#b7ff4a]/20 blur-2xl lg:block" />
           <div className="relative aspect-square overflow-hidden rounded-[1.5rem] border border-white/15 bg-[#101116] p-1.5 shadow-[0_30px_100px_rgba(0,0,0,0.65)] sm:rounded-[2rem] sm:p-2 lg:aspect-auto">
@@ -250,7 +250,7 @@ const Hero = () => {
                 />
 
                 <div className="relative z-10 w-full max-w-sm text-center">
-                  <div className="relative mx-auto mb-2 flex h-12 w-12 items-center justify-center sm:mb-5 sm:h-16 sm:w-16 lg:h-20 lg:w-20">
+                  <div className="relative mx-auto mb-2 flex h-16 w-16 items-center justify-center sm:mb-5 sm:h-16 sm:w-16 lg:h-20 lg:w-20">
                     <motion.span
                       aria-hidden="true"
                       className="absolute inset-0 rounded-full border border-[#9a7bff]/70"
@@ -264,7 +264,7 @@ const Hero = () => {
                       transition={{ duration: 2.2, delay: 0.45, repeat: Infinity, ease: 'easeOut' }}
                     />
                     <motion.div
-                      className="flex h-9 w-9 items-center justify-center rounded-full border border-[#b7ff4a]/50 bg-[#b7ff4a]/10 text-[#c9ff83] shadow-[0_0_32px_rgba(183,255,74,0.2)] sm:h-12 sm:w-12 lg:h-14 lg:w-14"
+                      className="flex h-12 w-12 items-center justify-center rounded-full border border-[#b7ff4a]/50 bg-[#b7ff4a]/10 text-[#c9ff83] shadow-[0_0_32px_rgba(183,255,74,0.2)] sm:h-12 sm:w-12 lg:h-14 lg:w-14"
                       animate={{ boxShadow: ['0 0 20px rgba(183,255,74,0.15)', '0 0 36px rgba(154,123,255,0.35)', '0 0 20px rgba(183,255,74,0.15)'] }}
                       transition={{ duration: 3, repeat: Infinity }}
                     >
@@ -281,13 +281,13 @@ const Hero = () => {
                       transition={{ duration: 0.45 }}
                       aria-live="polite"
                     >
-                      <p className="mb-1 text-[8px] font-bold tracking-[0.2em] text-[#b7ff4a] sm:mb-2 sm:text-[10px] sm:tracking-[0.28em] lg:text-xs">
+                      <p className="mb-1 text-[10px] font-bold tracking-[0.2em] text-[#b7ff4a] sm:mb-2 sm:text-[10px] sm:tracking-[0.28em] lg:text-xs">
                         {experienceHighlights[activeHighlight].label}
                       </p>
-                      <h3 className="text-sm font-black text-white drop-shadow-[0_0_18px_rgba(154,123,255,0.5)] sm:text-xl lg:text-3xl">
+                      <h3 className="text-lg font-black text-white drop-shadow-[0_0_18px_rgba(154,123,255,0.5)] sm:text-xl lg:text-3xl">
                         {experienceHighlights[activeHighlight].title}
                       </h3>
-                      <p className="mx-auto mt-1 max-w-xs text-[9px] leading-4 text-gray-200 sm:mt-2 sm:text-xs sm:leading-5 lg:text-sm lg:leading-6">
+                      <p className="mx-auto mt-1 max-w-xs text-[11px] leading-4 text-gray-200 sm:mt-2 sm:text-xs sm:leading-5 lg:text-sm lg:leading-6">
                         {experienceHighlights[activeHighlight].description}
                       </p>
                     </motion.div>
