@@ -1,0 +1,624 @@
+﻿{
+    "timezone":  "America/Sao_Paulo",
+    "now":  "2026-10-07T17:52:05.051Z",
+    "date":  "2026-10-07",
+    "generatedAt":  "2026-10-07T17:36:14.389Z",
+    "stale":  false,
+    "groups":  {
+                   "filmes":  "Filmes",
+                   "series":  "Séries",
+                   "documentarios":  "Documentários e variedades"
+               },
+    "sources":  {
+                    "brazilTvEpg/claro":  {
+                                              "ok":  true,
+                                              "generator":  "@limaalef - Criado em 2026-09-19 19:00:30",
+                                              "lastProgramEnd":  "2026-09-24T06:00:00.000Z",
+                                              "fresh":  false,
+                                              "error":  null
+                                          },
+                    "brazilTvEpg/vivoplay":  {
+                                                 "ok":  true,
+                                                 "generator":  "@limaalef - Criado em 2026-09-19 19:01:09",
+                                                 "lastProgramEnd":  "2026-09-24T09:02:00.000Z",
+                                                 "fresh":  false,
+                                                 "error":  null
+                                             },
+                    "iptv-org":  {
+                                     "ok":  true,
+                                     "generator":  null,
+                                     "lastProgramEnd":  "2026-10-10T06:58:00.000Z",
+                                     "fresh":  true,
+                                     "error":  null
+                                 }
+                },
+    "availableDates":  [
+                           "2026-10-07",
+                           "2026-10-08",
+                           "2026-10-09",
+                           "2026-10-10"
+                       ],
+    "channels":  [
+                     {
+                         "slug":  "telecine-premium",
+                         "channel":  "Telecine Premium",
+                         "channelId":  "TelecinePremium.br@SD",
+                         "group":  "filmes",
+                         "source":  "iptv-org",
+                         "available":  true,
+                         "current":  {
+                                         "title":  "Sir?t",
+                                         "description":  "Luis está viajando pelo sul do Marrocos com seu filho, Esteban. Eles estão à procura de sua filha, que está desaparecida há cinco meses, vista pela última vez em um festival de dança no deserto.",
+                                         "start":  "2026-10-07T17:15:00.000Z",
+                                         "end":  "2026-10-07T19:15:00.000Z",
+                                         "duration":  120,
+                                         "category":  "Drama / 2025",
+                                         "rating":  null
+                                     },
+                         "next":  {
+                                      "title":  "Refém Rebelde",
+                                      "description":  "No dia da inauguração do supermercado de um congressista dos EUA, terroristas tomam o lugar em busca de vingança, mas um ex-fuzileiro naval que sofre transtorno de estresse pós-traumático está entre os reféns.",
+                                      "start":  "2026-10-07T19:15:00.000Z",
+                                      "end":  "2026-10-07T20:55:00.000Z",
+                                      "duration":  100,
+                                      "category":  "Action / 2021",
+                                      "rating":  null
+                                  }
+                     },
+                     {
+                         "slug":  "telecine-pipoca",
+                         "channel":  "Telecine Pipoca",
+                         "channelId":  "TelecinePipoca.br@SD",
+                         "group":  "filmes",
+                         "source":  "iptv-org",
+                         "available":  true,
+                         "current":  {
+                                         "title":  "Uma Aventura LEGO",
+                                         "description":  "Emmet é uma minifigura LEGO perfeitamente comum e seguidora das regras, que é erroneamente identificado como uma pessoa extraordinária, essencial para salvar o mundo. Ele é recrutado por uma irmandade de estranhos para uma jornada épica para deter um tirano, uma viagem para a qual Emmet está totalmente despreparado. Como companheiros dessa aventura, ele terá Vitrúvius, um velho místico, e a durona Lucy, que convoca o misterioso Batman, com quem compartilha uma história do passado.",
+                                         "start":  "2026-10-07T17:15:00.000Z",
+                                         "end":  "2026-10-07T19:05:00.000Z",
+                                         "duration":  110,
+                                         "category":  "Children / 2014",
+                                         "rating":  null
+                                     },
+                         "next":  {
+                                      "title":  "A Lenda de Tarzan",
+                                      "description":  "Tarzan deixou as florestas da África para viver uma vida pacata como John Clayton III, o Lorde Greystoke, ao lado de sua esposa, Jane, na Inglaterra. Agora, ele é convidado para voltar ao Congo, onde passou a maioria da sua vida, para servir como emissário de troca do parlamento britânico. O que Tarzan não sabe é que está se dirigindo para uma armadilha mortal, fruto da vingança do capitão belga Leon Rom.",
+                                      "start":  "2026-10-07T19:05:00.000Z",
+                                      "end":  "2026-10-07T21:05:00.000Z",
+                                      "duration":  120,
+                                      "category":  "Adventure / 2016",
+                                      "rating":  null
+                                  }
+                     },
+                     {
+                         "slug":  "telecine-action",
+                         "channel":  "Telecine Action",
+                         "channelId":  "TelecineAction.br@SD",
+                         "group":  "filmes",
+                         "source":  "iptv-org",
+                         "available":  true,
+                         "current":  {
+                                         "title":  "A Profissional",
+                                         "description":  "Anna é resgatada quando criança e treinada para se tornar a assassina profissional mais habilidosa do mundo. Quando Moody, o homem que ela tinha como um pai e que lhe ensinou tudo sobre sobrevivência, é brutalmente assassinado, ela se junta ao enigmático Rembrandt e promete ir até o fim em busca de vingança.",
+                                         "start":  "2026-10-07T17:05:00.000Z",
+                                         "end":  "2026-10-07T18:55:00.000Z",
+                                         "duration":  110,
+                                         "category":  "Action / 2021",
+                                         "rating":  null
+                                     },
+                         "next":  {
+                                      "title":  "John Wick 4: Baba Yaga",
+                                      "description":  "O ex-assassino de aluguel John Wick é procurado pelo mundo todo e a recompensa por sua captura aumenta cada vez mais. Wick descobre um caminho para derrotar a Alta Cúpula, mas antes de conquistar sua liberdade, ele precisa enfrentar um novo inimigo com alianças poderosas e forças que transformam velhos amigos em inimigos.",
+                                      "start":  "2026-10-07T18:55:00.000Z",
+                                      "end":  "2026-10-07T21:45:00.000Z",
+                                      "duration":  170,
+                                      "category":  "Action / 2023",
+                                      "rating":  null
+                                  }
+                     },
+                     {
+                         "slug":  "telecine-touch",
+                         "channel":  "Telecine Touch",
+                         "channelId":  "TelecineTouch.br@SD",
+                         "group":  "filmes",
+                         "source":  "iptv-org",
+                         "available":  true,
+                         "current":  {
+                                         "title":  "Trama Fantasma",
+                                         "description":  "Nos anos 1950, Reynolds Woodcock é um renomado e confiante estilista que trabalha ao lado da irmã, Cyril, para vestir grandes nomes da realeza e da elite britânica. Sua inspiração surge através das mulheres que, constantemente, entram e saem de sua vida. Mas tudo muda quando ele conhece a forte e inteligente Alma, que vira sua musa e amante.",
+                                         "start":  "2026-10-07T16:50:00.000Z",
+                                         "end":  "2026-10-07T19:10:00.000Z",
+                                         "duration":  140,
+                                         "category":  "Drama / 2017",
+                                         "rating":  null
+                                     },
+                         "next":  {
+                                      "title":  "A Família da Noiva",
+                                      "description":  "Percy Jones está ansioso para conhecer o noivo de sua filha. Só que o patriarca de uma família afro-americana leva um choque ao descobrir que seu futuro genro é branco. Agora, o rapaz terá que se esforçar para conquistar a confiança do sogro.",
+                                      "start":  "2026-10-07T19:10:00.000Z",
+                                      "end":  "2026-10-07T21:05:00.000Z",
+                                      "duration":  115,
+                                      "category":  "Comedy / 2005",
+                                      "rating":  null
+                                  }
+                     },
+                     {
+                         "slug":  "telecine-cult",
+                         "channel":  "Telecine Cult",
+                         "channelId":  "TelecineCult.br@SD",
+                         "group":  "filmes",
+                         "source":  "iptv-org",
+                         "available":  true,
+                         "current":  {
+                                         "title":  "A Greve",
+                                         "description":  "O suicídio de um operário injustamente acusado de roubo é o estopim para o início de uma greve numa fábrica russa, em 1912. O lento processo de negociação expõe uma série de ações e contra-ações entre grevistas e polícia.",
+                                         "start":  "2026-10-07T16:30:00.000Z",
+                                         "end":  "2026-10-07T18:10:00.000Z",
+                                         "duration":  100,
+                                         "category":  "Drama / 1924",
+                                         "rating":  null
+                                     },
+                         "next":  {
+                                      "title":  "Os Sonhos de Pepe",
+                                      "description":  "O ex-presidente uruguaio Pepe Mujica e suas viagens pelo mundo, seus deveres políticos e sua visão progressista pautada pela sustentabilidade e pela justiça social.",
+                                      "start":  "2026-10-07T18:10:00.000Z",
+                                      "end":  "2026-10-07T19:45:00.000Z",
+                                      "duration":  95,
+                                      "category":  "Special",
+                                      "rating":  null
+                                  }
+                     },
+                     {
+                         "slug":  "telecine-fun",
+                         "channel":  "Telecine Fun",
+                         "channelId":  "TelecineFun.br@SD",
+                         "group":  "filmes",
+                         "source":  "iptv-org",
+                         "available":  true,
+                         "current":  {
+                                         "title":  "O Diário de Bridget Jones",
+                                         "description":  "Bridget Jones é uma solteirona de trinta e poucos anos que decide registrar em um diário suas tentativas de melhorar de vida. O resultado é um relato picante e bem-humorado de suas desventuras profissionais, familiares e românticas.",
+                                         "start":  "2026-10-07T16:40:00.000Z",
+                                         "end":  "2026-10-07T18:25:00.000Z",
+                                         "duration":  105,
+                                         "category":  "Romantic comedy / 2001",
+                                         "rating":  null
+                                     },
+                         "next":  {
+                                      "title":  "Minions",
+                                      "description":  "Seres amarelos milenares, os minions têm uma missão: servir aos maiores vilões. Em depressão desde a morte de seu antigo mestre, eles tentam encontrar um novo chefe. Três voluntários, Kevin, Stuart e Bob vão até uma convenção de vilões nos Estados Unidos e lá se encantam com Scarlet Overkill, que ambiciona ser a primeira mulher a dominar o mundo.",
+                                      "start":  "2026-10-07T18:25:00.000Z",
+                                      "end":  "2026-10-07T20:05:00.000Z",
+                                      "duration":  100,
+                                      "category":  "Children / 2015 / 6.4",
+                                      "rating":  null
+                                  }
+                     },
+                     {
+                         "slug":  "hbo",
+                         "channel":  "HBO",
+                         "channelId":  "HBO.br@SD",
+                         "group":  "filmes",
+                         "source":  "iptv-org",
+                         "available":  true,
+                         "current":  {
+                                         "title":  "Jumanji - Bem-Vindo à Selva",
+                                         "description":  "Quatro adolescentes encontram um videogame cuja ação se passa em uma floresta tropical. Empolgados com o jogo, eles escolhem seus avatares para o desafio, mas um evento inesperado faz com que eles sejam transportados para dentro do universo fictício, transformando-os nos personagens da aventura.",
+                                         "start":  "2026-10-07T16:35:00.000Z",
+                                         "end":  "2026-10-07T18:40:00.000Z",
+                                         "duration":  125,
+                                         "category":  "Adventure / 2017",
+                                         "rating":  null
+                                     },
+                         "next":  {
+                                      "title":  "Assassino sem Rastro",
+                                      "description":  "Alex, um assassino profissional, se recusa a completar um trabalho para uma organização criminosa e acaba se tornando um alvo. Agentes do FBI e da inteligência mexicana são trazidos para investigar seu rastro de corpos, levando-os para mais perto de Alex. Com o sindicato do crime e o FBI em perseguição, apenas uma coisa pode impedi-lo: uma doença que lhe causa grave perda de memória e afeta todos os seus movimentos. Alex agora deve questionar todas as suas ações e em quem ele pode confiar.",
+                                      "start":  "2026-10-07T18:40:00.000Z",
+                                      "end":  "2026-10-07T20:40:00.000Z",
+                                      "duration":  120,
+                                      "category":  "Action / 2022",
+                                      "rating":  null
+                                  }
+                     },
+                     {
+                         "slug":  "hbo-family",
+                         "channel":  "HBO Family",
+                         "channelId":  "HBOFamily.br@SD",
+                         "group":  "filmes",
+                         "source":  "iptv-org",
+                         "available":  true,
+                         "current":  {
+                                         "title":  "Tá Dando Onda",
+                                         "description":  "Surfar é a atividade do pinguim adolescente Cody Maverick. Acompanhado por uma equipe de filmagem, ele deixa sua casa na Antártida para ir à Ilha de Pen Gu participar do Big Z Memorial Surf Off.",
+                                         "start":  "2026-10-07T17:06:00.000Z",
+                                         "end":  "2026-10-07T18:34:00.000Z",
+                                         "duration":  88,
+                                         "category":  "Children / 2007",
+                                         "rating":  null
+                                     },
+                         "next":  {
+                                      "title":  "Tom \u0026 Jerry - O Filme",
+                                      "description":  "Uma das rivalidades mais amadas da história ressurge quando Jerry se muda para o hotel mais rico de Nova Iorque, na véspera do casamento do século, forçando a desesperada organizadora do evento a contratar Tom para se livrar do rato. A batalha entre gato e rato que se inicia ameaça destruir a sua carreira, o casamento e até mesmo o hotel. Mas logo um problema ainda maior surge: um diabólico funcionário começa a tramar contra os três.",
+                                      "start":  "2026-10-07T18:34:00.000Z",
+                                      "end":  "2026-10-07T20:18:00.000Z",
+                                      "duration":  104,
+                                      "category":  "Children / 2021",
+                                      "rating":  null
+                                  }
+                     },
+                     {
+                         "slug":  "hbo2",
+                         "channel":  "HBO 2",
+                         "channelId":  "HBO2.br@SD",
+                         "group":  "filmes",
+                         "source":  "iptv-org",
+                         "available":  true,
+                         "current":  {
+                                         "title":  "Demon Slayer - Kimetsu no Yaiba Castelo Infinito",
+                                         "description":  "Os Pilares agora enfrentam Muzan e decidem atacá-lo juntos. No entanto, eles são transportados para a Fortaleza Infinita antes que possam desferir um único golpe e, portanto, são separados.",
+                                         "start":  "2026-10-07T16:10:00.000Z",
+                                         "end":  "2026-10-07T18:50:00.000Z",
+                                         "duration":  160,
+                                         "category":  "Fantasy / 2025",
+                                         "rating":  null
+                                     },
+                         "next":  {
+                                      "title":  "Um Tio Quase Perfeito",
+                                      "description":  "Tio Tony é um adorável trambiqueiro que vive de bicos como estátua viva, cartomante, pastor e sempre conta com a cobertura da mãe, Cecilia. Quando eles são despejados de onde moram, procuram a irmã de Tony, Angela, com quem não falam há anos. Ela tem três filhos que mal conhecem a avó e o tio. Como Angela tem uma viagem de trabalho marcada e a babá não aparece, ela acaba aceitando o irmão e mãe em casa por uma temporada para ficar com as crianças.",
+                                      "start":  "2026-10-07T18:50:00.000Z",
+                                      "end":  "2026-10-07T20:35:00.000Z",
+                                      "duration":  105,
+                                      "category":  "Comedy / 2017",
+                                      "rating":  null
+                                  }
+                     },
+                     {
+                         "slug":  "hbo-signature",
+                         "channel":  "HBO Signature",
+                         "channelId":  "HBOSignature.br@SD",
+                         "group":  "filmes",
+                         "source":  "iptv-org",
+                         "available":  true,
+                         "current":  {
+                                         "title":  "Girls",
+                                         "description":  "Hannah viaja a Michigan para celebrar o aniversário de 30 anos de casamento dos seus pais; Hannah se encontra com seus antigos amigos de escola.",
+                                         "start":  "2026-10-07T17:49:00.000Z",
+                                         "end":  "2026-10-07T18:21:00.000Z",
+                                         "duration":  32,
+                                         "category":  "Temporada 1 Episódio 6 - The Return",
+                                         "rating":  null
+                                     },
+                         "next":  {
+                                      "title":  "Girls",
+                                      "description":  "Enquanto Hannah está em uma festa, ela descobre um atributo que define Adam; Marnie fica aborrecida após ver Charlie; Jessa provoca um mensageiro misterioso.",
+                                      "start":  "2026-10-07T18:21:00.000Z",
+                                      "end":  "2026-10-07T18:51:00.000Z",
+                                      "duration":  30,
+                                      "category":  "Temporada 1 Episódio 7 - Welcome to Bushwick a.k.a The Crackcident",
+                                      "rating":  null
+                                  }
+                     },
+                     {
+                         "slug":  "megapix",
+                         "channel":  "Megapix",
+                         "channelId":  "Megapix.br@SD",
+                         "group":  "filmes",
+                         "source":  "iptv-org",
+                         "available":  true,
+                         "current":  {
+                                         "title":  "Van Helsing - O Caçador de Monstros",
+                                         "description":  "O famoso monstro e assassino Gabriel Van Helsing é mandado para a Transilvânia para ajudar o último da linhagem dos Valerious em derrotar o Conde Drácula. Anna Valerious conta que Drácula formou uma aliança profana com o monstro do Dr. Frankenstein e está impondo uma maldição sobre sua família. Anna e Van Helsing estão determinados a destruir seu inimigo em comum, mas descobrem alguns segredos perturbadores ao longo do caminho.",
+                                         "start":  "2026-10-07T17:15:00.000Z",
+                                         "end":  "2026-10-07T19:40:00.000Z",
+                                         "duration":  145,
+                                         "category":  "Fantasy / 2004",
+                                         "rating":  null
+                                     },
+                         "next":  {
+                                      "title":  "Um Sonho Possível",
+                                      "description":  "Michael Oher é um jovem negro, filho de uma mãe viciada e que não tem onde morar. Com boa vocação para os esportes, um dia ele é avistado pela família de Leigh Anne Tuohy, andando em direção ao estádio da escola para dormir longe da chuva. Ao ser convidado para passar uma noite na casa dos milionários, Michael não tem ideia que aquele dia mudaria para sempre a sua vida. Com a ajuda da nova família e de uma tutora dedicada, ele percebe seu potencial como estudante e jogador de futebol americano.",
+                                      "start":  "2026-10-07T19:40:00.000Z",
+                                      "end":  "2026-10-07T22:00:00.000Z",
+                                      "duration":  140,
+                                      "category":  "Drama / 2009",
+                                      "rating":  null
+                                  }
+                     },
+                     {
+                         "slug":  "warner",
+                         "channel":  "Warner Channel",
+                         "channelId":  "WarnerChannel.us@Brazil",
+                         "group":  "series",
+                         "source":  "iptv-org",
+                         "available":  true,
+                         "current":  {
+                                         "title":  "Two and a Half Men",
+                                         "description":  "Charlie se comporta estranhamente depois de uma noite com sua mãe; amiga de Alan (Janeane Garofalo) reage de forma estranha depois do sexo.",
+                                         "start":  "2026-10-07T17:37:00.000Z",
+                                         "end":  "2026-10-07T18:02:00.000Z",
+                                         "duration":  25,
+                                         "category":  "Temporada 5 Episódio 2 - Media Room Slash Dungeon",
+                                         "rating":  null
+                                     },
+                         "next":  {
+                                      "title":  "Two and a Half Men",
+                                      "description":  "Charlie permite que Alan organize encontro com uma mulher de sua idade.",
+                                      "start":  "2026-10-07T18:02:00.000Z",
+                                      "end":  "2026-10-07T18:26:00.000Z",
+                                      "duration":  24,
+                                      "category":  "Temporada 5 Episódio 3 - Dum Diddy Dum Diddy Doo",
+                                      "rating":  null
+                                  }
+                     },
+                     {
+                         "slug":  "tnt",
+                         "channel":  "TNT",
+                         "channelId":  "TNTLatinAmerica.us@Brazil",
+                         "group":  "series",
+                         "source":  "iptv-org",
+                         "available":  true,
+                         "current":  {
+                                         "title":  "Romeu Tem que Morrer",
+                                         "description":  "Gangues rivais, asiáticos e negros americanos, disputam o controle do porto de Oakland em um conflito tradicional. Quando o filho do líder asiático é morto, a guerra escala para níveis de violência inesperados, colocando ambos em perigo mortal.",
+                                         "start":  "2026-10-07T17:34:00.000Z",
+                                         "end":  "2026-10-07T19:36:00.000Z",
+                                         "duration":  122,
+                                         "category":  "Action / 2000",
+                                         "rating":  null
+                                     },
+                         "next":  {
+                                      "title":  "Rei Arthur - A Lenda da Espada",
+                                      "description":  "Arthur é um jovem das ruas que controla os becos de Londonium e desconhece sua predestinação até o momento em que entra em contato pela primeira vez com a Excalibur. Desafiado pela espada, ele precisa tomar difíceis decisões, enfrentar seus demônios e aprender a dominar o poder que possui para conseguir, enfim, unir seu povo e partir para a luta contra o tirano Vortigern, que destruiu sua família.",
+                                      "start":  "2026-10-07T19:36:00.000Z",
+                                      "end":  "2026-10-07T21:45:00.000Z",
+                                      "duration":  129,
+                                      "category":  "Adventure / 2017",
+                                      "rating":  null
+                                  }
+                     },
+                     {
+                         "slug":  "tnt-series",
+                         "channel":  "TNT Series",
+                         "channelId":  null,
+                         "group":  "series",
+                         "source":  null,
+                         "available":  false,
+                         "current":  null,
+                         "next":  null
+                     },
+                     {
+                         "slug":  "discovery",
+                         "channel":  "Discovery Channel",
+                         "channelId":  "DiscoveryChannelLatinAmerica.us@Brazil",
+                         "group":  "documentarios",
+                         "source":  "iptv-org",
+                         "available":  true,
+                         "current":  {
+                                         "title":  "Largados e Pelados",
+                                         "description":  "Uma sobrevivente adia seu casamento para tentar durar 21 dias com um comando britânico nos trópicos colombianos infestados de mosquitos.",
+                                         "start":  "2026-10-07T16:52:00.000Z",
+                                         "end":  "2026-10-07T18:32:00.000Z",
+                                         "duration":  100,
+                                         "category":  "Temporada 17 Episódio 5 - Noiva em Fuga",
+                                         "rating":  null
+                                     },
+                         "next":  {
+                                      "title":  "Desafio em Dose Dupla",
+                                      "description":  "Em uma floresta da Costa Rica, Matt e Joe enfrentam chuvas torrenciais, insetos e correntezas violentas. A dupla usa a engenhosidade para sobreviver após perder uma chance de ser resgatada.",
+                                      "start":  "2026-10-07T18:32:00.000Z",
+                                      "end":  "2026-10-07T19:22:00.000Z",
+                                      "duration":  50,
+                                      "category":  "Temporada 5 Episódio 8 - Encharcados",
+                                      "rating":  null
+                                  }
+                     },
+                     {
+                         "slug":  "discovery-home-health",
+                         "channel":  "Discovery Home \u0026 Health",
+                         "channelId":  "DiscoveryHomeHealthLatinAmerica.mx@Brazil",
+                         "group":  "documentarios",
+                         "source":  "iptv-org",
+                         "available":  true,
+                         "current":  {
+                                         "title":  "100 Dias para Morar - Começando do Zero",
+                                         "description":  "Brian e Mika tentam controlar o estresse quando um casal da Virgínia decide construir uma casa na Flórida. Como ela prefere uma decoração colorida e ele sonha com um refúgio todo branco, Mika precisa encontrar um meio-termo.",
+                                         "start":  "2026-10-07T17:31:00.000Z",
+                                         "end":  "2026-10-07T18:23:00.000Z",
+                                         "duration":  52,
+                                         "category":  "Temporada 1 Episódio 3 - Novo Lar no Litoral",
+                                         "rating":  null
+                                     },
+                         "next":  {
+                                      "title":  "90 Dias para Casar - Felizes para Sempre?",
+                                      "description":  "Anfisa se descontrola quando descobre que Jorge mentiu; Mohamed enfrenta Danielle; Pao sofre um choque de realidade em Miami; Russ precisa fazer uma escolha sobre seu casamento; Loren conta a verdade a Alex.",
+                                      "start":  "2026-10-07T18:23:00.000Z",
+                                      "end":  "2026-10-07T20:05:00.000Z",
+                                      "duration":  102,
+                                      "category":  "Temporada 2 Episódio 2 - Sombras do Passado",
+                                      "rating":  null
+                                  }
+                     },
+                     {
+                         "slug":  "investigacao-discovery",
+                         "channel":  "Investigação Discovery",
+                         "channelId":  "InvestigationDiscovery.br@SD",
+                         "group":  "documentarios",
+                         "source":  "iptv-org",
+                         "available":  true,
+                         "current":  {
+                                         "title":  "O Lado Sombrio de Hollywood",
+                                         "description":  "Toda criança dos anos 90 se lembra do clássico programa Power Rangers. Quando tragédias se abatem sobre o elenco e os problemas começam a aparecer, os fãs passam a questionar seus heróis de infância.",
+                                         "start":  "2026-10-07T16:45:00.000Z",
+                                         "end":  "2026-10-07T18:14:00.000Z",
+                                         "duration":  89,
+                                         "category":  "Temporada 1 Episódio 3 - O Lado Sombrio dos Power Rangers",
+                                         "rating":  null
+                                     },
+                         "next":  {
+                                      "title":  "O Lado Sombrio de Hollywood",
+                                      "description":  "Durante dez anos, Stephen Collins representou um pai e pastor de comportamento irrepreensível no programa \"7th Heaven\". Em outubro de 2014, seu mundo desmorona quando ele admite abusar de garotas menores de idade.",
+                                      "start":  "2026-10-07T18:14:00.000Z",
+                                      "end":  "2026-10-07T19:42:00.000Z",
+                                      "duration":  88,
+                                      "category":  "Temporada 1 Episódio 1 - As Duas Caras de Stephen Collins",
+                                      "rating":  null
+                                  }
+                     },
+                     {
+                         "slug":  "tlc",
+                         "channel":  "TLC",
+                         "channelId":  "TLCLatinAmerica.us@Brazil",
+                         "group":  "documentarios",
+                         "source":  "iptv-org",
+                         "available":  true,
+                         "current":  {
+                                         "title":  "Amy e Tammy - Irmãs Contra o Peso",
+                                         "description":  "Amy decide fazer uma cerimônia de casamento de verdade; as irmãs vão para Atlanta para a pesagem.",
+                                         "start":  "2026-10-07T17:15:00.000Z",
+                                         "end":  "2026-10-07T17:58:00.000Z",
+                                         "duration":  43,
+                                         "category":  "Temporada 1 Episódio 5 - Casamento e Pesagens",
+                                         "rating":  null
+                                     },
+                         "next":  {
+                                      "title":  "Amy e Tammy - Irmãs Contra o Peso",
+                                      "description":  "Amy passa por uma cirurgia de redução do estômago para mudar sua vida, mas não acompanha sua dieta pós-operatória.",
+                                      "start":  "2026-10-07T17:58:00.000Z",
+                                      "end":  "2026-10-07T18:41:00.000Z",
+                                      "duration":  43,
+                                      "category":  "Temporada 1 Episódio 6 - A Cirurgia",
+                                      "rating":  null
+                                  }
+                     },
+                     {
+                         "slug":  "discovery-world",
+                         "channel":  "Discovery World",
+                         "channelId":  "DiscoveryWorld.us@Brazil",
+                         "group":  "documentarios",
+                         "source":  "iptv-org",
+                         "available":  true,
+                         "current":  {
+                                         "title":  "Viciados em Viagens",
+                                         "description":  "Mike McGuiness e David Arquette descobrem o que é legal em Nova Orleans, também chamada de Big Easy.",
+                                         "start":  "2026-10-07T17:48:00.000Z",
+                                         "end":  "2026-10-07T18:12:00.000Z",
+                                         "duration":  24,
+                                         "category":  "Documentary",
+                                         "rating":  null
+                                     },
+                         "next":  {
+                                      "title":  "7 Piscinas Incríveis",
+                                      "description":  "Coquetéis servidos em um barco, a maior festa em uma piscina no México e a maior piscina para adultos do Havaí.",
+                                      "start":  "2026-10-07T18:12:00.000Z",
+                                      "end":  "2026-10-07T18:36:00.000Z",
+                                      "duration":  24,
+                                      "category":  "Travel",
+                                      "rating":  null
+                                  }
+                     },
+                     {
+                         "slug":  "discovery-science",
+                         "channel":  "Discovery Science",
+                         "channelId":  "DiscoveryScienceLatinAmerica.us@Brazil",
+                         "group":  "documentarios",
+                         "source":  "iptv-org",
+                         "available":  true,
+                         "current":  {
+                                         "title":  "Desvendando o Passado",
+                                         "description":  "Arqueólogos têm lutado durante séculos para compreender as antigas estátuas Moai da Ilha de Páscoa em razão de suas localizações. Agora, especialistas usam tecnologia de ponta para explicar os locais misteriosos.",
+                                         "start":  "2026-10-07T17:24:00.000Z",
+                                         "end":  "2026-10-07T18:12:00.000Z",
+                                         "duration":  48,
+                                         "category":  "Temporada 1 Episódio 1 - Mistério na Ilha da Páscoa",
+                                         "rating":  null
+                                     },
+                         "next":  {
+                                      "title":  "Casos Médicos",
+                                      "description":  "Acompanhe um centro médico de Guadalajara e o cotidiano de seus funcionários.",
+                                      "start":  "2026-10-07T18:12:00.000Z",
+                                      "end":  "2026-10-07T19:00:00.000Z",
+                                      "duration":  48,
+                                      "category":  "Medical",
+                                      "rating":  null
+                                  }
+                     },
+                     {
+                         "slug":  "discovery-theater",
+                         "channel":  "Discovery Theater",
+                         "channelId":  "DiscoveryTheater.br@SD",
+                         "group":  "documentarios",
+                         "source":  "iptv-org",
+                         "available":  true,
+                         "current":  {
+                                         "title":  "Segredos e Lendas - Hotéis",
+                                         "description":  "Conheça a pousada isolada onde um agente novato do FBI enfrentou um criminoso famoso; o quarto de hóspedes onde um presidente se disfarçou para escapar de um homicídio; e o bar frequentado por um espião aspirante a escritor.",
+                                         "start":  "2026-10-07T17:24:00.000Z",
+                                         "end":  "2026-10-07T18:12:00.000Z",
+                                         "duration":  48,
+                                         "category":  "Temporada 1 Episódio 4 - Caos de Anões",
+                                         "rating":  null
+                                     },
+                         "next":  {
+                                      "title":  "Mistérios da História",
+                                      "description":  "Um pacto com o diabo se desenrola em um castelo sinistro nos Países Baixos; uma fortaleza estratégica na Irlanda é disputada por uma rainha pirata; a construção de um castelo francês termina em desastre.",
+                                      "start":  "2026-10-07T18:12:00.000Z",
+                                      "end":  "2026-10-07T19:00:00.000Z",
+                                      "duration":  48,
+                                      "category":  "Temporada 2 Episódio 3 - Fausto, Rainha Pirata e Versailles",
+                                      "rating":  null
+                                  }
+                     },
+                     {
+                         "slug":  "discovery-turbo",
+                         "channel":  "Discovery Turbo",
+                         "channelId":  "DiscoveryTurboLatinAmerica.us@Brazil",
+                         "group":  "documentarios",
+                         "source":  "iptv-org",
+                         "available":  true,
+                         "current":  {
+                                         "title":  "Overhaulin\u0027: Os Supercarros",
+                                         "description":  "Dan é um desenhista de revistas em quadrinhos que passou anos sonhando em ressuscitar seu Pontiac Firebird. Cabe ao designer Chip Foose fazer esse pássaro voar novamente.",
+                                         "start":  "2026-10-07T17:18:00.000Z",
+                                         "end":  "2026-10-07T18:02:00.000Z",
+                                         "duration":  44,
+                                         "category":  "Temporada 8 Episódio 5 - O Pontiac Firebird 1967 de Dan",
+                                         "rating":  null
+                                     },
+                         "next":  {
+                                      "title":  "Texas Metal - Alto e Bom Som",
+                                      "description":  "Para viajar confortavelmente pelo Texas, construir o carro certo é uma necessidade. A Mod Maia customiza um Global Expedition, enquanto a Wide Open Garage cria o seu maior e mais valente caminhão off-road.",
+                                      "start":  "2026-10-07T18:02:00.000Z",
+                                      "end":  "2026-10-07T18:45:00.000Z",
+                                      "duration":  43,
+                                      "category":  "Temporada 2 Episódio 3 - Trucks Valentes",
+                                      "rating":  null
+                                  }
+                     }
+                 ],
+    "missing":  [
+                    {
+                        "slug":  "tnt-series",
+                        "channel":  "TNT Series",
+                        "reason":  "sem-programacao-nas-fontes",
+                        "attempts":  [
+                                         {
+                                             "source":  "brazilTvEpg/claro",
+                                             "channelId":  "TNT SERIES HD",
+                                             "status":  "desatualizada",
+                                             "lastProgramEnd":  "2026-09-24T03:25:00.000Z"
+                                         },
+                                         {
+                                             "source":  "brazilTvEpg/vivoplay",
+                                             "channelId":  null,
+                                             "status":  "sem-mapeamento"
+                                         },
+                                         {
+                                             "source":  "iptv-org",
+                                             "channelId":  "TNTSeriesLatinAmerica.us@Brazil",
+                                             "status":  "canal-nao-encontrado"
+                                         }
+                                     ]
+                    }
+                ]
+}
