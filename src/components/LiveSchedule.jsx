@@ -21,7 +21,6 @@ const dateFormatter = new Intl.DateTimeFormat('pt-BR', {
 const formatTime = (iso) => timeFormatter.format(new Date(iso));
 const formatDay = (key) => dateFormatter.format(new Date(`${key}T12:00:00-03:00`)).replace('.', '');
 
-
 const isDateKey = (value) => /^\d{4}-\d{2}-\d{2}$/.test(value || '');
 const sharedDateFromLocation = () => {
   if (typeof window === 'undefined') return null;
@@ -135,7 +134,7 @@ const DayGuide = ({ channel, dates, initialDate, onClose, onShare, shareStatus }
     <div className="epg-overlay" role="dialog" aria-modal="true" aria-label={`Grade do dia: ${channel.channel}`} onClick={onClose}>
       <div className="epg-modal" onClick={(event) => event.stopPropagation()}>
         <header className="epg-modal-header">
-          <div>
+          <div className="epg-modal-heading">
             <h3>{channel.channel}</h3>
             <button type="button" className="epg-share epg-share--modal" onClick={() => onShare(date)}>
               Compartilhar este dia
@@ -243,6 +242,14 @@ const LiveSchedule = () => {
     return () => clearInterval(timer);
   }, [load]);
 
+  useEffect(() => {
+    if (!sharedDate || state.status !== 'ready') return undefined;
+    const timer = window.setTimeout(() => {
+      document.getElementById('programacao')?.scrollIntoView({ block: 'start' });
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [sharedDate, state.status]);
+
   const { data } = state;
   const available = useMemo(
     () => (data ? data.channels.filter((channel) => channel.available) : []),
@@ -330,7 +337,10 @@ const LiveSchedule = () => {
       {guide && data && (
         <DayGuide
           channel={guide}
-          dates={data.availableDates && data.availableDates.length ? data.availableDates : [data.date]}
+          dates={Array.from(new Set([
+            ...(sharedDate ? [sharedDate] : []),
+            ...(data.availableDates && data.availableDates.length ? data.availableDates : [data.date]),
+          ]))}
           initialDate={sharedDate || data.date}
           onClose={() => setGuide(null)}
           onShare={copyScheduleLink}
