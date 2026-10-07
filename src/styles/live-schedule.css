@@ -301,6 +301,7 @@
 }
 
 .epg-modal-header {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -330,7 +331,9 @@
 
 .epg-days {
   display: flex;
+  align-items: center;
   gap: 0.5rem;
+  min-height: 3.25rem;
   padding: 0.5rem 1.25rem 0.75rem;
   overflow-x: auto;
   scrollbar-width: none;
@@ -342,6 +345,10 @@
 
 .epg-day {
   flex: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  line-height: 1.2;
   padding: 0.4rem 0.85rem;
   text-transform: capitalize;
 }
@@ -416,7 +423,19 @@
 
   .epg-modal-header {
     align-items: flex-start;
+    flex-direction: column;
     padding: 0.9rem 1rem 0.45rem;
+  }
+
+  .epg-modal-heading {
+    width: 100%;
+    padding-right: 2rem;
+  }
+
+  .epg-modal-header .epg-close {
+    position: absolute;
+    top: 0.8rem;
+    right: 0.85rem;
   }
 
   .epg-modal-header h3 {
@@ -430,6 +449,7 @@
 
   .epg-days {
     gap: 0.4rem;
+    min-height: 3.5rem;
     padding-inline: 1rem;
   }
 
