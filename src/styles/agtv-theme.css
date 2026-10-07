@@ -327,10 +327,6 @@ footer {
     #090a0e !important;
 }
 
-.bg-video {
-  opacity: 0.24;
-}
-
 .agtv-scroll-ready .agtv-reveal {
   opacity: 0;
   filter: blur(6px);

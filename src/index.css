@@ -20,44 +20,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Estilos para o vídeo de fundo */
-video {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100vw;
-  height: 100vh;
-  object-fit: cover;
-  z-index: -1;
-  pointer-events: none;
-  will-change: transform;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
-  opacity: 0.24;
-}
-
-.bg-video {
-  position: fixed;
-  inset: 0;
-  width: 100vw;
-  height: 100vh;
-  object-fit: cover;
-  z-index: -1;
-  pointer-events: none;
-}
-
-.bg-fallback {
-  position: fixed;
-  inset: 0;
-  z-index: -2;
-  background-size: cover;
-  background-position: center center;
-}
-
 /* Prevent horizontal overflow on small screens */
 html, body, #root {
   overflow-x: hidden !important;

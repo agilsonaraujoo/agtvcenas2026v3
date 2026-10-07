@@ -386,7 +386,7 @@
 @media (max-width: 767px) {
   .epg-filters-sticky {
     position: sticky;
-    top: calc(4rem + env(safe-area-inset-top));
+    top: calc(4rem + env(safe-area-inset-top) + 0.5rem);
     z-index: 40;
     margin: 0 -1rem 1.5rem;
     background: rgb(10 11 16 / 94%);
