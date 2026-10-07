@@ -2,7 +2,7 @@ name: Atualizar programação de TV
 
 on:
   schedule:
-    - cron: '15 */6 * * *'
+    - cron: '5 * * * *'
   workflow_dispatch:
 
 permissions:
