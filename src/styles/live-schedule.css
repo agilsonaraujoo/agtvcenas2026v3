@@ -281,12 +281,13 @@
 .epg-overlay {
   position: fixed;
   inset: 0;
-  z-index: 60;
+  z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
   background: rgb(0 0 0 / 72%);
   padding: 1rem;
+  overscroll-behavior: contain;
 }
 
 .epg-modal {
@@ -294,6 +295,7 @@
   flex-direction: column;
   width: min(100%, 40rem);
   max-height: 88vh;
+  min-height: 0;
   border: 1px solid rgb(154 123 255 / 28%);
   border-radius: 1.25rem;
   background: var(--agtv-surface);
@@ -302,6 +304,7 @@
 
 .epg-modal-header {
   position: relative;
+  flex: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -331,6 +334,7 @@
 
 .epg-days {
   display: flex;
+  flex: none;
   align-items: center;
   gap: 0.5rem;
   min-height: 3.25rem;
@@ -354,7 +358,11 @@
 }
 
 .epg-list {
+  min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   padding: 0 1.25rem 1.25rem;
 }
 
@@ -416,15 +424,27 @@
 }
 
 @media (max-width: 600px) {
+  .epg-overlay {
+    align-items: stretch;
+    padding:
+      max(0.5rem, env(safe-area-inset-top))
+      0.5rem
+      max(0.5rem, env(safe-area-inset-bottom));
+  }
+
   .epg-modal {
     width: 100%;
-    max-height: calc(100svh - 1rem);
+    max-height: calc(100vh - 1rem);
+    max-height: calc(100dvh - max(1rem, env(safe-area-inset-top) + env(safe-area-inset-bottom)));
+    border-radius: 1rem;
   }
 
   .epg-modal-header {
+    position: relative;
     align-items: flex-start;
     flex-direction: column;
-    padding: 0.9rem 1rem 0.45rem;
+    padding: 0.9rem 3.5rem 0.65rem 1rem;
+    background: var(--agtv-surface);
   }
 
   .epg-modal-heading {
@@ -434,8 +454,21 @@
 
   .epg-modal-header .epg-close {
     position: absolute;
-    top: 0.8rem;
-    right: 0.85rem;
+    top: 0.65rem;
+    right: 0.65rem;
+    z-index: 1;
+    display: inline-flex;
+    width: 2.75rem;
+    height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgb(255 255 255 / 12%);
+    border-radius: 9999px;
+    background: rgb(255 255 255 / 6%);
+    color: #fff;
+    font-size: 1.65rem;
+    line-height: 1;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .epg-modal-header h3 {
@@ -451,6 +484,7 @@
     gap: 0.4rem;
     min-height: 3.5rem;
     padding-inline: 1rem;
+    touch-action: pan-x;
   }
 
   .epg-list {

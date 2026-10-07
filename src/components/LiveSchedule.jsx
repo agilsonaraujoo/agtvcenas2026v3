@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { API_CONFIG } from '../utils/api';
 import '../styles/live-schedule.css';
 
@@ -104,6 +105,39 @@ const DayGuide = ({ channel, dates, initialDate, onClose, onShare, shareStatus }
   const [date, setDate] = useState(initialDate);
   const [state, setState] = useState({ status: 'loading', programs: [] });
   const [now, setNow] = useState(Date.now());
+  const closeButtonRef = useRef(null);
+
+  useEffect(() => {
+    const scrollY = window.scrollY;
+    const activeElement = document.activeElement;
+    const body = document.body;
+    const root = document.documentElement;
+    const bodyStyles = {
+      position: body.style.position,
+      top: body.style.top,
+      left: body.style.left,
+      right: body.style.right,
+      width: body.style.width,
+      overflow: body.style.overflow,
+    };
+    const rootOverflow = root.style.overflow;
+
+    body.style.position = 'fixed';
+    body.style.top = `-${scrollY}px`;
+    body.style.left = '0';
+    body.style.right = '0';
+    body.style.width = '100%';
+    body.style.overflow = 'hidden';
+    root.style.overflow = 'hidden';
+    closeButtonRef.current?.focus({ preventScroll: true });
+
+    return () => {
+      Object.assign(body.style, bodyStyles);
+      root.style.overflow = rootOverflow;
+      window.scrollTo(0, scrollY);
+      if (activeElement instanceof HTMLElement) activeElement.focus({ preventScroll: true });
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -125,12 +159,32 @@ const DayGuide = ({ channel, dates, initialDate, onClose, onShare, shareStatus }
   }, []);
 
   useEffect(() => {
-    const onKey = (event) => event.key === 'Escape' && onClose();
+    const onKey = (event) => {
+      if (event.key === 'Escape') {
+        onClose();
+        return;
+      }
+
+      if (event.key !== 'Tab') return;
+      const modal = document.querySelector('.epg-modal');
+      const focusable = modal && modal.querySelectorAll('button:not(:disabled), [href], [tabindex]:not([tabindex="-1"])');
+      if (!focusable || focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  return (
+  return createPortal(
     <div className="epg-overlay" role="dialog" aria-modal="true" aria-label={`Grade do dia: ${channel.channel}`} onClick={onClose}>
       <div className="epg-modal" onClick={(event) => event.stopPropagation()}>
         <header className="epg-modal-header">
@@ -141,7 +195,7 @@ const DayGuide = ({ channel, dates, initialDate, onClose, onShare, shareStatus }
             </button>
             {shareStatus && <span className="epg-share-status" role="status">{shareStatus}</span>}
           </div>
-          <button type="button" className="epg-close" onClick={onClose} aria-label="Fechar">×</button>
+          <button ref={closeButtonRef} type="button" className="epg-close" onClick={onClose} aria-label="Fechar grade">×</button>
         </header>
 
         <div className="epg-days" role="tablist">
@@ -159,7 +213,7 @@ const DayGuide = ({ channel, dates, initialDate, onClose, onShare, shareStatus }
           ))}
         </div>
 
-        <div className="epg-list">
+        <div className="epg-list" aria-label="Programação do canal">
           {state.status === 'loading' && <p className="epg-muted">Carregando grade...</p>}
           {state.status === 'error' && <p className="epg-error">Não foi possível carregar a grade deste dia.</p>}
           {state.status === 'empty' && <p className="epg-muted">Sem programação disponível para este dia.</p>}
@@ -198,7 +252,8 @@ const DayGuide = ({ channel, dates, initialDate, onClose, onShare, shareStatus }
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };
 
