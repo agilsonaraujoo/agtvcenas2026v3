@@ -301,22 +301,24 @@ const LiveSchedule = () => {
 
         {state.status === 'ready' && available.length > 0 && (
           <>
-            <div className="epg-filters" role="tablist" aria-label="Categorias de canais">
-              {[['todos', 'Todos'], ...groups].map(([key, label]) => (
-                <button
-                  key={key}
-                  type="button"
-                  role="tab"
-                  aria-selected={group === key}
-                  className={`epg-filter${group === key ? ' is-active' : ''}`}
-                  onClick={() => setGroup(key)}
-                >
-                  {label}
+            <div className="epg-filters-sticky">
+              <div className="epg-filters" role="tablist" aria-label="Categorias de canais">
+                {[['todos', 'Todos'], ...groups].map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    role="tab"
+                    aria-selected={group === key}
+                    className={`epg-filter${group === key ? ' is-active' : ''}`}
+                    onClick={() => setGroup(key)}
+                  >
+                    {label}
+                  </button>
+                ))}
+                <button type="button" className="epg-share" onClick={() => copyScheduleLink(data.date)}>
+                  Compartilhar o dia
                 </button>
-              ))}
-              <button type="button" className="epg-share" onClick={() => copyScheduleLink(data.date)}>
-                Compartilhar o dia
-              </button>
+              </div>
             </div>
 
             <div className="epg-grid">
