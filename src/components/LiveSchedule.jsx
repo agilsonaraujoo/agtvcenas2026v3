@@ -157,8 +157,17 @@ const DayGuide = ({ channel, dates, initialDate, onClose }) => {
                 return (
                   <li key={`${program.start}-${program.title}`} className={live ? 'is-live' : ''}>
                     <time>{formatTime(program.start)}</time>
-                    <div>
-                      <p className="epg-title">
+                    <div className="epg-guide-entry">
+                      {program.posterUrl && (
+                        <img
+                          className="epg-artwork epg-artwork--guide"
+                          src={program.posterUrl}
+                          alt=""
+                          loading="lazy"
+                        />
+                      )}
+                      <div className="epg-guide-details">
+                        <p className="epg-title">
                         {program.title}
                         {live && <span className="epg-badge epg-badge--live epg-badge--inline">AO VIVO</span>}
                       </p>
@@ -166,7 +175,8 @@ const DayGuide = ({ channel, dates, initialDate, onClose }) => {
                         até {formatTime(program.end)} · {program.duration} min
                         {program.rating ? ` · ${program.rating}` : ''}
                       </p>
-                      {program.description && <p className="epg-desc">{program.description}</p>}
+                        {program.description && <p className="epg-desc">{program.description}</p>}
+                      </div>
                     </div>
                   </li>
                 );

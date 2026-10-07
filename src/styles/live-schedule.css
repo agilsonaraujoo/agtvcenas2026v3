@@ -104,15 +104,33 @@
 
 .epg-artwork {
   display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
   object-fit: cover;
   border-radius: 0.75rem;
   background: rgb(255 255 255 / 5%);
 }
 
 .epg-artwork--current {
-  width: 100%;
   aspect-ratio: 16 / 9;
   margin-bottom: 0.8rem;
+}
+
+.epg-guide-entry {
+  display: grid;
+  grid-template-columns: minmax(4.5rem, 7rem) minmax(0, 1fr);
+  align-items: start;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.epg-guide-details {
+  min-width: 0;
+}
+
+.epg-artwork--guide {
+  aspect-ratio: 2 / 3;
 }
 
 .epg-next-content {
@@ -307,6 +325,27 @@
 .epg-list time {
   color: var(--agtv-green);
   font-weight: 800;
+}
+
+@media (max-width: 600px) {
+  .epg-card {
+    min-width: 0;
+    padding: 1rem;
+  }
+
+  .epg-artwork--current {
+    max-height: 12rem;
+  }
+
+  .epg-guide-entry {
+    grid-template-columns: minmax(4rem, 5.5rem) minmax(0, 1fr);
+    gap: 0.6rem;
+  }
+
+  .epg-list li {
+    grid-template-columns: 2.75rem minmax(0, 1fr);
+    gap: 0.5rem;
+  }
 }
 
 @keyframes epg-pulse {
