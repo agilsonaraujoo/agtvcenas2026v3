@@ -54,6 +54,9 @@ const ChannelCard = ({ channel, now, onOpen }) => {
         </span>
         {channel.current ? (
           <>
+            {channel.current.posterUrl && (
+              <img className="epg-artwork epg-artwork--current" src={channel.current.posterUrl} alt="" loading="lazy" />
+            )}
             <p className="epg-title">{channel.current.title}</p>
             <p className="epg-time">
               {formatTime(channel.current.start)} – {formatTime(channel.current.end)}
@@ -70,9 +73,14 @@ const ChannelCard = ({ channel, now, onOpen }) => {
       <div className="epg-next">
         <span className="epg-badge">A SEGUIR</span>
         {channel.next ? (
-          <p className="epg-next-line">
-            <strong>{formatTime(channel.next.start)}</strong> {channel.next.title}
-          </p>
+          <div className="epg-next-content">
+            {channel.next.posterUrl && (
+              <img className="epg-artwork epg-artwork--next" src={channel.next.posterUrl} alt="" loading="lazy" />
+            )}
+            <p className="epg-next-line">
+              <strong>{formatTime(channel.next.start)}</strong> {channel.next.title}
+            </p>
+          </div>
         ) : (
           <p className="epg-muted">Sem informação do próximo programa.</p>
         )}

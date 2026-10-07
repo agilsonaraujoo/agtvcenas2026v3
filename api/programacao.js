@@ -1,4 +1,4 @@
-const { hasSameOrigin, sendJson } = require('../lib/serverApi');
+const { fetchTmdb, hasSameOrigin, normalizeTitle, sendJson } = require('../lib/serverApi');
 const { CHANNELS, GROUPS, getChannel } = require('../lib/epg/channels');
 const { TIMEZONE, DAY_MS, dateKey, dayRange, isValidDateKey } = require('../lib/epg/time');
 const { findCurrentAndNext, hasUpcomingData, programsForDate } = require('../lib/epg/schedule');
@@ -8,11 +8,47 @@ const getQuery = (req) => (
   req.query || Object.fromEntries(new URL(req.url, 'http://localhost').searchParams)
 );
 
-const buildChannel = (config, entry, { now, key, includePrograms }) => {
+
+const POSTER_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const posterCache = new Map();
+
+const posterForTitle = async (title) => {
+  if (!title || !process.env.TMDB_API_KEY) return null;
+
+  const key = normalizeTitle(title);
+  const cached = posterCache.get(key);
+  if (cached && cached.expiresAt > Date.now()) return cached.posterUrl;
+
+  try {
+    const data = await fetchTmdb('search/multi', { query: title });
+    const match = (data.results || []).find((item) => (
+      item.poster_path
+      && ['movie', 'tv'].includes(item.media_type)
+      && [item.title, item.name, item.original_title, item.original_name]
+        .some((value) => value && normalizeTitle(value) === key)
+    ));
+    const posterUrl = match ? `https://image.tmdb.org/t/p/w500${match.poster_path}` : null;
+    posterCache.set(key, { posterUrl, expiresAt: Date.now() + POSTER_CACHE_TTL_MS });
+    return posterUrl;
+  } catch (error) {
+    console.error('[EPG] TMDB poster lookup failed:', error.message);
+    posterCache.set(key, { posterUrl: null, expiresAt: Date.now() + POSTER_CACHE_TTL_MS });
+    return null;
+  }
+};
+
+const enrichProgram = async (program) => {
+  if (!program) return program;
+  const posterUrl = await posterForTitle(program.title);
+  return posterUrl ? { ...program, posterUrl } : program;
+};
+
+const buildChannel = async (config, entry, { now, key, includePrograms, slug }) => {
   const programs = entry ? entry.programs : [];
   const available = hasUpcomingData(programs, now);
   const { current, next } = available ? findCurrentAndNext(programs, now) : { current: null, next: null };
 
+  const enriched = await Promise.all([current, next].map(enrichProgram));
   const result = {
     slug: config.slug,
     channel: config.name,
@@ -20,13 +56,16 @@ const buildChannel = (config, entry, { now, key, includePrograms }) => {
     group: config.group,
     source: entry ? entry.source : null,
     available,
-    current,
-    next,
+    current: enriched[0],
+    next: enriched[1],
   };
 
   if (includePrograms) {
     result.date = key;
     result.programs = available ? programsForDate(programs, key) : [];
+    if (slug && config.slug === slug) {
+      result.programs = await Promise.all(result.programs.map(enrichProgram));
+    }
   }
   return result;
 };
@@ -87,9 +126,9 @@ module.exports = async function handler(req, res) {
   const includePrograms = Boolean(requestedDate || slug);
   const scope = slug ? [getChannel(slug)] : CHANNELS;
 
-  const channels = scope.map((config) => (
-    buildChannel(config, dataset.channels[config.slug], { now, key, includePrograms })
-  ));
+  const channels = await Promise.all(scope.map((config) => (
+    buildChannel(config, dataset.channels[config.slug], { now, key, includePrograms, slug })
+  )));
 
   const missing = channels
     .filter((item) => !item.available)
