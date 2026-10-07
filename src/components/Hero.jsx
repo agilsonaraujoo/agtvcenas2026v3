@@ -212,16 +212,16 @@ const Hero = () => {
             className="mx-auto grid max-w-xl grid-cols-3 divide-x divide-white/10 rounded-2xl border border-white/10 bg-white/[0.035] px-2 py-4 backdrop-blur-md lg:mx-0"
           >
             <div className="px-2 text-center lg:text-left">
-              <p className="text-lg font-extrabold text-[#b7ff4a] sm:text-2xl">22 mil+</p>
-              <p className="mt-1 text-[11px] leading-4 text-gray-400 sm:text-xs">conteúdos</p>
+              <p className="text-lg font-extrabold text-[#b7ff4a] sm:text-2xl">2.200+</p>
+              <p className="mt-1 text-[11px] leading-4 text-gray-400 sm:text-xs">canais</p>
             </div>
             <div className="px-2 text-center lg:pl-5 lg:text-left">
-              <p className="text-sm font-extrabold text-[#b7ff4a] sm:text-xl">SD · HD · FHD · 4K</p>
-              <p className="mt-1 text-[11px] leading-4 text-gray-400 sm:text-xs">opções de qualidade</p>
+              <p className="text-lg font-extrabold text-[#b7ff4a] sm:text-2xl">20.600+</p>
+              <p className="mt-1 text-[11px] leading-4 text-gray-400 sm:text-xs">filmes</p>
             </div>
             <div className="px-2 text-center lg:pl-5 lg:text-left">
-              <p className="text-lg font-extrabold text-[#b7ff4a] sm:text-2xl">Dedicado</p>
-              <p className="mt-1 text-[11px] leading-4 text-gray-400 sm:text-xs">suporte rápido</p>
+              <p className="text-lg font-extrabold text-[#b7ff4a] sm:text-2xl">8.400+</p>
+              <p className="mt-1 text-[11px] leading-4 text-gray-400 sm:text-xs">séries</p>
             </div>
           </motion.div>
         </div>
