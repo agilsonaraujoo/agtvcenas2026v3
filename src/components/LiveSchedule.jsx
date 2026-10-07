@@ -121,6 +121,7 @@ const DayGuide = ({ channel, dates, initialDate, onClose, onShare, shareStatus }
       overflow: body.style.overflow,
     };
     const rootOverflow = root.style.overflow;
+    const rootScrollBehavior = root.style.scrollBehavior;
 
     body.style.position = 'fixed';
     body.style.top = `-${scrollY}px`;
@@ -129,12 +130,15 @@ const DayGuide = ({ channel, dates, initialDate, onClose, onShare, shareStatus }
     body.style.width = '100%';
     body.style.overflow = 'hidden';
     root.style.overflow = 'hidden';
+    root.style.scrollBehavior = 'auto';
     closeButtonRef.current?.focus({ preventScroll: true });
 
     return () => {
       Object.assign(body.style, bodyStyles);
       root.style.overflow = rootOverflow;
+      root.style.scrollBehavior = 'auto';
       window.scrollTo(0, scrollY);
+      root.style.scrollBehavior = rootScrollBehavior;
       if (activeElement instanceof HTMLElement) activeElement.focus({ preventScroll: true });
     };
   }, []);
