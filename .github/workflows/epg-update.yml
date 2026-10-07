@@ -1,0 +1,64 @@
+name: Atualizar programação de TV
+
+on:
+  schedule:
+    - cron: '15 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: epg-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Instalar dependências do projeto
+        run: npm ci --ignore-scripts
+
+      - name: Preparar o grabber iptv-org/epg (fallback)
+        run: |
+          git clone --depth 1 https://github.com/iptv-org/epg.git .epg-grabber
+          cd .epg-grabber
+          npm install --no-audit --no-fund
+          node ../scripts/epg/channels-xml.js ../agtv.channels.xml
+
+      - name: Coletar grade do iptv-org (mi.tv, poucas conexões)
+        continue-on-error: true
+        working-directory: .epg-grabber
+        run: npm run grab --- --channels=../agtv.channels.xml --output=../iptv-guide.xml --maxConnections=1 --days=3 --delay=1000
+
+      - name: Normalizar para JSON
+        run: node scripts/epg/update.js --out programacao.json --iptv-xml iptv-guide.xml
+
+      - name: Publicar na branch epg-data
+        run: |
+          git config user.name "agtv-epg-bot"
+          git config user.email "agtv-epg-bot@users.noreply.github.com"
+          cp programacao.json "$RUNNER_TEMP/programacao.json"
+          if git ls-remote --exit-code --heads origin epg-data >/dev/null 2>&1; then
+            git fetch --depth 1 origin epg-data
+            git checkout -f -B epg-data FETCH_HEAD
+          else
+            git checkout --orphan epg-data
+            git rm -rf --quiet .
+          fi
+          git clean -fdxq
+          cp "$RUNNER_TEMP/programacao.json" programacao.json
+          git add programacao.json
+          if git diff --cached --quiet; then
+            echo "Sem alterações na programação."
+          else
+            git commit -m "Atualiza programação ($(date -u +%Y-%m-%dT%H:%MZ))"
+            git push origin epg-data
+          fi

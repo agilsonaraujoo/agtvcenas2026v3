@@ -20,6 +20,7 @@ const Header = () => {
   const menuItems = [
     { id: 1, text: 'Início', icon: <FiHome className="h-5 w-5" />, href: '#home' },
     { id: 2, text: 'Serviços', icon: <FiTv className="h-5 w-5" />, href: '#servicos' },
+    { id: 8, text: 'Programação', icon: <FiTv className="h-5 w-5" />, href: '#programacao' },
     { id: 3, text: 'Em Alta 🔥', icon: <FiTrendingUp className="h-5 w-5" />, href: '#trending' },
     { id: 4, text: 'Recomendações ✨', icon: <FiStar className="h-5 w-5" />, href: '#recomendacoes' },
     { id: 5, text: 'Planos', icon: <FiDollarSign className="h-5 w-5" />, href: '#planos' },

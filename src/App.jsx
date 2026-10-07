@@ -4,6 +4,7 @@ import AGTVDevicesCarousel from './components/AGTVDevicesCarousel';
 import Hero from './components/Hero';
 import Features from './components/Features';
 import Pricing from './components/Pricing';
+import LiveSchedule from './components/LiveSchedule';
 import TrendingContent from './components/TrendingContent';
 import RecommendationEngine from './components/RecommendationEngine';
 import FAQ from './components/FAQ';
@@ -50,6 +51,7 @@ const App = () => {
            <Features />
            {/* ...existing code... */}
            <AGTVDevicesCarousel />
+  <LiveSchedule />
   <TrendingContent />
   <RecommendationEngine />
   <Pricing />
