@@ -21,6 +21,14 @@ const dateFormatter = new Intl.DateTimeFormat('pt-BR', {
 const formatTime = (iso) => timeFormatter.format(new Date(iso));
 const formatDay = (key) => dateFormatter.format(new Date(`${key}T12:00:00-03:00`)).replace('.', '');
 
+
+const isDateKey = (value) => /^\d{4}-\d{2}-\d{2}$/.test(value || '');
+const sharedDateFromLocation = () => {
+  if (typeof window === 'undefined') return null;
+  const value = new URLSearchParams(window.location.search).get('date');
+  return isDateKey(value) ? value : null;
+};
+
 const progressOf = (program, now) => {
   const start = Date.parse(program.start);
   const end = Date.parse(program.end);
@@ -93,7 +101,7 @@ const ChannelCard = ({ channel, now, onOpen }) => {
   );
 };
 
-const DayGuide = ({ channel, dates, initialDate, onClose }) => {
+const DayGuide = ({ channel, dates, initialDate, onClose, onShare, shareStatus }) => {
   const [date, setDate] = useState(initialDate);
   const [state, setState] = useState({ status: 'loading', programs: [] });
   const [now, setNow] = useState(Date.now());
@@ -127,7 +135,13 @@ const DayGuide = ({ channel, dates, initialDate, onClose }) => {
     <div className="epg-overlay" role="dialog" aria-modal="true" aria-label={`Grade do dia: ${channel.channel}`} onClick={onClose}>
       <div className="epg-modal" onClick={(event) => event.stopPropagation()}>
         <header className="epg-modal-header">
-          <h3>{channel.channel}</h3>
+          <div>
+            <h3>{channel.channel}</h3>
+            <button type="button" className="epg-share epg-share--modal" onClick={() => onShare(date)}>
+              Compartilhar este dia
+            </button>
+            {shareStatus && <span className="epg-share-status" role="status">{shareStatus}</span>}
+          </div>
           <button type="button" className="epg-close" onClick={onClose} aria-label="Fechar">×</button>
         </header>
 
@@ -194,16 +208,33 @@ const LiveSchedule = () => {
   const [group, setGroup] = useState('todos');
   const [now, setNow] = useState(Date.now());
   const [guide, setGuide] = useState(null);
+  const [shareStatus, setShareStatus] = useState('');
+  const sharedDate = sharedDateFromLocation();
 
   const load = useCallback(async () => {
     try {
-      const { ok, data } = await fetchJson(API_CONFIG.PROGRAMACAO.URL);
+      const requestUrl = new URL(API_CONFIG.PROGRAMACAO.URL, window.location.origin);
+      if (sharedDate) requestUrl.searchParams.set('date', sharedDate);
+      const { ok, data } = await fetchJson(requestUrl.toString());
       if (!ok || !data || !Array.isArray(data.channels)) throw new Error('indisponivel');
       setState({ status: 'ready', data });
       setNow(Date.now());
     } catch {
       setState((previous) => (previous.data ? previous : { status: 'error', data: null }));
     }
+  }, [sharedDate]);
+
+  const copyScheduleLink = useCallback(async (date) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('date', date);
+    url.hash = 'programacao';
+    try {
+      await navigator.clipboard.writeText(url.toString());
+      setShareStatus('Link copiado!');
+    } catch {
+      window.prompt('Copie o link da programacao:', url.toString());
+    }
+    window.setTimeout(() => setShareStatus(''), 2500);
   }, []);
 
   useEffect(() => {
@@ -276,6 +307,9 @@ const LiveSchedule = () => {
                   {label}
                 </button>
               ))}
+              <button type="button" className="epg-share" onClick={() => copyScheduleLink(data.date)}>
+                Compartilhar o dia
+              </button>
             </div>
 
             <div className="epg-grid">
@@ -297,8 +331,10 @@ const LiveSchedule = () => {
         <DayGuide
           channel={guide}
           dates={data.availableDates && data.availableDates.length ? data.availableDates : [data.date]}
-          initialDate={data.date}
+          initialDate={sharedDate || data.date}
           onClose={() => setGuide(null)}
+          onShare={copyScheduleLink}
+          shareStatus={shareStatus}
         />
       )}
     </section>

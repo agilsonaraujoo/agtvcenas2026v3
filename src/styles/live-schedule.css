@@ -13,6 +13,37 @@
   margin-bottom: 1.5rem;
 }
 
+.epg-share {
+  border: 1px solid rgb(183 255 74 / 38%);
+  border-radius: 9999px;
+  background: rgb(183 255 74 / 10%);
+  padding: 0.5rem 0.9rem;
+  color: var(--agtv-green);
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, color 0.2s;
+}
+
+.epg-share:hover {
+  border-color: var(--agtv-green);
+  background: rgb(183 255 74 / 18%);
+  color: #fff;
+}
+
+.epg-share--modal {
+  margin-top: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.72rem;
+}
+
+.epg-share-status {
+  display: inline-block;
+  margin-left: 0.5rem;
+  color: var(--agtv-green);
+  font-size: 0.75rem;
+}
+
 .epg-filter,
 .epg-day {
   border: 1px solid rgb(154 123 255 / 24%);
@@ -325,6 +356,33 @@
 .epg-list time {
   color: var(--agtv-green);
   font-weight: 800;
+}
+
+@media (max-width: 767px) {
+  .epg-filters {
+    position: sticky;
+    top: 4rem;
+    z-index: 40;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    margin: 0 -1rem 1.5rem;
+    padding: 0.65rem 1rem;
+    overflow-x: auto;
+    background: rgb(10 11 16 / 94%);
+    box-shadow: 0 10px 24px rgb(0 0 0 / 26%);
+    backdrop-filter: blur(14px);
+    scrollbar-width: none;
+  }
+
+  .epg-filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  .epg-filter,
+  .epg-share {
+    flex: none;
+    white-space: nowrap;
+  }
 }
 
 @media (max-width: 600px) {
