@@ -156,6 +156,7 @@
 .epg-current-trigger {
   display: block;
   width: 100%;
+  min-width: 0;
   border: 0;
   background: transparent;
   padding: 0;
@@ -164,16 +165,25 @@
   cursor: pointer;
 }
 
+.epg-current-trigger .epg-title {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
 .epg-current-trigger:focus-visible {
   border-radius: 0.75rem;
 }
 
 .epg-synopsis-toggle {
-  display: inline-block;
-  margin-top: 0.3rem;
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 0.45rem;
   color: var(--agtv-green);
   font-size: 0.75rem;
   font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .epg-current-synopsis {

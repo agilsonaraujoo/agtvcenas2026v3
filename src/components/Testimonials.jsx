@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { testimonials } from '../data/testimonials';
-
 import { FaStar } from 'react-icons/fa';
+import '../styles/testimonials.css';
 
 const Testimonials = () => {
-  // Função para formatar o nome (primeiro nome + inicial do sobrenome)
+  const [expandedIds, setExpandedIds] = useState([]);
+
   const formatName = (fullName) => {
     const names = fullName.split(' ');
     if (names.length > 1) {
@@ -19,7 +20,7 @@ const Testimonials = () => {
   const scrollSpeed = 0.05;
   const isInteractingRef = useRef(false);
 
-  const animateScroll = (timestamp) => {
+  const animateScroll = useCallback((timestamp) => {
     if (!lastScrollTimeRef.current) {
       lastScrollTimeRef.current = timestamp;
     }
@@ -37,40 +38,40 @@ const Testimonials = () => {
       }
     }
     scrollAnimationRef.current = requestAnimationFrame(animateScroll);
-  };
+  }, []);
 
-  const startAutoScroll = () => {
+  const stopAutoScroll = useCallback(() => {
+    if (scrollAnimationRef.current) {
+      cancelAnimationFrame(scrollAnimationRef.current);
+      scrollAnimationRef.current = null;
+    }
+  }, []);
+
+  const startAutoScroll = useCallback(() => {
     if (scrollContainerRef.current && window.matchMedia('(min-width: 768px) and (hover: hover) and (pointer: fine)').matches) {
       stopAutoScroll();
       lastScrollTimeRef.current = 0;
       scrollAnimationRef.current = requestAnimationFrame(animateScroll);
     }
-  };
+  }, [animateScroll, stopAutoScroll]);
 
-  const stopAutoScroll = () => {
-    if (scrollAnimationRef.current) {
-      cancelAnimationFrame(scrollAnimationRef.current);
-      scrollAnimationRef.current = null;
-    }
-  };
-
-  const renderStars = (rating) => {
-    const stars = [];
-    for (let i = 0; i < 5; i++) {
-      stars.push(
+  const renderStars = (rating) => (
+    <span className="testimonial-stars" role="img" aria-label={`Avaliação ${rating} de 5 estrelas`}>
+      {Array.from({ length: 5 }, (_, index) => (
         <FaStar
-          key={i}
-          className={`text-yellow-400 ${i < rating ? 'opacity-100' : 'opacity-20'}`}
+          key={index}
+          aria-hidden="true"
+          className={`testimonial-star ${index + 0.5 < rating ? 'is-filled' : index < rating ? 'is-partial' : ''}`}
+          style={{ '--star-index': index }}
         />
-      );
-    }
-    return stars;
-  };
+      ))}
+    </span>
+  );
 
   useEffect(() => {
     startAutoScroll();
     return () => stopAutoScroll();
-  }, []);
+  }, [startAutoScroll, stopAutoScroll]);
 
   return (
   <section id="depoimentos" className="py-14 sm:py-20">
@@ -140,38 +141,48 @@ const Testimonials = () => {
                   key={testimonial.id}
                   className="w-full flex-shrink-0 snap-center p-3 sm:p-6 md:w-1/2 lg:w-1/3 xl:w-1/4"
                 >
-                  <div className="transform rounded-2xl bg-gradient-to-r from-gray-800 to-gray-900 p-5 shadow-lg transition-shadow duration-300 hover:shadow-xl hover:scale-105 hover:-translate-y-2 sm:p-8">
+                  <div className="testimonial-card">
                     <div className="flex items-center mb-4 md:mb-6">
                       <div className="relative">
                         <img
                           src={`/images/${testimonial.image}`}
+                          alt={`Foto de ${formatName(testimonial.name)}`}
                           className="mr-3 h-16 w-16 select-none rounded-full border-2 border-white object-cover shadow-xl sm:mr-4 sm:h-24 sm:w-24"
                           style={{ userSelect: 'none' }}
                           draggable={false}
-                          onError={(e) => {
-                            e.currentTarget.src = '/images/default-avatar.jpeg';
+                          onError={(event) => {
+                            event.currentTarget.onerror = null;
+                            event.currentTarget.src = '/images/default-avatar.jpeg';
                           }}
                         />
-                        <div className="absolute -top-1 -left-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                          <span className="text-xs font-semibold text-white">★</span>
+                        <div className="testimonial-badge" aria-hidden="true">
+                          <FaStar />
                         </div>
                       </div>
                       <div>
                         <h3 className="text-lg md:text-xl font-semibold text-white">{formatName(testimonial.name)}</h3>
-                        <p className="text-sm md:text-base text-gray-400 mt-1">{testimonial.role}</p>
-                        <div className="flex items-center mt-3">
-                          {renderStars(testimonial.rating)}
-                        </div>
+                        <div className="mt-2">{renderStars(testimonial.rating)}</div>
                       </div>
                     </div>
-                    <p className="text-gray-300 text-sm mb-4">{testimonial.testimonial}</p>
+                    <p className={`testimonial-quote${expandedIds.includes(testimonial.id) ? ' is-expanded' : ''}`}>
+                      {testimonial.testimonial}
+                    </p>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
                         <span className="text-green-500 text-sm font-semibold">{Math.round(testimonial.rating * 10) / 10}</span>
-                        <FaStar className="text-yellow-400 ml-1" />
+                        <FaStar aria-hidden="true" className="testimonial-rating-star ml-1" />
                       </div>
-                      <button className="text-sm text-blue-400 hover:text-blue-300 transition-colors">
-                        Ver mais
+                      <button
+                        type="button"
+                        className="testimonial-more"
+                        aria-expanded={expandedIds.includes(testimonial.id)}
+                        onClick={() => setExpandedIds((ids) => (
+                          ids.includes(testimonial.id)
+                            ? ids.filter((id) => id !== testimonial.id)
+                            : [...ids, testimonial.id]
+                        ))}
+                      >
+                        {expandedIds.includes(testimonial.id) ? 'Ver menos' : 'Ver mais'}
                       </button>
                     </div>
                   </div>

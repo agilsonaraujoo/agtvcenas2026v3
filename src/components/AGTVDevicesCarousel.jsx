@@ -27,6 +27,8 @@ const devices = [
   { name: 'Mi Stick Xiaomi', img: '/logos/mistick.png', platform: 'android' },
   { name: 'Fire Stick Amazon', img: '/logos/firestick.png', platform: 'android' },
   { name: 'Android TV', img: '/logos/android.png', platform: 'android' },
+  { name: 'Celular Android', img: '/logos/mobile-android.svg', platform: 'android', mobile: true },
+  { name: 'iPhone e iPad (iOS)', img: '/logos/mobile-ios.svg', platform: 'ios', mobile: true },
   { name: 'Windows/PC', img: '/logos/windows.png', platform: 'pc' },
 ];
 
@@ -37,6 +39,9 @@ const appsByPlatform = {
   roku: [
     { name: 'Dream TV', note: 'Licença própria, sem anuidade' },
     { name: 'Meta Player', note: 'Licença anual' },
+  ],
+  ios: [
+    { name: 'Players compatíveis para iOS', note: 'Consulte o suporte para indicação do app atualizado' },
   ],
   pc: [{ name: 'Smarters Player', note: 'Licença anual' }],
 };
@@ -201,8 +206,8 @@ const AGTVDevicesCarousel = () => {
                   }}
                   className={`flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-2xl border p-6 text-center shadow-xl transition duration-300 ${
                     isSelected
-                      ? 'border-[#b7ff4a]/70 bg-gray-800 ring-2 ring-[#b7ff4a]/20'
-                      : 'border-white/10 bg-gray-800 hover:-translate-y-1 hover:border-[#9a7bff]/50'
+                      ? 'border-[#b7ff4a]/70 bg-gradient-to-br from-[#34384a] via-[#1d202b] to-[#302448] ring-2 ring-[#b7ff4a]/20'
+                      : 'border-white/10 bg-gradient-to-br from-[#292b38] via-[#191b26] to-[#28213b] hover:-translate-y-1 hover:border-[#9a7bff]/50'
                   }`}
                 >
                   <div className="flex min-h-[10rem] w-full items-center justify-center">
@@ -214,9 +219,11 @@ const AGTVDevicesCarousel = () => {
                           ? 'h-[18rem] sm:h-64 object-contain mb-4'
                           : device.big
                             ? 'h-[15rem] sm:h-56 object-contain mb-4'
-                            : device.tclMargin
-                              ? 'h-[12rem] sm:h-40 object-contain mb-4 mt-8'
-                              : 'h-[12rem] sm:h-40 object-contain mb-4'
+                            : device.mobile
+                              ? 'h-56 sm:h-64 object-contain mb-4'
+                              : device.tclMargin
+                                ? 'h-[12rem] sm:h-40 object-contain mb-4 mt-8'
+                                : 'h-[12rem] sm:h-40 object-contain mb-4'
                       }
                       style={{ marginLeft: 'auto', marginRight: 'auto', display: 'block' }}
                       draggable={false}

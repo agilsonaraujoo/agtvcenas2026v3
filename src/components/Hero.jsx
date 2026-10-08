@@ -162,17 +162,17 @@ const Hero = () => {
               target="_blank"
               rel="noreferrer"
               data-analytics="cta_trial"
-              className="inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-[#b7ff4a] px-8 py-4 text-base font-extrabold text-[#10130a] shadow-[0_0_30px_rgba(183,255,74,0.2)] transition hover:scale-[1.03] hover:bg-[#ceff83] sm:w-auto"
+              className="mx-auto inline-flex min-h-14 w-full max-w-[22rem] items-center justify-center gap-2 rounded-full bg-[#b7ff4a] px-8 py-4 text-base font-extrabold text-[#10130a] shadow-[0_0_30px_rgba(183,255,74,0.2)] transition hover:scale-[1.03] hover:bg-[#ceff83] sm:mx-0 sm:w-auto sm:max-w-none"
             >
               <FiPlay aria-hidden="true" />
               Começar teste grátis
             </a>
             <a
-              href="#planos"
-              data-analytics="cta_planos"
-              className="inline-flex min-h-14 w-full items-center justify-center rounded-full border border-white/15 bg-white/[0.04] px-8 py-4 text-base font-bold text-white transition hover:border-[#9a7bff]/60 hover:bg-[#9a7bff]/10 sm:w-auto"
+              href="#programacao"
+              data-analytics="cta_programacao"
+              className="mx-auto inline-flex min-h-14 w-full max-w-[22rem] items-center justify-center rounded-full border border-white/15 bg-white/[0.04] px-8 py-4 text-base font-bold text-white transition hover:border-[#9a7bff]/60 hover:bg-[#9a7bff]/10 sm:mx-0 sm:w-auto sm:max-w-none"
             >
-              Conhecer planos
+              Ver programação
             </a>
           </motion.div>
 

@@ -354,6 +354,31 @@ const Header = () => {
           })}
         </nav>
       </header>
+
+      <nav
+        aria-label="Atalhos principais"
+        className="mobile-quick-nav fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-white/10 bg-[#090a0e]/95 text-white shadow-[0_-12px_35px_rgba(0,0,0,0.35)] backdrop-blur-xl md:hidden"
+      >
+        {[
+          { label: 'Início', href: '#home', Icon: FiHome },
+          { label: 'Programação', href: '#programacao', Icon: FiTv },
+          { label: 'Em alta', href: '#trending', Icon: FiTrendingUp },
+          { label: 'Planos', href: '#planos', Icon: FiDollarSign },
+        ].map(({ label, href, Icon }) => (
+          <a
+            key={href}
+            href={href}
+            onClick={() => handleNavClick(href)}
+            aria-current={activeId === href ? 'location' : undefined}
+            className={`flex min-h-14 flex-col items-center justify-center gap-1 px-1 py-2 text-[10px] font-bold transition ${
+              activeId === href ? 'text-[#b7ff4a]' : 'text-gray-300 hover:text-white'
+            }`}
+          >
+            <Icon aria-hidden="true" className="h-5 w-5" />
+            <span>{label}</span>
+          </a>
+        ))}
+      </nav>
     </>
   );
 };
