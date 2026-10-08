@@ -27,8 +27,8 @@ const devices = [
   { name: 'Mi Stick Xiaomi', img: '/logos/mistick.png', platform: 'android' },
   { name: 'Fire Stick Amazon', img: '/logos/firestick.png', platform: 'android' },
   { name: 'Android TV', img: '/logos/android.png', platform: 'android' },
-  { name: 'Celular Android', img: '/logos/mobile-android.svg', platform: 'android', mobile: true },
-  { name: 'iPhone e iPad (iOS)', img: '/logos/mobile-ios.svg', platform: 'ios', mobile: true },
+  { name: 'Celular Android', img: '/logos/mobile-android.png', platform: 'android', mobile: true },
+  { name: 'iPhone e iPad (iOS)', img: '/logos/mobile-ios.png', platform: 'ios', mobile: true },
   { name: 'Windows/PC', img: '/logos/windows.png', platform: 'pc' },
 ];
 
@@ -215,7 +215,9 @@ const AGTVDevicesCarousel = () => {
                       src={device.img}
                       alt=""
                       className={
-                        device.big === 'xl'
+                        device.mobile
+                          ? 'h-48 w-44 rounded-xl bg-white p-1 object-contain shadow-lg md:h-52 md:w-48'
+                          : device.big === 'xl'
                           ? 'h-[18rem] sm:h-64 object-contain mb-4'
                           : device.big
                             ? 'h-[15rem] sm:h-56 object-contain mb-4'
