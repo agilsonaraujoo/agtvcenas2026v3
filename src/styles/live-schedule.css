@@ -153,6 +153,34 @@
   margin-bottom: 0.8rem;
 }
 
+.epg-current-trigger {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.epg-current-trigger:focus-visible {
+  border-radius: 0.75rem;
+}
+
+.epg-synopsis-toggle {
+  display: inline-block;
+  margin-top: 0.3rem;
+  color: var(--agtv-green);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.epg-current-synopsis {
+  border-left: 2px solid var(--agtv-green);
+  padding-left: 0.65rem;
+}
+
 .epg-guide-entry {
   display: grid;
   grid-template-columns: minmax(4.5rem, 7rem) minmax(0, 1fr);

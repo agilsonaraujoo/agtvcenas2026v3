@@ -43,6 +43,8 @@ const fetchJson = async (url) => {
 };
 
 const ChannelCard = ({ channel, now, onOpen }) => {
+  const [showSynopsis, setShowSynopsis] = useState(false);
+
   if (!channel.available) {
     return (
       <article className="epg-card epg-card--empty">
@@ -62,16 +64,31 @@ const ChannelCard = ({ channel, now, onOpen }) => {
         </span>
         {channel.current ? (
           <>
-            {channel.current.posterUrl && (
-              <img className="epg-artwork epg-artwork--current" src={channel.current.posterUrl} alt="" loading="lazy" />
-            )}
-            <p className="epg-title">{channel.current.title}</p>
+            <button
+              type="button"
+              className="epg-current-trigger"
+              aria-expanded={showSynopsis}
+              aria-controls={`epg-synopsis-${channel.slug}`}
+              aria-label={`${showSynopsis ? 'Ocultar' : 'Ver'} sinopse: ${channel.current.title}`}
+              onClick={() => setShowSynopsis((visible) => !visible)}
+            >
+              {channel.current.posterUrl && (
+                <img className="epg-artwork epg-artwork--current" src={channel.current.posterUrl} alt="" loading="lazy" />
+              )}
+              <span className="epg-title">{channel.current.title}</span>
+              <span className="epg-synopsis-toggle">{showSynopsis ? 'Ocultar sinopse' : 'Ver sinopse'}</span>
+            </button>
             <p className="epg-time">
               {formatTime(channel.current.start)} – {formatTime(channel.current.end)}
             </p>
             <div className="epg-progress" aria-hidden="true">
               <span style={{ width: `${progressOf(channel.current, now)}%` }} />
             </div>
+            {showSynopsis && (
+              <p id={`epg-synopsis-${channel.slug}`} className="epg-desc epg-current-synopsis">
+                {channel.current.description || 'Sinopse não disponível para este programa.'}
+              </p>
+            )}
           </>
         ) : (
           <p className="epg-muted">Sem informação do programa atual.</p>
