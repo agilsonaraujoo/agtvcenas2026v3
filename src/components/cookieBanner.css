@@ -1,10 +1,13 @@
+/* Faixa de cookies entra deslizando de baixo. */
 .cookie-banner {
-  transition: all 2s cubic-bezier(0.4, 0, 0.2, 1);
-  transform: translateY(0);
-  opacity: 1;
+  animation: cookie-banner-in 0.45s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
-.cookie-banner.hiding {
-  transform: translateY(100%);
-  opacity: 0;
+@keyframes cookie-banner-in {
+  from { transform: translateY(24px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cookie-banner { animation: none; }
 }
