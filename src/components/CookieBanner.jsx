@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaCookieBite } from 'react-icons/fa';
-import { trackEvent, loadGoogleAnalytics } from '../utils/analytics';
+import { trackEvent, loadGoogleTagManager } from '../utils/analytics';
 import './cookieBanner.css';
 
 // Faixa de cookies no rodapé: não bloqueia o site e só some quando a pessoa escolhe.
@@ -23,7 +23,7 @@ const CookieBanner = () => {
     } catch (e) {
       // localStorage bloqueado: a escolha vale só para esta visita.
     }
-    if (value === 'accepted') loadGoogleAnalytics();
+    if (value === 'accepted') loadGoogleTagManager();
 
     // trackEvent já envia para o dataLayer do GTM.
     trackEvent('cookie_consent', {
@@ -46,11 +46,8 @@ const CookieBanner = () => {
         <div className="flex items-start gap-3">
           <FaCookieBite className="mt-0.5 shrink-0 text-[#b7ff4a]" size={20} aria-hidden="true" />
           <p className="text-sm leading-5 text-gray-300">
-            Usamos cookies para entender o que você mais procura e melhorar o atendimento.
-            Você pode recusar sem perder nada do site.{' '}
-            <a href="/privacidade.html" className="whitespace-nowrap text-[#c9ff83] underline underline-offset-2">
-              Saiba mais
-            </a>
+            Registramos visitas em métricas agregadas sem cookies. Se você aceitar, também medimos cliques e conversões.
+            Você pode recusar sem perder nada do site.
           </p>
         </div>
 

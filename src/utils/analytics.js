@@ -1,5 +1,15 @@
-// Simple analytics helper: initializes dataLayer and captures site-wide clicks/touches
-// Push events to window.dataLayer for GTM, and logs to console for debugging.
+// Captures analytics only after the visitor has accepted optional cookies.
+const GTM_CONTAINER_ID = 'GTM-M8V62TJV';
+let gtmLoaded = false;
+
+const hasAnalyticsConsent = () => {
+  try {
+    return localStorage.getItem('cookieChoice') === 'accepted';
+  } catch (e) {
+    return false;
+  }
+};
+
 const ensureDataLayer = () => {
   if (typeof window === 'undefined') return;
   window.dataLayer = window.dataLayer || [];
@@ -15,36 +25,24 @@ const buildElementDescriptor = (el) => {
   return { tag, id, classes, text, aria };
 };
 
-// Google Analytics 4: ID da propriedade (começa com "G-"). Vazio = desligado.
-// Só carrega depois que o visitante clica em "Aceitar" no aviso de cookies (LGPD).
-export const GA_MEASUREMENT_ID = '';
-
-// Eventos de conversão que também vão para o GA4.
-const GA_EVENTS = new Set(['trial_click', 'whatsapp_click', 'begin_checkout']);
-let gaLoaded = false;
-
-export const loadGoogleAnalytics = () => {
-  if (gaLoaded || !GA_MEASUREMENT_ID || typeof window === 'undefined') return;
-  gaLoaded = true;
+export const loadGoogleTagManager = () => {
+  if (gtmLoaded || !hasAnalyticsConsent() || typeof window === 'undefined') return;
+  gtmLoaded = true;
   ensureDataLayer();
-  window.gtag = window.gtag || function gtag() { window.dataLayer.push(arguments); };
-  window.gtag('js', new Date());
-  window.gtag('config', GA_MEASUREMENT_ID);
+  window.dataLayer.push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
   const script = document.createElement('script');
   script.async = true;
-  script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`;
+  script.src = `https://www.googletagmanager.com/gtm.js?id=${GTM_CONTAINER_ID}`;
   document.head.appendChild(script);
 };
 
-// Public: push a custom event to dataLayer and console
+// Public: push an analytics event only with recorded consent.
 export const trackEvent = (eventName, payload = {}) => {
+  if (!hasAnalyticsConsent()) return;
   ensureDataLayer();
   try {
     const eventObj = { event: eventName, ...payload };
     window.dataLayer.push(eventObj);
-    if (gaLoaded && GA_EVENTS.has(eventName)) {
-      window.gtag('event', eventName, payload);
-    }
     // console log for local debugging
     // eslint-disable-next-line no-console
     console.log('analytics.trackEvent', eventObj);
@@ -56,6 +54,7 @@ export const trackEvent = (eventName, payload = {}) => {
 
 // Handler for DOM clicks/touches
 export const handleInteraction = (ev) => {
+  if (!hasAnalyticsConsent()) return;
   try {
     const target = ev.target;
     // Find element with explicit data-analytics attribute upwards
@@ -101,13 +100,7 @@ export const handleInteraction = (ev) => {
 
 // Initialize global listeners — returns cleanup function
 export const initAnalyticsListeners = () => {
-  ensureDataLayer();
-  // Quem já aceitou os cookies numa visita anterior passa a ser medido no GA4 de cara.
-  try {
-    if (localStorage.getItem('cookieChoice') === 'accepted') loadGoogleAnalytics();
-  } catch (e) {
-    // localStorage bloqueado: segue sem GA4.
-  }
+  if (hasAnalyticsConsent()) loadGoogleTagManager();
   // Só 'click': no celular o toque também gera 'click', então ouvir 'touchend'
   // junto contava cada toque duas vezes.
   const clickHandler = (ev) => handleInteraction(ev);
@@ -119,8 +112,11 @@ export const initAnalyticsListeners = () => {
   };
 };
 
-export default {
+const analytics = {
   initAnalyticsListeners,
+  loadGoogleTagManager,
   trackEvent,
   handleInteraction,
 };
+
+export default analytics;

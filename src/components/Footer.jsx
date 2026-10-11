@@ -4,9 +4,7 @@ const Footer = () => {
   return (
     <footer className="bg-gray-900 text-gray-400 py-8 px-4 text-center">
       <div className="container mx-auto">
-        <nav aria-label="Informações legais" className="mb-4 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">
-          <a href="/termos.html" className="underline-offset-4 hover:text-white hover:underline">Termos de Uso</a>
-          <a href="/privacidade.html" className="underline-offset-4 hover:text-white hover:underline">Política de Privacidade</a>
+        <nav aria-label="Atendimento" className="mb-4 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">
           <a
             href="https://wa.me/5583986913481"
             target="_blank"
