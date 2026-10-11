@@ -1,7 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { plans } from '../data/pricingPlans';
+import { plans, commonFeatures, monthlyReferencePrice } from '../data/pricingPlans';
+import { trackEvent } from '../utils/analytics';
 import './pricing.css';
 import '../styles/animations.css';
+
+const parsePrice = (price) => parseFloat(price.replace('.', '').replace(',', '.'));
+const formatBRL = (value) => value.toFixed(2).replace('.', ',');
+
+const CheckIcon = () => (
+  <svg className="mr-2 h-5 w-5 shrink-0 text-green-500" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path>
+  </svg>
+);
 
 const Pricing = () => {
   const [modalOpen, setModalOpen] = useState(false);
@@ -60,18 +70,18 @@ const Pricing = () => {
     };
   }, [modalOpen]);
   const openConfirm = (plan) => {
-    try {
-      console.log('pricing: openConfirm', { plan: plan.name, price: plan.price, time: new Date().toISOString() });
-      if (window && window.dataLayer) {
-        window.dataLayer.push({ event: 'pricing_open_confirm', plan: plan.name, price: plan.price });
-      }
-    } catch (e) {
-      console.error('Tracking openConfirm error', e);
-    }
+    // Evento padrão do GA4 para "começou a comprar", com o valor do plano.
+    trackEvent('begin_checkout', {
+      currency: 'BRL',
+      value: parsePrice(plan.price),
+      plan: plan.name,
+      items: [{ item_id: plan.name.toLowerCase(), item_name: `AGTV ${plan.name}`, price: parsePrice(plan.price), quantity: 1 }],
+    });
 
     const priceDisplay = plan.price;
     const message = `Olá, vim pelo site AGTV CENAS e gostaria de assinar o plano ${plan.name} pelo valor de R$ ${priceDisplay}`;
     const waLink = `https://wa.me/5583986913481?text=${encodeURIComponent(message)}`;
+    trackEvent('whatsapp_click', { location: 'planos', plan: plan.name });
     window.open(waLink, '_blank', 'noopener');
   };
 
@@ -92,10 +102,29 @@ const Pricing = () => {
         </p>
       </div>
 
+      <div className="container mx-auto mb-6 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-4 sm:mb-8 sm:px-6">
+        <p className="mb-3 text-center text-sm font-semibold uppercase tracking-wider text-gray-400">Todos os planos incluem</p>
+        <ul className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-gray-200 sm:text-base">
+          {commonFeatures.map((feature) => (
+            <li key={feature} className="flex items-center">
+              <CheckIcon />
+              {feature}
+            </li>
+          ))}
+        </ul>
+      </div>
+
       <div className="container mx-auto grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-4 lg:gap-8">
-        {plans.map((plan, index) => (
+        {plans.map((plan, index) => {
+          const total = parsePrice(plan.price);
+          const months = plan.billedMonths || 1;
+          const fullPrice = monthlyReferencePrice * months;
+          const savings = fullPrice - total;
+          const savingsPercent = Math.round((savings / fullPrice) * 100);
+
+          return (
           <div
-            key={index}
+            key={plan.name}
             className={`relative flex flex-col rounded-lg bg-gray-800 p-6 shadow-xl plan-card sm:p-8 ${plan.name === 'Anual' ? 'border-2 border-yellow-400 shadow-[0_0_30px_rgba(250,204,21,0.25)]' : ''} fade-in-up delay-${index + 3}`}
           >
             {plan.isPopular && !plan.highlight && (
@@ -105,39 +134,30 @@ const Pricing = () => {
               <span className={`absolute top-0 right-0 bg-purple-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-lg z-10`}>{plan.highlight.text}</span>
             )}
 
-            <h3 className="text-2xl font-bold text-indigo-400 mb-6">{plan.name}</h3>
-            <div className="mb-2 text-4xl font-extrabold text-white sm:text-5xl">
+            <h3 className="text-2xl font-bold text-indigo-400 mb-1">{plan.name}</h3>
+            <p className="mb-5 text-sm text-gray-400">{plan.description}</p>
+            <div className="mb-1 text-4xl font-extrabold text-white sm:text-5xl">
               R$ {plan.price.split(',')[0]}<span className="text-2xl text-gray-400 sm:text-3xl">,{plan.price.split(',')[1]}</span>
             </div>
-            {plan.name !== 'Mensal' && plan.name !== 'Plano Mensal' && (() => {
-              const numeric = parseFloat(plan.price.replace('.', '').replace(',', '.'));
-              const billed = plan.billedMonths || (
-                plan.name === 'Trimestral' ? 3 :
-                plan.name === 'Semestral' ? 6 :
-                plan.name === 'Anual' ? 12 :
-                1
-              );
-              const monthlyRaw = numeric / billed;
-              const monthlyStr = monthlyRaw.toFixed(2).replace('.', ',');
-              return (
-                <div className="text-sm text-gray-300 mb-4">
-                  Média mensal: <b className="text-white">R$ {monthlyStr}</b>
-                </div>
-              );
-            })()}
-            <ul className="mb-8 flex-grow space-y-3 text-base text-gray-300 sm:text-lg">
-              {plan.features.map((feature, idx) => (
-                  <li key={idx} className="flex items-start">
-                  <svg className="h-6 w-6 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path>
-                  </svg>
-                    {feature === 'Ultra Economia' ? (
-                      <span className="neon">{feature}</span>
-                    ) : (
-                      <span>{feature}</span>
-                    )}
-                </li>
-              ))}
+            <p className="mb-4 text-sm text-gray-300">
+              {months === 1 ? 'por mês' : <>equivale a <b className="text-white">R$ {formatBRL(total / months)}</b> por mês</>}
+            </p>
+            <div className="mb-5 min-h-[2.25rem]">
+              {savings > 0.5 && (
+                <span className="inline-block rounded-full bg-green-500/15 px-3 py-1.5 text-sm font-bold text-green-400">
+                  Economize R$ {formatBRL(savings)} ({savingsPercent}%)
+                </span>
+              )}
+            </div>
+            <ul className="mb-8 flex-grow space-y-3 text-base text-gray-300">
+              <li className="flex items-start">
+                <CheckIcon />
+                <span>Qualidade <b className="text-white">{plan.quality}</b></span>
+              </li>
+              <li className="flex items-start">
+                <CheckIcon />
+                <span>{plan.screens === 1 ? '1 tela por vez' : `${plan.screens} telas ao mesmo tempo`}</span>
+              </li>
             </ul>
             <button
               onClick={() => openConfirm(plan)}
@@ -148,7 +168,8 @@ const Pricing = () => {
               Assinar Agora!
             </button>
           </div>
-        ))}
+          );
+        })}
       </div>
 
     </section>

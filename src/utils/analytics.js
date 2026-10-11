@@ -58,6 +58,17 @@ export const handleInteraction = (ev) => {
     };
 
     trackEvent('site_interaction', payload);
+
+    // Eventos de conversão com nome fixo, para virar gatilho direto no GTM/GA4.
+    const link = target.closest ? target.closest('a[href]') : null;
+    if (link) {
+      const location = analyticsAttr || 'sem_rotulo';
+      if (link.href.includes('pagme.xyz/trial')) {
+        trackEvent('trial_click', { location });
+      } else if (link.href.includes('wa.me/')) {
+        trackEvent('whatsapp_click', { location });
+      }
+    }
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error('analytics.handleInteraction error', err);
@@ -67,15 +78,14 @@ export const handleInteraction = (ev) => {
 // Initialize global listeners — returns cleanup function
 export const initAnalyticsListeners = () => {
   ensureDataLayer();
+  // Só 'click': no celular o toque também gera 'click', então ouvir 'touchend'
+  // junto contava cada toque duas vezes.
   const clickHandler = (ev) => handleInteraction(ev);
-  const touchHandler = (ev) => handleInteraction(ev);
   document.addEventListener('click', clickHandler, { capture: true });
-  document.addEventListener('touchend', touchHandler, { capture: true });
 
   // Return cleanup
   return () => {
     document.removeEventListener('click', clickHandler, { capture: true });
-    document.removeEventListener('touchend', touchHandler, { capture: true });
   };
 };
 
