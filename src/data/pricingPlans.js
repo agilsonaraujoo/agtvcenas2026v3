@@ -1,9 +1,11 @@
+import { catalogStats } from './catalog';
+
 // Preço do plano mensal, usado para calcular a economia dos planos mais longos.
 export const monthlyReferencePrice = 34.9;
 
 // Itens iguais em todos os planos: aparecem uma vez só, acima dos cards.
 export const commonFeatures = [
-  "+22 mil conteúdos",
+  ...catalogStats.map(({ value, label }) => `${value} ${label}`),
   "Filmes e séries on demand",
   "Suporte via WhatsApp 7 dias por semana",
 ];
