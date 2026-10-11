@@ -1,38 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { FaCookieBite } from 'react-icons/fa';
-import { trackEvent } from '../utils/analytics';
+import { trackEvent, loadGoogleAnalytics } from '../utils/analytics';
 import './cookieBanner.css';
 
+// Faixa de cookies no rodapé: não bloqueia o site e só some quando a pessoa escolhe.
+// "Aceitar" e "Recusar" têm o mesmo tamanho e ficam lado a lado (exigência da LGPD/ANPD);
+// o destaque visual vai para "Aceitar".
 const CookieBanner = () => {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    // Show only if no prior choice stored
-    const choice = localStorage.getItem('cookieChoice');
-    setVisible(!choice);
+    try {
+      setVisible(!localStorage.getItem('cookieChoice'));
+    } catch (e) {
+      setVisible(true);
+    }
   }, []);
 
   const choose = (value) => {
-    // Always set cookieChoice, regardless of accept/reject
-    localStorage.setItem('cookieChoice', value);
-    
-    // Track cookie consent to analytics/dataLayer
     try {
-      trackEvent('cookie_consent', {
-        consent_choice: value,
-        timestamp: new Date().toISOString()
-      });
+      localStorage.setItem('cookieChoice', value);
     } catch (e) {
-      console.error('Cookie tracking error', e);
+      // localStorage bloqueado: a escolha vale só para esta visita.
     }
+    if (value === 'accepted') loadGoogleAnalytics();
 
-    // Also push to window.dataLayer for GTM
-    if (window && window.dataLayer) {
-      window.dataLayer.push({
-        event: 'cookie_consent',
-        consent_choice: value
-      });
-    }
+    // trackEvent já envia para o dataLayer do GTM.
+    trackEvent('cookie_consent', {
+      consent_choice: value,
+      timestamp: new Date().toISOString()
+    });
 
     setVisible(false);
   };
@@ -40,34 +37,37 @@ const CookieBanner = () => {
   if (!visible) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Overlay escurecido (modal backdrop) */}
-      <div className="absolute inset-0 bg-black/60" onClick={() => choose('rejected')}></div>
-      
-      {/* Modal content */}
-      <div className="relative bg-gray-900 backdrop-blur rounded-2xl shadow-2xl text-white p-6 w-full max-w-md">
-        <div className="flex items-start gap-4 mb-4">
-          <FaCookieBite className="text-yellow-400 flex-shrink-0 mt-1" size={24} />
-          <div>
-            <h3 className="text-lg font-bold mb-2">Política de Cookies</h3>
-            <p className="text-sm text-gray-300">
-              Usamos cookies para melhorar sua experiência e coletar dados de navegação. Você pode aceitar ou recusar — ambas as opções serão registradas.
-            </p>
-          </div>
+    <div
+      role="region"
+      aria-label="Aviso de cookies"
+      className="cookie-banner fixed inset-x-0 z-[60] px-3 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] md:bottom-4"
+    >
+      <div className="mx-auto flex max-w-3xl flex-col gap-3 rounded-2xl border border-white/10 bg-[#101116]/95 p-4 text-white shadow-[0_12px_40px_rgba(0,0,0,0.55)] backdrop-blur-lg sm:flex-row sm:items-center sm:gap-5 sm:p-5">
+        <div className="flex items-start gap-3">
+          <FaCookieBite className="mt-0.5 shrink-0 text-[#b7ff4a]" size={20} aria-hidden="true" />
+          <p className="text-sm leading-5 text-gray-300">
+            Usamos cookies para entender o que você mais procura e melhorar o atendimento.
+            Você pode recusar sem perder nada do site.{' '}
+            <a href="/privacidade.html" className="whitespace-nowrap text-[#c9ff83] underline underline-offset-2">
+              Saiba mais
+            </a>
+          </p>
         </div>
-        
-        <div className="flex gap-3 mt-6">
-          <button 
-            onClick={() => choose('rejected')} 
+
+        <div className="grid shrink-0 grid-cols-2 gap-2 sm:flex">
+          <button
+            type="button"
+            onClick={() => choose('rejected')}
             data-analytics="cookie_reject"
-            className="flex-1 px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-semibold transition"
+            className="min-h-11 rounded-xl border border-white/20 px-5 text-sm font-semibold text-gray-200 transition hover:border-white/40 hover:bg-white/5"
           >
             Recusar
           </button>
-          <button 
-            onClick={() => choose('accepted')} 
+          <button
+            type="button"
+            onClick={() => choose('accepted')}
             data-analytics="cookie_accept"
-            className="flex-1 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition"
+            className="min-h-11 rounded-xl bg-[#b7ff4a] px-5 text-sm font-extrabold text-[#10130a] shadow-[0_0_20px_rgba(183,255,74,0.2)] transition hover:bg-[#ceff83]"
           >
             Aceitar
           </button>

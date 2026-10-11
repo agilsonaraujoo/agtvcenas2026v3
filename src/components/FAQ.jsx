@@ -53,6 +53,7 @@ const FAQ = () => {
                       href="https://wa.me/5583986913481?text=Olá!%20Gostaria%20de%20solicitar%20um%20período%20de%20teste%20gratuito%20da%20AGTV.%20Como%20posso%20proceder?"
                       target="_blank"
                       rel="noopener noreferrer"
+                      data-analytics="faq_whatsapp"
                       className="inline-flex items-center px-6 py-3 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 text-base font-medium"
                     >
                       <FaWhatsapp className="h-5 w-5 mr-2" />

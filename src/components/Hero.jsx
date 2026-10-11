@@ -2,7 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { FaInstagram, FaWhatsapp, FaYoutube } from 'react-icons/fa';
 import { FiArrowDown, FiBookOpen, FiCheck, FiFilm, FiMonitor, FiPause, FiPlay, FiTv } from 'react-icons/fi';
+import { plans } from '../data/pricingPlans';
+import { catalogStats, onDemandTotalLabel } from '../data/catalog';
 import '../styles/animations.css';
+
+// Menor valor mensal entre os planos (o anual dividido por 12), para o link 'veja os planos'.
+const lowestMonthly = Math.min(...plans.map((p) => parseFloat(p.price.replace(',', '.')) / (p.billedMonths || 1)))
+  .toFixed(2)
+  .replace('.', ',');
 
 const trialUrl = 'https://pagme.xyz/trial/eeebb22786aeac95e12e1b7bd37012a3d07f69721315fc2d';
 const contactLinks = [
@@ -155,24 +162,24 @@ const Hero = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
-            className="mb-9 flex flex-col items-center justify-center gap-3 sm:flex-row lg:justify-start"
+            className="mb-6 flex flex-col items-center gap-3 lg:items-start"
           >
             <a
               href={trialUrl}
               target="_blank"
               rel="noreferrer"
               data-analytics="cta_trial"
-              className="mx-auto inline-flex min-h-14 w-full max-w-[22rem] items-center justify-center gap-2 rounded-full bg-[#b7ff4a] px-8 py-4 text-base font-extrabold text-[#10130a] shadow-[0_0_30px_rgba(183,255,74,0.2)] transition hover:scale-[1.03] hover:bg-[#ceff83] sm:mx-0 sm:w-auto sm:max-w-none"
+              className="mx-auto inline-flex min-h-14 w-full max-w-[22rem] items-center justify-center gap-2 rounded-full bg-[#b7ff4a] px-10 py-4 text-lg font-extrabold text-[#10130a] shadow-[0_0_30px_rgba(183,255,74,0.2)] transition hover:scale-[1.03] hover:bg-[#ceff83] sm:w-auto sm:max-w-none lg:mx-0"
             >
               <FiPlay aria-hidden="true" />
-              Começar teste grátis
+              Testar grátis agora
             </a>
             <a
-              href="#programacao"
-              data-analytics="cta_programacao"
-              className="mx-auto inline-flex min-h-14 w-full max-w-[22rem] items-center justify-center rounded-full border border-white/15 bg-white/[0.04] px-8 py-4 text-base font-bold text-white transition hover:border-[#9a7bff]/60 hover:bg-[#9a7bff]/10 sm:mx-0 sm:w-auto sm:max-w-none"
+              href="#planos"
+              data-analytics="cta_ver_planos"
+              className="text-sm font-semibold text-gray-300 underline decoration-white/30 underline-offset-4 transition hover:text-white hover:decoration-[#b7ff4a]"
             >
-              Ver programação
+              Ou veja os planos a partir de R$ {lowestMonthly}/mês
             </a>
           </motion.div>
 
@@ -180,7 +187,7 @@ const Hero = () => {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.36 }}
-            className="mb-9 grid grid-cols-2 gap-2.5 sm:flex sm:flex-wrap sm:justify-center sm:gap-3 lg:justify-start"
+            className="mx-auto mb-9 grid max-w-sm grid-cols-4 gap-1 sm:flex sm:max-w-none sm:flex-wrap sm:items-center sm:justify-center sm:gap-1.5 lg:mx-0 lg:justify-start"
             aria-label="Redes e contato AGTV"
           >
             {contactLinks.map(({ label, href, Icon, logo, className }) => (
@@ -189,16 +196,17 @@ const Hero = () => {
                 href={href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm font-semibold text-gray-200 transition hover:-translate-y-0.5 hover:bg-white/[0.08] sm:px-4 ${className}`}
+                data-analytics={`hero_link_${label.toLowerCase().replace(/\s+/g, '_')}`}
+                className={`inline-flex min-h-11 flex-col items-center justify-center gap-1 rounded-lg px-1 py-1.5 text-[11px] font-medium text-gray-400 transition hover:bg-white/[0.06] sm:min-h-9 sm:flex-row sm:gap-1.5 sm:px-2.5 sm:text-xs ${className}`}
               >
                 {logo ? (
                   <img
                     src={logo}
                     alt=""
-                    className="h-[18px] w-[18px] rounded-sm object-contain"
+                    className="h-4 w-4 rounded-sm object-contain"
                   />
                 ) : (
-                  <Icon aria-hidden="true" size={18} />
+                  <Icon aria-hidden="true" size={16} />
                 )}
                 {label}
               </a>
@@ -211,18 +219,12 @@ const Hero = () => {
             transition={{ duration: 0.6, delay: 0.4 }}
             className="mx-auto grid max-w-xl grid-cols-3 divide-x divide-white/10 rounded-2xl border border-white/10 bg-white/[0.035] px-2 py-4 backdrop-blur-md lg:mx-0"
           >
-            <div className="px-2 text-center lg:text-left">
-              <p className="text-lg font-extrabold text-[#b7ff4a] sm:text-2xl">2.200+</p>
-              <p className="mt-1 text-[11px] leading-4 text-gray-400 sm:text-xs">canais</p>
-            </div>
-            <div className="px-2 text-center lg:pl-5 lg:text-left">
-              <p className="text-lg font-extrabold text-[#b7ff4a] sm:text-2xl">20.600+</p>
-              <p className="mt-1 text-[11px] leading-4 text-gray-400 sm:text-xs">filmes</p>
-            </div>
-            <div className="px-2 text-center lg:pl-5 lg:text-left">
-              <p className="text-lg font-extrabold text-[#b7ff4a] sm:text-2xl">8.400+</p>
-              <p className="mt-1 text-[11px] leading-4 text-gray-400 sm:text-xs">séries</p>
-            </div>
+            {catalogStats.map(({ value, label }, index) => (
+              <div key={label} className={`px-2 text-center lg:text-left ${index > 0 ? 'lg:pl-5' : ''}`}>
+                <p className="text-lg font-extrabold text-[#b7ff4a] sm:text-2xl">{value}</p>
+                <p className="mt-1 text-[11px] leading-4 text-gray-400 sm:text-xs">{label}</p>
+              </div>
+            ))}
           </motion.div>
         </div>
 
@@ -339,7 +341,7 @@ const Hero = () => {
                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#b7ff4a]/10 text-[#b7ff4a]">
                   <FiCheck aria-hidden="true" />
                 </span>
-                <span className="text-sm font-semibold text-white">22 mil+ conteúdos para explorar</span>
+                <span className="text-sm font-semibold text-white">{onDemandTotalLabel} filmes e séries para explorar</span>
               </motion.div>
             )}
           </AnimatePresence>
