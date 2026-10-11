@@ -1,5 +1,14 @@
-import React, { useEffect, useState } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  AnimatePresence,
+  animate,
+  motion,
+  useMotionTemplate,
+  useMotionValue,
+  useReducedMotion,
+  useSpring,
+  useTransform,
+} from 'framer-motion';
 import { FaInstagram, FaWhatsapp, FaYoutube } from 'react-icons/fa';
 import { FiArrowDown, FiBookOpen, FiCheck, FiFilm, FiMonitor, FiPause, FiPlay, FiTv } from 'react-icons/fi';
 import { plans } from '../data/pricingPlans';
@@ -99,6 +108,52 @@ const Hero = () => {
     return () => window.clearInterval(interval);
   }, [isPreviewPlaying]);
 
+  // TV em 3D: inclina na direção do mouse (computador) ou balança devagar (celular).
+  // pointerX/pointerY vão de -1 a 1; as molas suavizam o movimento.
+  const tvRef = useRef(null);
+  const pointerX = useMotionValue(0);
+  const pointerY = useMotionValue(0);
+  const glareOpacity = useSpring(0, { stiffness: 80, damping: 20 });
+  const springX = useSpring(pointerX, { stiffness: 110, damping: 16, mass: 0.6 });
+  const springY = useSpring(pointerY, { stiffness: 110, damping: 16, mass: 0.6 });
+  const tvRotateY = useTransform(springX, [-1, 1], [-16, 16]);
+  const tvRotateX = useTransform(springY, [-1, 1], [12, -12]);
+  const glareX = useTransform(springX, [-1, 1], [10, 90]);
+  const glareY = useTransform(springY, [-1, 1], [5, 95]);
+  const glare = useMotionTemplate`radial-gradient(circle at ${glareX}% ${glareY}%, rgba(255,255,255,0.22), rgba(255,255,255,0) 48%)`;
+  const [hasFinePointer, setHasFinePointer] = useState(false);
+
+  useEffect(() => {
+    setHasFinePointer(window.matchMedia('(hover: hover) and (pointer: fine)').matches);
+  }, []);
+
+  useEffect(() => {
+    if (prefersReducedMotion || hasFinePointer) return undefined;
+    glareOpacity.set(0.55);
+    const swayX = animate(pointerX, [-0.55, 0.55], { duration: 6, repeat: Infinity, repeatType: 'mirror', ease: 'easeInOut' });
+    const swayY = animate(pointerY, [-0.35, 0.35], { duration: 8.5, repeat: Infinity, repeatType: 'mirror', ease: 'easeInOut' });
+    return () => {
+      swayX.stop();
+      swayY.stop();
+    };
+  }, [prefersReducedMotion, hasFinePointer, pointerX, pointerY, glareOpacity]);
+
+  const handleHeroPointerMove = (event) => {
+    if (prefersReducedMotion || event.pointerType !== 'mouse' || !tvRef.current) return;
+    const rect = tvRef.current.getBoundingClientRect();
+    const clampUnit = (value) => Math.max(-1, Math.min(1, value));
+    pointerX.set(clampUnit((event.clientX - (rect.left + rect.width / 2)) / (window.innerWidth / 2)));
+    pointerY.set(clampUnit((event.clientY - (rect.top + rect.height / 2)) / (window.innerHeight / 2)));
+    glareOpacity.set(1);
+  };
+
+  const handleHeroPointerLeave = (event) => {
+    if (event.pointerType !== 'mouse') return;
+    pointerX.set(0);
+    pointerY.set(0);
+    glareOpacity.set(0);
+  };
+
   const togglePreview = () => {
     setIsPreviewPlaying((playing) => !playing);
   };
@@ -106,6 +161,8 @@ const Hero = () => {
   return (
     <section
       id="home"
+      onPointerMove={handleHeroPointerMove}
+      onPointerLeave={handleHeroPointerLeave}
       className="relative flex min-h-screen items-start overflow-hidden px-4 pb-10 pt-16 text-white sm:px-6 sm:pt-28 lg:items-center lg:pt-32"
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_18%_48%,rgba(154,123,255,0.14),transparent_42%),radial-gradient(ellipse_at_78%_52%,rgba(183,255,74,0.08),transparent_35%)]" />
@@ -234,8 +291,22 @@ const Hero = () => {
           transition={{ duration: 0.75, delay: 0.25 }}
           className="relative z-0 order-1 mx-auto w-[min(88vw,420px)] sm:w-[min(82vw,520px)] lg:order-2 lg:w-full lg:max-w-[470px]"
         >
-          <div className="absolute -inset-5 rounded-[2.5rem] bg-gradient-to-br from-[#9a7bff]/25 via-transparent to-[#b7ff4a]/20 blur-2xl lg:block" />
+          <motion.div
+            ref={tvRef}
+            className="relative"
+            style={{ rotateX: tvRotateX, rotateY: tvRotateY, transformPerspective: 1100, transformStyle: 'preserve-3d' }}
+          >
+          <div
+            className="absolute -inset-5 rounded-[2.5rem] bg-gradient-to-br from-[#9a7bff]/25 via-transparent to-[#b7ff4a]/20 blur-2xl lg:block"
+            style={{ transform: 'translateZ(-60px)' }}
+          />
           <div className="relative aspect-square overflow-hidden rounded-[1.5rem] border border-white/15 bg-[#101116] p-1.5 shadow-[0_30px_100px_rgba(0,0,0,0.65)] sm:rounded-[2rem] sm:p-2 lg:aspect-auto">
+            {/* Reflexo de luz que acompanha a inclinação */}
+            <motion.div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 z-30 mix-blend-screen"
+              style={{ backgroundImage: glare, opacity: glareOpacity }}
+            />
             <img
               src="/agtv-neon-logo.jpg"
               alt="Televisor AGTV com aro neon verde e roxo"
@@ -336,6 +407,7 @@ const Hero = () => {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -8 }}
                 transition={{ duration: 0.2 }}
+                style={{ z: 70 }}
                 className="absolute -left-4 top-8 z-20 hidden items-center gap-2 rounded-2xl border border-white/10 bg-[#101116]/90 px-4 py-3 shadow-xl backdrop-blur-lg sm:flex lg:-left-12"
               >
                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#b7ff4a]/10 text-[#b7ff4a]">
@@ -345,6 +417,7 @@ const Hero = () => {
               </motion.div>
             )}
           </AnimatePresence>
+          </motion.div>
         </motion.div>
       </div>
 
