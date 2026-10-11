@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaCookieBite } from 'react-icons/fa';
-import { trackEvent } from '../utils/analytics';
+import { trackEvent, loadGoogleAnalytics } from '../utils/analytics';
 import './cookieBanner.css';
 
 const CookieBanner = () => {
@@ -15,6 +15,7 @@ const CookieBanner = () => {
   const choose = (value) => {
     // Always set cookieChoice, regardless of accept/reject
     localStorage.setItem('cookieChoice', value);
+    if (value === 'accepted') loadGoogleAnalytics();
     
     // Track cookie consent to analytics/dataLayer
     try {
