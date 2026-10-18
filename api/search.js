@@ -28,6 +28,7 @@ module.exports = async function handler(req, res) {
     res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
     return sendJson(res, 200, {
       posterUrl: match ? `https://image.tmdb.org/t/p/w500${match.poster_path}` : null,
+      tmdbId: match ? match.id : null,
     });
   } catch (error) {
     console.error('TMDB title search failed:', error.message);

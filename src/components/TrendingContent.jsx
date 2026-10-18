@@ -1,5 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { API_CONFIG } from '../utils/api';
+import { buildWhatsappLink } from '../utils/whatsapp';
+import TitleDetailsModal from './TitleDetailsModal';
 
 const TrendingContent = () => {
   const [trendingItems, setTrendingItems] = useState([]);
@@ -10,11 +12,19 @@ const TrendingContent = () => {
   const lastScrollTimeRef = useRef(0);
   const scrollSpeed = 0.1;
   const isInteractingRef = useRef(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const closeModal = useCallback(() => setSelectedItem(null), []);
 
-  // Detecta o tipo de conteúdo baseado no media_type do TMDB
-  const getContentType = (mediaType) => {
-    return mediaType === 'movie' ? 'filme' : 'série';
+  const openDetails = (item) => {
+    setSelectedItem({
+      id: item.id,
+      mediaType: item.media_type === 'movie' ? 'movie' : 'tv',
+      title: item.title || item.name,
+      overview: item.overview,
+      posterUrl: `https://image.tmdb.org/t/p/w500${item.poster_path}`,
+    });
   };
+
 
   const animateScroll = (timestamp) => {
     if (!lastScrollTimeRef.current) {
@@ -155,8 +165,12 @@ const TrendingContent = () => {
             Filmes e Séries <span>do Momento</span> <span aria-hidden="true">🔥</span>
           </h2>
         </div>
-        <p className="agtv-section-description text-center mb-8">
+        <p className="agtv-section-description text-center mb-3">
           Os títulos mais assistidos de 2026 (e além)!
+        </p>
+        <p className="mx-auto mb-8 max-w-2xl text-center text-xs leading-5 text-gray-400 sm:text-sm">
+          ⚠️ Muitos destes títulos ainda estão em cartaz nos cinemas e podem não estar disponíveis
+          na AGTV. Consulte a disponibilidade pelo WhatsApp.
         </p>
 
         {loading && <p className="text-center text-indigo-400">Carregando conteúdo em alta...</p>}
@@ -192,35 +206,42 @@ const TrendingContent = () => {
                   className="flex-none w-48 snap-start pr-4 transition-transform duration-300 sm:w-56 md:w-64 md:snap-center md:pr-0 lg:w-72 xl:w-80 md:mr-4 md:hover:scale-105"
                 >
                   <div className="bg-gray-800 rounded-lg shadow-xl overflow-hidden h-full flex flex-col">
-                    <img
-                      src={`https://image.tmdb.org/t/p/w500${item.poster_path}`}
-                      alt={`Capa de ${item.title || item.name}`}
-                      className="w-full h-auto object-cover rounded-t-lg"
-                      onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/500x750/000000/FFFFFF?text=Poster+Nao+Disponivel'; }}
-                    />
+                    <button
+                      type="button"
+                      onClick={() => openDetails(item)}
+                      data-analytics={`trending_details_${item.id || index}`}
+                      className="group relative block w-full focus:outline-none focus:ring-2 focus:ring-[#b7ff4a]"
+                      aria-label={`Ver sinopse e trailer de ${item.title || item.name}`}
+                    >
+                      <img
+                        src={`https://image.tmdb.org/t/p/w500${item.poster_path}`}
+                        alt={`Capa de ${item.title || item.name}`}
+                        loading="lazy"
+                        className="w-full h-auto object-cover rounded-t-lg"
+                        onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/500x750/000000/FFFFFF?text=Poster+Nao+Disponivel'; }}
+                      />
+                      <span className="absolute inset-x-0 bottom-0 flex items-center justify-center bg-gradient-to-t from-black/90 to-transparent pb-3 pt-10 text-sm font-bold text-[#c9ff83] transition md:opacity-0 md:group-hover:opacity-100 md:group-focus:opacity-100">
+                        ▶ Trailer e sinopse
+                      </span>
+                    </button>
                     <div className="p-4 flex-grow flex flex-col justify-between">
                       <h3 className="text-lg font-bold text-white mb-1 leading-tight">
-                        {item.title || item.name}
+                        <button type="button" onClick={() => openDetails(item)} className="text-left hover:text-[#c9ff83]">
+                          {item.title || item.name}
+                        </button>
                       </h3>
                       <p className="text-gray-400 text-sm mb-3">{item.media_type === 'movie' ? 'Filme' : 'Série'}</p>
                       <div className="flex justify-center">
-                        {(() => {
-                          const contentType = getContentType(item.media_type);
-                          const message = `Olá, vim pelo site AGTV CENAS e gostaria de um teste grátis para o ${contentType} ${item.title || item.name}`;
-                          const waLink = `https://wa.me/5583986913481?text=${encodeURIComponent(message)}`;
-                          return (
-                            <a
-                              href={waLink}
-                              data-analytics={`trending_assist_${item.id || index}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-3 rounded-full text-xs transition duration-200 shadow-sm"
-                              aria-label={`Solicitar teste grátis para ${item.title || item.name} via WhatsApp`}
-                            >
-                              Assistir
-                            </a>
-                          );
-                        })()}
+                        <a
+                          href={buildWhatsappLink(item.title || item.name, { mediaType: item.media_type })}
+                          data-analytics={`trending_assist_${item.id || index}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-3 rounded-full text-xs transition duration-200 shadow-sm"
+                          aria-label={`Solicitar teste grátis para ${item.title || item.name} via WhatsApp`}
+                        >
+                          Assistir
+                        </a>
                       </div>
                     </div>
                   </div>
@@ -240,6 +261,11 @@ const TrendingContent = () => {
           </div>
         )}
       </div>
+      <TitleDetailsModal
+        item={selectedItem}
+        onClose={closeModal}
+        notice="Este título pode ainda estar em cartaz nos cinemas e não estar disponível na AGTV. Consulte a disponibilidade pelo WhatsApp."
+      />
     </section>
   );
 };
