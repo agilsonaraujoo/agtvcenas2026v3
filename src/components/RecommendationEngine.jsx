@@ -286,9 +286,21 @@ const RecommendationEngine = () => {
             <div className="flex min-w-0 flex-1 flex-col">
               <p className="mb-1 text-xs font-bold tracking-[0.2em] text-[#c9ff83]">VOCÊ PESQUISOU</p>
               <h3 className="text-2xl font-extrabold sm:text-3xl">{searchedTitle.title}</h3>
-              <p className="mt-1 text-sm capitalize text-gray-400">
-                {resolveCategory(searchedTitle.category, searchedTitle.mediaType).label} · {searchedTitle.genre}
-              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+                <span
+                  className={`rounded-full px-3 py-0.5 text-xs font-bold uppercase tracking-wider ${searchedTitle.mediaType === 'tv'
+                    ? 'bg-[#9a7bff]/20 text-[#c7b6ff] ring-1 ring-[#9a7bff]/50'
+                    : 'bg-[#b7ff4a]/15 text-[#c9ff83] ring-1 ring-[#b7ff4a]/40'}`}
+                >
+                  {searchedTitle.mediaType === 'tv' ? 'Série' : 'Filme'}
+                </span>
+                {!['filme', 'serie'].includes(searchedTitle.category) && searchedTitle.category && (
+                  <span className="rounded-full bg-white/10 px-3 py-0.5 text-xs font-semibold capitalize text-gray-200">
+                    {resolveCategory(searchedTitle.category, searchedTitle.mediaType).label}
+                  </span>
+                )}
+                <span className="text-gray-400">{searchedTitle.genre}</span>
+              </div>
               <p className="mt-3 flex-grow text-gray-300">{searchedTitle.shortDescription}</p>
               <div className="mt-5 grid gap-2.5 sm:flex sm:flex-wrap">
                 <button
@@ -361,7 +373,21 @@ const RecommendationEngine = () => {
                     </>
                   );
                 })()}
-                <p className="text-gray-400 text-sm mb-3">{rec.genre}</p>
+                <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
+                  <span
+                    className={`rounded-full px-3 py-0.5 text-xs font-bold uppercase tracking-wider ${rec.mediaType === 'tv'
+                      ? 'bg-[#9a7bff]/20 text-[#c7b6ff] ring-1 ring-[#9a7bff]/50'
+                      : 'bg-[#b7ff4a]/15 text-[#c9ff83] ring-1 ring-[#b7ff4a]/40'}`}
+                  >
+                    {rec.mediaType === 'tv' ? 'Série' : 'Filme'}
+                  </span>
+                  {!['filme', 'serie'].includes(rec.category) && rec.category && (
+                    <span className="rounded-full bg-white/10 px-3 py-0.5 text-xs font-semibold capitalize text-gray-200">
+                      {resolveCategory(rec.category, rec.mediaType).label}
+                    </span>
+                  )}
+                  <span className="text-gray-400">{rec.genre}</span>
+                </div>
                 <p className="text-gray-300 flex-grow">{rec.shortDescription}</p>
                 <div className="mt-5 grid gap-2.5">
                   <a

@@ -14,6 +14,8 @@ const TrendingContent = () => {
   const isInteractingRef = useRef(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const closeModal = useCallback(() => setSelectedItem(null), []);
+  const [mediaFilter, setMediaFilter] = useState('movie');
+  const cacheRef = useRef({});
 
   const openDetails = (item) => {
     setSelectedItem({
@@ -62,37 +64,59 @@ const TrendingContent = () => {
   };
 
   useEffect(() => {
+    let cancelled = false;
+    stopAutoScroll();
+    if (scrollContainerRef.current) scrollContainerRef.current.scrollLeft = 0;
+
+    const showItems = (items) => {
+      setTrendingItems([...items, ...items]);
+      setError('');
+      setLoading(false);
+    };
+
+    if (cacheRef.current[mediaFilter]) {
+      showItems(cacheRef.current[mediaFilter]);
+      return () => {
+        cancelled = true;
+        stopAutoScroll();
+      };
+    }
+
     const fetchTrending = async () => {
+      setLoading(true);
       try {
-        const response = await fetch(API_CONFIG.TMDB.TRENDING_URL);
+        const response = await fetch(`${API_CONFIG.TMDB.TRENDING_URL}?type=${mediaFilter}`);
         if (!response.ok) {
           throw new Error(`Erro HTTP: ${response.status}`);
         }
         const data = await response.json();
+        if (cancelled) return;
 
         if (data.results) {
           const filteredItems = data.results.filter(item =>
             item.poster_path && (item.title || item.name)
           );
-          const itemsToDisplay = [...filteredItems, ...filteredItems];
-          setTrendingItems(itemsToDisplay);
+          cacheRef.current[mediaFilter] = filteredItems;
+          showItems(filteredItems);
         } else {
           setError('Não foi possível carregar o conteúdo em alta.');
+          setLoading(false);
         }
       } catch (err) {
+        if (cancelled) return;
         setError('Erro ao buscar conteúdo em alta. Verifique sua conexão ou tente novamente mais tarde.');
-        console.error('Erro ao buscar trending do TMDB:', err);
-      } finally {
         setLoading(false);
+        console.error('Erro ao buscar trending do TMDB:', err);
       }
     };
 
     fetchTrending();
 
     return () => {
+      cancelled = true;
       stopAutoScroll();
     };
-  }, []);
+  }, [mediaFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (trendingItems.length > 0 && !loading && !error) {
@@ -168,9 +192,31 @@ const TrendingContent = () => {
         <p className="agtv-section-description text-center mb-3">
           Os títulos mais assistidos de 2026 (e além)!
         </p>
+        <div className="mb-4 flex justify-center gap-3" role="tablist" aria-label="Escolha entre filmes e séries em alta">
+          {[
+            { value: 'movie', label: '🎬 Filmes' },
+            { value: 'tv', label: '📺 Séries' },
+          ].map(({ value, label }) => (
+            <button
+              key={value}
+              type="button"
+              role="tab"
+              aria-selected={mediaFilter === value}
+              onClick={() => setMediaFilter(value)}
+              data-analytics={`trending_tab_${value}`}
+              className={`min-h-11 rounded-full px-6 py-2 text-sm font-bold transition sm:text-base ${mediaFilter === value
+                ? 'bg-[#b7ff4a] text-[#10130a] shadow-[0_0_24px_rgba(183,255,74,0.25)]'
+                : 'border border-white/15 bg-white/5 text-gray-200 hover:border-[#b7ff4a]/50 hover:text-white'}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
         <p className="mx-auto mb-8 max-w-2xl text-center text-xs leading-5 text-gray-400 sm:text-sm">
-          ⚠️ Muitos destes títulos ainda estão em cartaz nos cinemas e podem não estar disponíveis
-          na AGTV. Consulte a disponibilidade pelo WhatsApp.
+          {mediaFilter === 'movie'
+            ? '⚠️ Muitos destes filmes ainda estão em cartaz nos cinemas e podem não estar disponíveis na AGTV.'
+            : '⚠️ Episódios e temporadas recém-lançados podem ainda não estar disponíveis na AGTV.'}
+          {' '}Consulte a disponibilidade pelo WhatsApp.
         </p>
 
         {loading && <p className="text-center text-indigo-400">Carregando conteúdo em alta...</p>}
@@ -264,7 +310,9 @@ const TrendingContent = () => {
       <TitleDetailsModal
         item={selectedItem}
         onClose={closeModal}
-        notice="Este título pode ainda estar em cartaz nos cinemas e não estar disponível na AGTV. Consulte a disponibilidade pelo WhatsApp."
+        notice={selectedItem?.mediaType === 'tv'
+          ? 'Episódios e temporadas recém-lançados podem ainda não estar disponíveis na AGTV. Consulte a disponibilidade pelo WhatsApp.'
+          : 'Este filme pode ainda estar em cartaz nos cinemas e não estar disponível na AGTV. Consulte a disponibilidade pelo WhatsApp.'}
       />
     </section>
   );
