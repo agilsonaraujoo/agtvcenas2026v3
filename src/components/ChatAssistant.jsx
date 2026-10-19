@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { FiMessageCircle, FiX, FiSend, FiStar, FiDollarSign, FiTv, FiTrendingUp, FiZap, FiHelpCircle } from 'react-icons/fi';
+import { AnimatePresence, animate, motion, useMotionValue, useReducedMotion } from 'framer-motion';
+import { FiMessageCircle, FiX, FiSend, FiChevronLeft, FiStar, FiDollarSign, FiTv, FiTrendingUp, FiZap, FiHelpCircle } from 'react-icons/fi';
 import { FaWhatsapp } from 'react-icons/fa';
 import { API_CONFIG } from '../utils/api';
 import { WHATSAPP_NUMBER } from '../utils/whatsapp';
@@ -33,6 +33,19 @@ const ChatAssistant = () => {
   const [busy, setBusy] = useState(false);
   const [nudge, setNudge] = useState(false);
   const listRef = useRef(null);
+  // Bolinha arrastável: solta onde quiser; jogada com força para a direita, some e vira uma aba na borda.
+  const areaRef = useRef(null);
+  const bx = useMotionValue(0), by = useMotionValue(0);
+  const draggedRef = useRef(false);
+  const [hidden, setHidden] = useState(() => { try { return sessionStorage.getItem(`${STORE_KEY}-hidden`) === '1'; } catch { return false; } });
+  const setHiddenSaved = (v) => { setHidden(v); try { sessionStorage.setItem(`${STORE_KEY}-hidden`, v ? '1' : '0'); } catch { /* ignore */ } };
+  const onDragEnd = (_, info) => {
+    if (info.velocity.x > 700 || (info.offset.x > 120 && info.velocity.x > 250)) {
+      animate(bx, window.innerWidth, { duration: 0.25, ease: 'easeIn' }).then(() => { setHiddenSaved(true); bx.set(0); by.set(0); });
+    }
+    setTimeout(() => { draggedRef.current = false; }, 0);
+  };
+  const restore = () => { bx.set(0); by.set(0); setHiddenSaved(false); };
   const inputRef = useRef(null);
 
   useEffect(() => { try { sessionStorage.setItem(STORE_KEY, JSON.stringify(messages.slice(-30))); } catch { /* sem armazenamento */ } }, [messages]);
@@ -82,8 +95,39 @@ const ChatAssistant = () => {
 
   return (
     <>
+      {/* área onde a bolinha pode ser arrastada */}
+      <div ref={areaRef} aria-hidden="true" className="pointer-events-none fixed inset-x-2 bottom-[calc(4rem+env(safe-area-inset-bottom))] top-20 md:inset-x-4 md:bottom-4" />
+
+      {/* aba na borda: traz a bolinha de volta */}
+      <AnimatePresence>
+        {hidden && !open && (
+          <motion.button
+            type="button"
+            onClick={restore}
+            aria-label="Mostrar assistente da AGTV"
+            data-analytics="chat_restore"
+            initial={reduce ? false : { x: 40 }}
+            animate={{ x: 0 }}
+            exit={reduce ? undefined : { x: 40 }}
+            className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-0 z-50 flex h-12 w-7 items-center justify-center rounded-l-xl bg-[#b7ff4a] text-[#10130a] shadow-[0_6px_20px_rgba(0,0,0,0.45)] md:bottom-10"
+          >
+            <FiChevronLeft aria-hidden="true" className="h-5 w-5" />
+          </motion.button>
+        )}
+      </AnimatePresence>
+
       {/* bolinha */}
-      <div className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] right-4 z-50 md:bottom-6 md:right-6">
+      {!hidden && (
+      <motion.div
+        drag={!open}
+        dragConstraints={areaRef}
+        dragElastic={{ left: 0.1, top: 0.1, bottom: 0.1, right: 0.9 }}
+        dragMomentum={false}
+        onDragStart={() => { draggedRef.current = true; setNudge(false); }}
+        onDragEnd={onDragEnd}
+        style={{ x: bx, y: by, touchAction: 'none' }}
+        className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] right-4 z-50 md:bottom-6 md:right-6"
+      >
         <AnimatePresence>
           {nudge && !open && (
             <motion.button
@@ -100,7 +144,8 @@ const ChatAssistant = () => {
         </AnimatePresence>
         <motion.button
           type="button"
-          onClick={() => { setNudge(false); setOpen((o) => !o); }}
+          onClick={() => { if (draggedRef.current) return; setNudge(false); setOpen((o) => !o); }}
+          title="Arraste para mover • jogue para a direita para esconder"
           aria-label={open ? 'Fechar assistente' : 'Abrir assistente da AGTV'}
           aria-expanded={open}
           data-analytics="chat_toggle"
@@ -112,7 +157,8 @@ const ChatAssistant = () => {
           {open ? <FiX aria-hidden="true" className="relative h-6 w-6" /> : <FiMessageCircle aria-hidden="true" className="relative h-6 w-6" />}
           {!open && <span aria-hidden="true" className="absolute -right-0.5 -top-0.5 h-3.5 w-3.5 rounded-full border-2 border-[#07080b] bg-[#ff4d4d]" />}
         </motion.button>
-      </div>
+      </motion.div>
+      )}
 
       {/* janela do chat */}
       <AnimatePresence>
