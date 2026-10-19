@@ -27,7 +27,7 @@ const BackToTop = () => {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={reduce ? undefined : { opacity: 0, y: 20, scale: 0.8 }}
           whileHover={reduce ? undefined : { y: -3 }}
-          className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full border border-[#b7ff4a]/40 bg-[#0b0c12]/85 text-[#b7ff4a] shadow-[0_10px_30px_rgba(0,0,0,0.45),0_0_18px_rgba(183,255,74,0.2)] backdrop-blur-xl transition-colors hover:bg-[#b7ff4a] hover:text-[#10130a] md:bottom-6 md:right-6"
+          className="fixed bottom-[calc(9rem+env(safe-area-inset-bottom))] right-[1.375rem] z-40 flex h-11 w-11 items-center justify-center rounded-full border border-[#b7ff4a]/40 bg-[#0b0c12]/85 text-[#b7ff4a] shadow-[0_10px_30px_rgba(0,0,0,0.45),0_0_18px_rgba(183,255,74,0.2)] backdrop-blur-xl transition-colors hover:bg-[#b7ff4a] hover:text-[#10130a] md:bottom-[6.5rem] md:right-[1.875rem]"
         >
           <FiArrowUp aria-hidden="true" className="h-5 w-5" />
         </motion.button>

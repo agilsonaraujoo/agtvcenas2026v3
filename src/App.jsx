@@ -14,6 +14,7 @@ import NewSubscriptionPopup from './components/NewSubscriptionPopup';
 import CookieBanner from './components/CookieBanner';
 import ScrollReveal from './components/ScrollReveal';
 import BackToTop from './components/BackToTop';
+import ChatAssistant from './components/ChatAssistant';
 
 const App = () => {
   React.useEffect(() => {
@@ -60,6 +61,7 @@ const App = () => {
   {/* <NewSubscriptionPopup /> */}
   <CookieBanner />
   <BackToTop />
+  <ChatAssistant />
       </div>
     </div>
   );
