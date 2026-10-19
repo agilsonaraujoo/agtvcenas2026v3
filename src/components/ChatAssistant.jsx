@@ -37,7 +37,8 @@ const ChatAssistant = () => {
   const areaRef = useRef(null);
   const bx = useMotionValue(0), by = useMotionValue(0);
   const draggedRef = useRef(false);
-  const [hidden, setHidden] = useState(() => { try { return sessionStorage.getItem(`${STORE_KEY}-hidden`) === '1'; } catch { return false; } });
+  // O site abre só com a setinha na borda; a bolinha aparece se a pessoa puxar a setinha.
+  const [hidden, setHidden] = useState(() => { try { return sessionStorage.getItem(`${STORE_KEY}-hidden`) !== '0'; } catch { return true; } });
   const setHiddenSaved = (v) => { setHidden(v); try { sessionStorage.setItem(`${STORE_KEY}-hidden`, v ? '1' : '0'); } catch { /* ignore */ } };
   const onDragEnd = (_, info) => {
     if (info.velocity.x > 700 || (info.offset.x > 120 && info.velocity.x > 250)) {
