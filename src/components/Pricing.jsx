@@ -35,6 +35,8 @@ const CheckIcon = () => (
 const Pricing = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
+  // Plano cujo link de pagamento está sendo gerado.
+  const [checkoutPlan, setCheckoutPlan] = useState(null);
   // Plano marcado no seletor do celular; começa no de melhor custo.
   const [mobilePlanIndex, setMobilePlanIndex] = useState(() => {
     const best = plans.findIndex((plan) => plan.highlight);
@@ -95,7 +97,8 @@ const Pricing = () => {
       window.removeEventListener('scroll', preventScroll);
     };
   }, [modalOpen]);
-  const openConfirm = (plan) => {
+  const openConfirm = async (plan) => {
+    if (checkoutPlan) return;
     // Evento padrão do GA4 para "começou a comprar", com o valor do plano.
     trackEvent('begin_checkout', {
       currency: 'BRL',
@@ -104,11 +107,24 @@ const Pricing = () => {
       items: [{ item_id: plan.name.toLowerCase(), item_name: `AGTV ${plan.name}`, price: parsePrice(plan.price), quantity: 1 }],
     });
 
-    const priceDisplay = plan.price;
-    const message = `Olá, vim pelo site AGTV CENAS e gostaria de assinar o plano ${plan.name} pelo valor de R$ ${priceDisplay}`;
-    const waLink = `https://wa.me/5583986913481?text=${encodeURIComponent(message)}`;
-    trackEvent('whatsapp_click', { location: 'planos', plan: plan.name });
-    window.open(waLink, '_blank', 'noopener');
+    setCheckoutPlan(plan.name);
+    try {
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: plan.name.toLowerCase() }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.url) throw new Error('checkout failed');
+      trackEvent('checkout_redirect', { location: 'planos', plan: plan.name });
+      window.location.href = data.url;
+    } catch (error) {
+      // Se a InfinitePay falhar, o cliente ainda consegue assinar pelo WhatsApp.
+      setCheckoutPlan(null);
+      const message = `Olá, vim pelo site AGTV CENAS e gostaria de assinar o plano ${plan.name} pelo valor de R$ ${plan.price}`;
+      trackEvent('whatsapp_click', { location: 'planos_fallback', plan: plan.name });
+      window.location.href = `https://wa.me/5583986913481?text=${encodeURIComponent(message)}`;
+    }
   };
 
   return (
@@ -209,10 +225,11 @@ const Pricing = () => {
             onClick={() => openConfirm(mobilePlan)}
             data-analytics={`pricing_mobile_assinar_${mobilePlan.name.toLowerCase()}`}
             className="mt-4 flex min-h-[3.25rem] w-full flex-col items-center justify-center rounded-xl bg-[#b7ff4a] px-4 py-2.5 font-extrabold text-[#10130a] shadow-[0_0_24px_rgba(183,255,74,0.18)] transition active:scale-[0.98]"
-            aria-label={`Assinar o plano ${mobilePlan.name} por R$ ${mobilePlan.price} via WhatsApp`}
+            disabled={Boolean(checkoutPlan)}
+            aria-label={`Assinar o plano ${mobilePlan.name} por R$ ${mobilePlan.price} com Pix ou cartão`}
           >
-            <span className="text-base">Assinar {mobilePlan.name}</span>
-            <span className="text-xs font-semibold opacity-80">R$ {mobilePlan.price} {billingLabel(mobileNumbers.months)} · via WhatsApp</span>
+            <span className="text-base">{checkoutPlan === mobilePlan.name ? 'Abrindo pagamento…' : `Assinar ${mobilePlan.name}`}</span>
+            <span className="text-xs font-semibold opacity-80">R$ {mobilePlan.price} {billingLabel(mobileNumbers.months)} · Pix ou cartão</span>
           </button>
         </div>
       </div>
@@ -262,9 +279,11 @@ const Pricing = () => {
               onClick={() => openConfirm(plan)}
               data-analytics={`pricing_assinar_${index}`}
               className="mt-auto block bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-300 text-center"
-              aria-label={`Assinar o plano ${plan.name} via WhatsApp`}
+              disabled={Boolean(checkoutPlan)}
+              aria-label={`Assinar o plano ${plan.name} com Pix ou cartão`}
             >
-              Assinar Agora!
+              {checkoutPlan === plan.name ? 'Abrindo pagamento…' : 'Assinar Agora!'}
+              <span className="mt-1 block text-xs font-semibold opacity-80">Pix ou cartão</span>
             </button>
           </div>
           );
