@@ -118,7 +118,22 @@ const ChannelCard = ({ channel, now, onOpen }) => {
   );
 };
 
-const DayGuide = ({ channel, dates, initialDate, onClose, onShare, shareStatus }) => {
+const DayGuide = ({ channel, channels = [], onNavigate, dates, initialDate, onClose, onShare, shareStatus }) => {
+  // Passar para o canal anterior/próximo sem fechar: setas, deslizar com o dedo ou ← →.
+  const index = channels.findIndex((c) => c.slug === channel.slug);
+  const prev = index > 0 ? channels[index - 1] : null;
+  const next = index >= 0 && index < channels.length - 1 ? channels[index + 1] : null;
+  const [direction, setDirection] = useState(0);
+  const goTo = useCallback((target, dir) => { if (target && onNavigate) { setDirection(dir); onNavigate(target); } }, [onNavigate]);
+  const touchRef = useRef(null);
+  const onTouchStart = (event) => { if (event.target.closest('.epg-days')) { touchRef.current = null; return; } const t = event.touches[0]; touchRef.current = { x: t.clientX, y: t.clientY }; };
+  const onTouchEnd = (event) => {
+    const start = touchRef.current; touchRef.current = null;
+    if (!start) return;
+    const t = event.changedTouches[0];
+    const dx = t.clientX - start.x, dy = t.clientY - start.y;
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) goTo(dx < 0 ? next : prev, dx < 0 ? 1 : -1);
+  };
   const [date, setDate] = useState(initialDate);
   const [state, setState] = useState({ status: 'loading', programs: [] });
   const [now, setNow] = useState(Date.now());
@@ -227,6 +242,8 @@ const DayGuide = ({ channel, dates, initialDate, onClose, onShare, shareStatus }
         onClose();
         return;
       }
+      if (event.key === 'ArrowRight' && next) { goTo(next, 1); return; }
+      if (event.key === 'ArrowLeft' && prev) { goTo(prev, -1); return; }
 
       if (event.key !== 'Tab') return;
       const modal = document.querySelector('.epg-modal');
@@ -245,14 +262,21 @@ const DayGuide = ({ channel, dates, initialDate, onClose, onShare, shareStatus }
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [onClose, goTo, next, prev]);
 
   return createPortal(
     <div className="epg-overlay" role="dialog" aria-modal="true" aria-label={`Grade do dia: ${channel.channel}`} onClick={onClose}>
-      <div className="epg-modal" onClick={(event) => event.stopPropagation()}>
+      <div className="epg-modal" onClick={(event) => event.stopPropagation()} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         <header className="epg-modal-header">
           <div className="epg-modal-heading">
-            <h3>{channel.channel}</h3>
+            {channels.length > 1 && (
+              <div className="epg-channel-nav">
+                <button type="button" className="epg-pager-btn" onClick={() => goTo(prev, -1)} disabled={!prev} aria-label={prev ? `Canal anterior: ${prev.channel}` : 'Sem canal anterior'}>‹</button>
+                <span className="epg-channel-count">{index + 1} de {channels.length}</span>
+                <button type="button" className="epg-pager-btn" onClick={() => goTo(next, 1)} disabled={!next} aria-label={next ? `Próximo canal: ${next.channel}` : 'Sem próximo canal'}>›</button>
+              </div>
+            )}
+            <h3 key={channel.slug} className={`epg-guide-title${direction > 0 ? ' from-right' : direction < 0 ? ' from-left' : ''}`}>{channel.channel}</h3>
             <button type="button" className="epg-share epg-share--modal" onClick={() => onShare(date)}>
               Compartilhar este dia
             </button>
@@ -484,6 +508,8 @@ const LiveSchedule = () => {
       {guide && data && (
         <DayGuide
           channel={guide}
+          channels={visible.filter((c) => c.available !== false)}
+          onNavigate={setGuide}
           dates={Array.from(new Set([
             ...(sharedDate ? [sharedDate] : []),
             ...(data.availableDates && data.availableDates.length ? data.availableDates : [data.date]),

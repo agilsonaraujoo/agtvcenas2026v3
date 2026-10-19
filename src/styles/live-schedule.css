@@ -622,3 +622,45 @@
 
 /* Grade do dia: o que já passou fica mais apagado */
 .epg-list li.is-past { opacity: 0.5; }
+
+/* Grade do dia: navegar entre canais */
+.epg-channel-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.35rem;
+}
+
+.epg-channel-count {
+  color: var(--agtv-muted, #a7a9b4);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.epg-channel-nav .epg-pager-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border: 1px solid rgb(183 255 74 / 35%);
+  border-radius: 9999px;
+  background: rgb(183 255 74 / 10%);
+  color: var(--agtv-green, #b7ff4a);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 160ms ease;
+}
+
+.epg-channel-nav .epg-pager-btn:hover:not(:disabled) { background: rgb(183 255 74 / 22%); }
+.epg-channel-nav .epg-pager-btn:disabled { opacity: 0.3; cursor: default; }
+
+@keyframes epg-from-right { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
+@keyframes epg-from-left { from { opacity: 0; transform: translateX(-24px); } to { opacity: 1; transform: none; } }
+.epg-guide-title.from-right { animation: epg-from-right 260ms ease-out; }
+.epg-guide-title.from-left { animation: epg-from-left 260ms ease-out; }
+@media (prefers-reduced-motion: reduce) { .epg-guide-title.from-right, .epg-guide-title.from-left { animation: none; } }
+
+/* Programa sem capa: o texto ocupa a linha inteira */
+.epg-guide-entry > .epg-guide-details:first-child { grid-column: 1 / -1; }

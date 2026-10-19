@@ -128,6 +128,11 @@ const TitleDetailsModal = ({ item, onClose, trialUrl, notice }) => {
                       aria-label={`Assistir trailer de ${title}`}
                     >
                       <FiPlay aria-hidden="true" /> Ver trailer
+                      {trailer.language && (
+                        <span className="rounded-full bg-[#10130a]/15 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide">
+                          {{ dublado: 'Dublado', legendado: 'Legendado', pt: 'Português', en: 'Em inglês' }[trailer.language]}
+                        </span>
+                      )}
                     </button>
                   )}
                   {status === 'loading' && (

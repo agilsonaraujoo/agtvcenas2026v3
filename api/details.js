@@ -1,18 +1,31 @@
 const { fetchTmdb, hasSameOrigin, sendJson } = require('../lib/serverApi');
 
-// Prefere trailer dublado/legendado em português; cai para inglês se não houver.
+// Ordem de preferência: português dublado > português legendado > outro vídeo em português
+// > inglês. O idioma sempre vence o tipo: um teaser dublado ganha de um trailer em inglês.
+const normalize = (text = '') => text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const pickTrailer = (videos = []) => {
   const youtube = videos.filter((video) => video.site === 'YouTube' && video.key);
   const rank = (video) => {
+    const name = normalize(video.name);
     let score = 0;
+    if (video.iso_639_1 === 'pt') {
+      score += 100;
+      if (/dublad|dub\b/.test(name)) score += 40;
+      else if (/legendad|leg\b/.test(name)) score += 20;
+      if (video.iso_3166_1 === 'BR') score += 5;
+    } else if (video.iso_639_1 === 'en') {
+      score += 10;
+    }
     if (video.type === 'Trailer') score += 4;
     else if (video.type === 'Teaser') score += 2;
-    if (video.iso_639_1 === 'pt') score += 3;
     if (video.official) score += 1;
     return score;
   };
   const [best] = youtube.sort((a, b) => rank(b) - rank(a));
-  return best ? { key: best.key, name: best.name } : null;
+  if (!best) return null;
+  const name = normalize(best.name);
+  const language = best.iso_639_1 !== 'pt' ? 'en' : /dublad|dub\b/.test(name) ? 'dublado' : /legendad|leg\b/.test(name) ? 'legendado' : 'pt';
+  return { key: best.key, name: best.name, language };
 };
 
 module.exports = async function handler(req, res) {
