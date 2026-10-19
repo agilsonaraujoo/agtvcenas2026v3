@@ -10,8 +10,10 @@ const TrendingContent = () => {
   const scrollContainerRef = useRef(null);
   const scrollAnimationRef = useRef(null);
   const lastScrollTimeRef = useRef(0);
-  const scrollSpeed = 0.1;
+  const scrollSpeed = 0.08; // px por ms
   const isInteractingRef = useRef(false);
+  // Posição em ponto flutuante: no celular o scrollLeft é arredondado e passos pequenos se perderiam.
+  const positionRef = useRef(0);
   const [selectedItem, setSelectedItem] = useState(null);
   const closeModal = useCallback(() => setSelectedItem(null), []);
   const [mediaFilter, setMediaFilter] = useState('movie');
@@ -38,19 +40,21 @@ const TrendingContent = () => {
 
     const container = scrollContainerRef.current;
     if (container && !isInteractingRef.current) {
-      container.scrollLeft += scrollSpeed * deltaTime;
-
       const originalContentWidth = container.scrollWidth / 2;
-      if (container.scrollLeft >= originalContentWidth) {
-        container.scrollLeft -= originalContentWidth;
+      positionRef.current += scrollSpeed * Math.min(deltaTime, 50);
+      if (positionRef.current >= originalContentWidth) {
+        positionRef.current -= originalContentWidth;
       }
+      container.scrollLeft = positionRef.current;
     }
     scrollAnimationRef.current = requestAnimationFrame(animateScroll);
   };
 
   const startAutoScroll = () => {
-    if (scrollContainerRef.current && window.matchMedia('(min-width: 768px) and (hover: hover) and (pointer: fine)').matches) {
+    // Roda em qualquer tela (computador e celular); só pausa enquanto a pessoa arrasta ou usa as setas.
+    if (scrollContainerRef.current) {
       stopAutoScroll();
+      positionRef.current = scrollContainerRef.current.scrollLeft;
       lastScrollTimeRef.current = 0;
       scrollAnimationRef.current = requestAnimationFrame(animateScroll);
     }
@@ -67,6 +71,7 @@ const TrendingContent = () => {
     let cancelled = false;
     stopAutoScroll();
     if (scrollContainerRef.current) scrollContainerRef.current.scrollLeft = 0;
+    positionRef.current = 0;
 
     const showItems = (items) => {
       setTrendingItems([...items, ...items]);
@@ -236,10 +241,9 @@ const TrendingContent = () => {
 
             <div
               ref={scrollContainerRef}
-              className="flex snap-x snap-mandatory touch-pan-x overflow-x-auto pb-4 hide-scrollbar cursor-grab active:cursor-grabbing md:snap-none"
+              className="flex touch-pan-x overflow-x-auto pb-4 hide-scrollbar cursor-grab active:cursor-grabbing"
               style={{ WebkitOverflowScrolling: 'touch' }}
-              onMouseEnter={handleInteractionStart}
-              onMouseLeave={handleInteractionEnd}
+              onMouseLeave={() => { if (isInteractingRef.current) handleInteractionEnd(); }}
               onTouchStart={handleInteractionStart}
               onTouchEnd={handleInteractionEnd}
               onTouchCancel={handleInteractionEnd}
