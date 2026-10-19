@@ -3,6 +3,23 @@ import { API_CONFIG } from '../utils/api';
 import { buildWhatsappLink } from '../utils/whatsapp';
 import TitleDetailsModal from './TitleDetailsModal';
 
+// Capas no tamanho certo para a tela: w342 em telas comuns, w500 nas de alta densidade (celulares).
+const POSTER_SIZE = typeof window !== 'undefined' && window.devicePixelRatio > 1.5 ? 'w500' : 'w342';
+const posterUrl = (path) => `https://image.tmdb.org/t/p/${POSTER_SIZE}${path}`;
+
+// Baixa as capas antes de aparecerem: ao passar rápido pro lado, elas já estão prontas.
+const preloaded = new Set();
+const preloadPosters = (items) => {
+  items.forEach((item) => {
+    const url = posterUrl(item.poster_path);
+    if (preloaded.has(url)) return;
+    preloaded.add(url);
+    const img = new Image();
+    img.decoding = 'async';
+    img.src = url;
+  });
+};
+
 const TrendingContent = () => {
   const [trendingItems, setTrendingItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -74,9 +91,25 @@ const TrendingContent = () => {
     positionRef.current = 0;
 
     const showItems = (items) => {
+      preloadPosters(items);
       setTrendingItems([...items, ...items]);
       setError('');
       setLoading(false);
+    };
+
+    // Busca a outra aba (Filmes/Séries) em segundo plano, para a troca ser instantânea.
+    const prefetchOther = () => {
+      const other = mediaFilter === 'movie' ? 'tv' : 'movie';
+      if (cacheRef.current[other]) return;
+      fetch(`${API_CONFIG.TMDB.TRENDING_URL}?type=${other}`)
+        .then((response) => (response.ok ? response.json() : null))
+        .then((data) => {
+          if (!data?.results || cacheRef.current[other]) return;
+          const items = data.results.filter((item) => item.poster_path && (item.title || item.name));
+          cacheRef.current[other] = items;
+          preloadPosters(items);
+        })
+        .catch(() => {});
     };
 
     if (cacheRef.current[mediaFilter]) {
@@ -103,6 +136,7 @@ const TrendingContent = () => {
           );
           cacheRef.current[mediaFilter] = filteredItems;
           showItems(filteredItems);
+          setTimeout(prefetchOther, 1500);
         } else {
           setError('Não foi possível carregar o conteúdo em alta.');
           setLoading(false);
@@ -264,10 +298,13 @@ const TrendingContent = () => {
                       aria-label={`Ver sinopse e trailer de ${item.title || item.name}`}
                     >
                       <img
-                        src={`https://image.tmdb.org/t/p/w500${item.poster_path}`}
+                        src={posterUrl(item.poster_path)}
                         alt={`Capa de ${item.title || item.name}`}
-                        loading="lazy"
-                        className="w-full h-auto object-cover rounded-t-lg"
+                        loading="eager"
+                        decoding="async"
+                        width="342"
+                        height="513"
+                        className="aspect-[2/3] w-full h-auto object-cover rounded-t-lg bg-gradient-to-br from-[#1d1b2e] via-[#171820] to-[#1f2a12]"
                         onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/500x750/000000/FFFFFF?text=Poster+Nao+Disponivel'; }}
                       />
                       <span className="absolute inset-x-0 bottom-0 flex items-center justify-center bg-gradient-to-t from-black/90 to-transparent pb-3 pt-10 text-sm font-bold text-[#c9ff83] transition md:opacity-0 md:group-hover:opacity-100 md:group-focus:opacity-100">
