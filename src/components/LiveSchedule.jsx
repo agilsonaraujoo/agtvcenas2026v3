@@ -168,7 +168,15 @@ const DayGuide = ({ channel, dates, initialDate, onClose, onShare, shareStatus }
         if (!active) return;
         const entry = data && data.channels && data.channels[0];
         if (!ok || !entry) throw new Error('indisponivel');
-        setState({ status: entry.programs.length ? 'ready' : 'empty', programs: entry.programs });
+        // A fonte às vezes repete o mesmo programa no mesmo horário: mostramos uma vez só.
+        const seen = new Set();
+        const programs = entry.programs.filter((p) => {
+          const key = `${p.start}|${p.title}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        setState({ status: programs.length ? 'ready' : 'empty', programs });
       })
       .catch(() => active && setState({ status: 'error', programs: [] }));
     return () => { active = false; };
@@ -178,6 +186,17 @@ const DayGuide = ({ channel, dates, initialDate, onClose, onShare, shareStatus }
     const timer = setInterval(() => setNow(Date.now()), REFRESH_MS);
     return () => clearInterval(timer);
   }, []);
+
+  // Ao abrir (ou trocar de dia), a lista já começa no que está passando agora, lá em cima.
+  // Programas que já passaram continuam acima, a uma rolagem de distância.
+  const listRef = useRef(null);
+  useEffect(() => {
+    if (state.status !== 'ready') return;
+    const list = listRef.current;
+    const target = list?.querySelector('li.is-live') || list?.querySelector('li:not(.is-past)');
+    if (!list || !target) return;
+    list.scrollTop += target.getBoundingClientRect().top - list.getBoundingClientRect().top - 8;
+  }, [state.status, date]);
 
   useEffect(() => {
     const onKey = (event) => {
@@ -234,7 +253,7 @@ const DayGuide = ({ channel, dates, initialDate, onClose, onShare, shareStatus }
           ))}
         </div>
 
-        <div className="epg-list" aria-label="Programação do canal">
+        <div className="epg-list" aria-label="Programação do canal" ref={listRef}>
           {state.status === 'loading' && <p className="epg-muted">Carregando grade...</p>}
           {state.status === 'error' && <p className="epg-error">Não foi possível carregar a grade deste dia.</p>}
           {state.status === 'empty' && <p className="epg-muted">Sem programação disponível para este dia.</p>}
@@ -242,8 +261,9 @@ const DayGuide = ({ channel, dates, initialDate, onClose, onShare, shareStatus }
             <ul>
               {state.programs.map((program) => {
                 const live = Date.parse(program.start) <= now && now < Date.parse(program.end);
+                const past = Date.parse(program.end) <= now;
                 return (
-                  <li key={`${program.start}-${program.title}`} className={live ? 'is-live' : ''}>
+                  <li key={`${program.start}-${program.title}`} className={live ? 'is-live' : past ? 'is-past' : ''}>
                     <time>{formatTime(program.start)}</time>
                     <div className="epg-guide-entry">
                       {program.posterUrl && (

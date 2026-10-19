@@ -13,6 +13,7 @@ import Testimonials from './components/Testimonials';
 import NewSubscriptionPopup from './components/NewSubscriptionPopup';
 import CookieBanner from './components/CookieBanner';
 import ScrollReveal from './components/ScrollReveal';
+import BackToTop from './components/BackToTop';
 
 const App = () => {
   React.useEffect(() => {
@@ -58,6 +59,7 @@ const App = () => {
   <Footer />
   {/* <NewSubscriptionPopup /> */}
   <CookieBanner />
+  <BackToTop />
       </div>
     </div>
   );

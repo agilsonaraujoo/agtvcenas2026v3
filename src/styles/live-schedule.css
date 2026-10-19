@@ -619,3 +619,6 @@
 
   .epg-pager-btn:disabled { opacity: 0.35; }
 }
+
+/* Grade do dia: o que já passou fica mais apagado */
+.epg-list li.is-past { opacity: 0.5; }

@@ -35,10 +35,8 @@ const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [activeId, setActiveId] = useState('#home');
   const [compact, setCompact] = useState(false);     // shrinks once the page is scrolled
-  const [hidden, setHidden] = useState(false);       // hides while scrolling down, returns on the way up
   const [progress, setProgress] = useState(0);       // page reading progress, 0..1
   const navRef = useRef(null);
-  const lastYRef = useRef(0);
 
   // Which section sits in the middle of the screen, plus compact/hidden/progress state.
   useEffect(() => {
@@ -51,10 +49,6 @@ const Header = () => {
         const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
         setProgress(Math.min(1, y / max));
         setCompact(y > 60);
-        const goingDown = y > lastYRef.current + 4, goingUp = y < lastYRef.current - 4;
-        if (goingDown && y > 400) setHidden(true);
-        if (goingUp || y < 200) setHidden(false);
-        lastYRef.current = y;
 
         const center = window.innerHeight / 2;
         let current = '#home';
@@ -84,7 +78,7 @@ const Header = () => {
     return () => window.removeEventListener('keydown', closeOnEscape);
   }, [isOpen]);
 
-  const go = useCallback((href) => { setActiveId(href); setIsOpen(false); setHidden(false); }, []);
+  const go = useCallback((href) => { setActiveId(href); setIsOpen(false); }, []);
 
   // Spotlight that follows the mouse across the desktop bar.
   const onMove = (event) => {
@@ -100,11 +94,9 @@ const Header = () => {
   return (
     <>
       {/* ------------------------------------------------ Desktop: floating glass pill */}
+      {/* always fixed at the top */}
       <motion.header
-        initial={false}
-        animate={{ y: hidden && !reduce ? -120 : 0 }}
-        transition={{ duration: reduce ? 0 : 0.35, ease: [0.22, 1, 0.36, 1] }}
-        className="fixed inset-x-0 top-0 z-50 hidden px-4 md:block"
+        className="fixed inset-x-0 top-0 z-50 hidden px-4 transition-[padding] duration-300 md:block"
         style={{ paddingTop: compact ? 8 : 14 }}
       >
         <nav

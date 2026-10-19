@@ -13,6 +13,44 @@ const recommendationEyebrows = [
 ];
 const trialUrl = 'https://pagme.xyz/trial/eeebb22786aeac95e12e1b7bd37012a3d07f69721315fc2d';
 
+// Exemplos que aparecem sendo "digitados" na caixa vazia, como se fosse uma pessoa.
+const TYPING_EXAMPLES = [
+  'filme de ação com muita adrenalina',
+  'qual o nome daquele filme do navio que afunda?',
+  'Homem-Aranha: Um Novo Dia',
+  'uma série de suspense pra maratonar',
+  'anime parecido com Naruto',
+  'comédia leve pra ver em família',
+  'documentário sobre o espaço',
+];
+const STATIC_PLACEHOLDER = 'Digite o nome de um filme, série ou anime para ver o trailer — ou descreva o que quer assistir. Ex: ficção científica com muita ação...';
+
+// Digita, pausa, apaga e passa para o próximo exemplo, com ritmo levemente irregular.
+const useTypewriter = (phrases, running) => {
+  const [text, setText] = useState('');
+  useEffect(() => {
+    if (!running) { setText(''); return undefined; }
+    let phrase = 0, pos = 0, deleting = false, timer;
+    const tick = () => {
+      const full = phrases[phrase];
+      if (!deleting) {
+        pos += 1;
+        setText(full.slice(0, pos));
+        if (pos >= full.length) { deleting = true; timer = setTimeout(tick, 1600); return; }
+        timer = setTimeout(tick, 55 + Math.random() * 70);
+      } else {
+        pos -= 1;
+        setText(full.slice(0, pos));
+        if (pos <= 0) { deleting = false; phrase = (phrase + 1) % phrases.length; timer = setTimeout(tick, 400); return; }
+        timer = setTimeout(tick, 25);
+      }
+    };
+    timer = setTimeout(tick, 600);
+    return () => clearTimeout(timer);
+  }, [phrases, running]);
+  return text;
+};
+
 const RecommendationEngine = () => {
   const [preference, setPreference] = useState('');
   const [recommendations, setRecommendations] = useState([]);
@@ -23,6 +61,9 @@ const RecommendationEngine = () => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [searchedTitle, setSearchedTitle] = useState(null);
   const closeModal = useCallback(() => setSelectedItem(null), []);
+  const [focused, setFocused] = useState(false);
+  const typingDemo = !prefersReducedMotion && !focused && !preference;
+  const typed = useTypewriter(TYPING_EXAMPLES, typingDemo);
 
   useEffect(() => {
     if (prefersReducedMotion) return undefined;
@@ -202,11 +243,22 @@ const RecommendationEngine = () => {
               transition={{ duration: 5, repeat: Infinity, ease: 'linear' }}
             />
           )}
+          <div className="relative">
+          {typingDemo && (
+            <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-20 p-4 text-left text-base leading-6 text-gray-400">
+              <span className="mr-1 text-[#9a7bff]">Ex:</span>
+              {typed}
+              <span className="ml-0.5 inline-block h-5 w-[2px] translate-y-1 animate-pulse bg-[#b7ff4a]" />
+            </div>
+          )}
           <textarea
             className="relative z-10 min-h-[120px] w-full resize-none rounded-2xl border border-white/10 bg-gray-700 p-4 text-white placeholder:text-gray-500 focus:border-[#b7ff4a] focus:ring-2 focus:ring-[#b7ff4a]/10"
-            placeholder="Digite o nome de um filme, série ou anime para ver o trailer — ou descreva o que quer assistir. Ex: ficção científica com muita ação..."
+            placeholder={typingDemo ? '' : STATIC_PLACEHOLDER}
+            aria-label="Digite o nome de um filme, série ou anime, ou descreva o que quer assistir"
             data-analytics="reco_textarea"
             value={preference}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
             onChange={(e) => setPreference(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
@@ -217,6 +269,7 @@ const RecommendationEngine = () => {
               }
             }}
           ></textarea>
+          </div>
           <button
             onClick={getRecommendations}
             disabled={loading || !preference.trim()}
