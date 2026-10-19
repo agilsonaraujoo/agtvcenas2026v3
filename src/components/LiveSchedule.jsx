@@ -194,8 +194,31 @@ const DayGuide = ({ channel, dates, initialDate, onClose, onShare, shareStatus }
     if (state.status !== 'ready') return;
     const list = listRef.current;
     const target = list?.querySelector('li.is-live') || list?.querySelector('li:not(.is-past)');
-    if (!list || !target) return;
-    list.scrollTop += target.getBoundingClientRect().top - list.getBoundingClientRect().top - 8;
+    if (!list || !target) return undefined;
+    const content = list.firstElementChild;
+    const pin = () => {
+      // No fim do dia sobra pouca lista abaixo do programa atual; um espaço no fim deixa ele subir até o topo.
+      if (content) {
+        content.style.paddingBottom = '0px';
+        const below = content.getBoundingClientRect().bottom - target.getBoundingClientRect().top;
+        content.style.paddingBottom = `${Math.max(0, list.clientHeight - below - 8)}px`;
+      }
+      list.scrollTop += target.getBoundingClientRect().top - list.getBoundingClientRect().top - 8;
+    };
+    pin();
+    // As capas acima terminam de carregar depois e empurram a lista: mantém o programa atual
+    // no topo até a pessoa mexer na lista (ou por alguns segundos).
+    let touched = false;
+    const stop = () => { touched = true; };
+    const ro = content && typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => { if (!touched) pin(); }) : null;
+    if (ro) ro.observe(content);
+    ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach((ev) => list.addEventListener(ev, stop, { passive: true }));
+    const timer = setTimeout(() => ro && ro.disconnect(), 4000);
+    return () => {
+      clearTimeout(timer);
+      if (ro) ro.disconnect();
+      ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach((ev) => list.removeEventListener(ev, stop));
+    };
   }, [state.status, date]);
 
   useEffect(() => {
