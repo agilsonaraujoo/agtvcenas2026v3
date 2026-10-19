@@ -32,8 +32,8 @@ const FAQ = () => {
         <p className="agtv-section-description">Encontre sua resposta rapidinho ou fale com a gente.</p>
       </div>
 
-      <div className="container mx-auto grid max-w-6xl gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <div>
+      <div className="container mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="min-w-0">
           {/* busca + categorias */}
           <label className="relative mb-4 block">
             <span className="sr-only">Buscar nas perguntas</span>
@@ -42,7 +42,7 @@ const FAQ = () => {
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Busque: pagamento, Smart TV, teste grátis..."
+              placeholder="Buscar dúvida..."
               data-analytics="faq_search"
               className="min-h-12 w-full rounded-full border border-white/10 bg-[#101116] py-3 pl-12 pr-11 text-sm text-white placeholder:text-gray-500 focus:border-[#b7ff4a] focus:outline-none focus:ring-2 focus:ring-[#b7ff4a]/20 sm:text-base"
             />
@@ -53,7 +53,7 @@ const FAQ = () => {
             )}
           </label>
 
-          <div className="mb-5 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]" role="tablist" aria-label="Categorias">
+          <div className="-mx-4 mb-5 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0" role="tablist" aria-label="Categorias">
             {[{ id: 'todas', label: 'Todas' }, ...faqCategories].map(({ id, label }) => (
               <button
                 key={id}
