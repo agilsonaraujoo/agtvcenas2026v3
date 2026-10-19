@@ -46,6 +46,13 @@ const ChatAssistant = () => {
     setTimeout(() => { draggedRef.current = false; }, 0);
   };
   const restore = () => { bx.set(0); by.set(0); setHiddenSaved(false); };
+  // Setinha na borda: toque abre o chat; arrasta para cima/baixo pela borda; puxada para a esquerda, a bolinha volta.
+  const tabY = useMotionValue(0);
+  const tabDraggedRef = useRef(false);
+  const onTabDragEnd = (_, info) => {
+    if (info.offset.x < -50 || info.velocity.x < -500) restore();
+    setTimeout(() => { tabDraggedRef.current = false; }, 0);
+  };
   const inputRef = useRef(null);
 
   useEffect(() => { try { sessionStorage.setItem(STORE_KEY, JSON.stringify(messages.slice(-30))); } catch { /* sem armazenamento */ } }, [messages]);
@@ -103,15 +110,25 @@ const ChatAssistant = () => {
         {hidden && !open && (
           <motion.button
             type="button"
-            onClick={restore}
-            aria-label="Mostrar assistente da AGTV"
-            data-analytics="chat_restore"
-            initial={reduce ? false : { x: 40 }}
-            animate={{ x: 0 }}
-            exit={reduce ? undefined : { x: 40 }}
-            className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-0 z-50 flex h-12 w-7 items-center justify-center rounded-l-xl bg-[#b7ff4a] text-[#10130a] shadow-[0_6px_20px_rgba(0,0,0,0.45)] md:bottom-10"
+            drag
+            dragConstraints={{ left: -80, right: 0, top: -(typeof window !== 'undefined' ? window.innerHeight - 220 : 500), bottom: 0 }}
+            dragElastic={{ left: 0.4, right: 0, top: 0.05, bottom: 0.05 }}
+            dragSnapToOrigin={false}
+            dragMomentum={false}
+            onDragStart={() => { tabDraggedRef.current = true; }}
+            onDragEnd={onTabDragEnd}
+            onClick={() => { if (tabDraggedRef.current) return; setOpen(true); }}
+            title="Toque para abrir o chat • arraste pela borda • puxe para a esquerda para trazer a bolinha"
+            aria-label="Abrir assistente da AGTV"
+            data-analytics="chat_tab"
+            initial={reduce ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={reduce ? undefined : { opacity: 0 }}
+            style={{ y: tabY, touchAction: 'none' }}
+            className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-0 z-50 flex h-14 w-8 items-center justify-center rounded-l-2xl bg-[#b7ff4a] text-[#10130a] shadow-[0_6px_20px_rgba(0,0,0,0.45),0_0_18px_rgba(183,255,74,0.35)] md:bottom-10"
           >
             <FiChevronLeft aria-hidden="true" className="h-5 w-5" />
+            <span aria-hidden="true" className="absolute -left-1 -top-1 h-3 w-3 rounded-full border-2 border-[#07080b] bg-[#ff4d4d]" />
           </motion.button>
         )}
       </AnimatePresence>
