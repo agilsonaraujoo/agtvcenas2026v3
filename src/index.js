@@ -5,7 +5,7 @@ import './styles/agtv-theme.css';
 import App from './App';
 import ThankYou from './components/ThankYou';
 
-// O site não tem roteador: /obrigado é a volta do pagamento da InfinitePay.
+// O site não tem roteador: /obrigado é a volta do pagamento do Mercado Pago.
 const Page = window.location.pathname.replace(/\/+$/, '') === '/obrigado' ? ThankYou : App;
 
 const container = document.getElementById('root');

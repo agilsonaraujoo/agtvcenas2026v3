@@ -119,7 +119,7 @@ const Pricing = () => {
       trackEvent('checkout_redirect', { location: 'planos', plan: plan.name });
       window.location.href = data.url;
     } catch (error) {
-      // Se a InfinitePay falhar, o cliente ainda consegue assinar pelo WhatsApp.
+      // Se o Mercado Pago falhar, o cliente ainda consegue assinar pelo WhatsApp.
       setCheckoutPlan(null);
       const message = `Olá, vim pelo site AGTV CENAS e gostaria de assinar o plano ${plan.name} pelo valor de R$ ${plan.price}`;
       trackEvent('whatsapp_click', { location: 'planos_fallback', plan: plan.name });

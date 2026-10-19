@@ -2,36 +2,31 @@ import React, { useEffect, useState } from 'react';
 import { trackEvent } from '../utils/analytics';
 
 const WHATSAPP_NUMBER = '5583986913481';
-const formatBRL = (cents) => (cents / 100).toFixed(2).replace('.', ',');
+const formatBRL = (value) => value.toFixed(2).replace('.', ',');
 
-// Página para onde a InfinitePay manda o cliente depois do pagamento.
+// Página para onde o Mercado Pago manda o cliente depois do pagamento.
 // Confere o pagamento no servidor e leva o cliente ao WhatsApp para receber o acesso.
 const ThankYou = () => {
   const [state, setState] = useState({ status: 'checking' });
   const params = new URLSearchParams(window.location.search);
-  const orderNsu = params.get('order_nsu') || '';
-  const receiptUrl = params.get('receipt_url') || '';
+  const paymentId = params.get('payment_id') || params.get('collection_id') || '';
 
   useEffect(() => {
-    const query = new URLSearchParams({
-      order_nsu: orderNsu,
-      transaction_nsu: params.get('transaction_nsu') || '',
-      slug: params.get('slug') || '',
-    });
-
     let cancelled = false;
-    fetch(`/api/checkout-status?${query}`)
+    fetch(`/api/checkout-status?${new URLSearchParams({ payment_id: paymentId })}`)
       .then((response) => response.json().then((data) => ({ ok: response.ok, data })))
       .then(({ ok, data }) => {
         if (cancelled) return;
         if (ok && data.paid) {
           setState({ status: 'paid', ...data });
           trackEvent('purchase', {
-            transaction_id: orderNsu,
+            transaction_id: data.orderRef,
             currency: 'BRL',
-            value: data.amount / 100,
-            items: [{ item_id: data.plan.toLowerCase(), item_name: `AGTV ${data.plan}`, price: data.amount / 100, quantity: 1 }],
+            value: data.amount,
+            items: [{ item_id: data.plan.toLowerCase(), item_name: `AGTV ${data.plan}`, price: data.amount, quantity: 1 }],
           });
+        } else if (ok && data.pending) {
+          setState({ status: 'pending', ...data });
         } else {
           setState({ status: 'unpaid' });
         }
@@ -43,8 +38,8 @@ const ThankYou = () => {
 
   const whatsappLink = (text) => `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
   const paidMessage = state.status === 'paid'
-    ? `Olá! Acabei de assinar o plano ${state.plan} (R$ ${formatBRL(state.amount)}) pelo site AGTV CENAS.\nPedido: ${orderNsu}${receiptUrl ? `\nComprovante: ${receiptUrl}` : ''}`
-    : `Olá! Fiz um pagamento pelo site AGTV CENAS e preciso de ajuda.\nPedido: ${orderNsu || 'não informado'}${receiptUrl ? `\nComprovante: ${receiptUrl}` : ''}`;
+    ? `Olá! Acabei de assinar o plano ${state.plan} (R$ ${formatBRL(state.amount)}) pelo site AGTV CENAS.\nPagamento Mercado Pago nº ${paymentId}`
+    : `Olá! Fiz um pagamento pelo site AGTV CENAS e preciso de ajuda.\nPagamento Mercado Pago nº ${paymentId || 'não informado'}`;
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-gray-900 px-4 py-12 text-white">
@@ -65,7 +60,7 @@ const ThankYou = () => {
               Plano <b className="text-white">{state.plan}</b> · R$ {formatBRL(state.amount)}
             </p>
             <p className="mt-4 text-sm text-gray-400">
-              Agora é só chamar a gente no WhatsApp para receber seu acesso. A mensagem já vai pronta com os dados do pedido.
+              Agora é só chamar a gente no WhatsApp para receber seu acesso. A mensagem já vai pronta com os dados do pagamento.
             </p>
             <a
               href={whatsappLink(paidMessage)}
@@ -74,6 +69,23 @@ const ThankYou = () => {
             >
               Receber meu acesso no WhatsApp
             </a>
+          </>
+        )}
+
+        {state.status === 'pending' && (
+          <>
+            <h1 className="text-xl font-bold">Pagamento em análise</h1>
+            <p className="mt-3 text-sm text-gray-400">
+              O Mercado Pago ainda está processando o seu pagamento do plano {state.plan}. Se você já pagou, atualize esta página em alguns minutos ou fale com a gente.
+            </p>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="mt-6 flex min-h-[3.25rem] w-full items-center justify-center rounded-xl bg-[#b7ff4a] px-4 py-3 text-base font-extrabold text-[#10130a]"
+            >
+              Verificar de novo
+            </button>
+            <a href={whatsappLink(paidMessage)} className="mt-3 block text-sm text-gray-400 underline">Falar no WhatsApp</a>
           </>
         )}
 

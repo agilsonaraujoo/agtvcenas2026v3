@@ -1,7 +1,7 @@
 const { hasSameOrigin, sendJson } = require('../lib/serverApi');
-const { planFromOrderNsu, postCheckout } = require('../lib/infinitepay');
+const { mercadoPago, planFromOrderRef } = require('../lib/mercadopago');
 
-// Confere com a InfinitePay se o pedido que voltou para /obrigado foi pago, e com o valor certo.
+// Confere com o Mercado Pago se o pagamento que voltou para /obrigado foi aprovado, e com o valor certo.
 module.exports = async function handler(req, res) {
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET');
@@ -12,32 +12,32 @@ module.exports = async function handler(req, res) {
   }
 
   const params = new URL(req.url, `https://${req.headers.host || 'localhost'}`).searchParams;
-  const orderNsu = params.get('order_nsu') || '';
-  const transactionNsu = params.get('transaction_nsu') || '';
-  const slug = params.get('slug') || '';
-  const plan = planFromOrderNsu(orderNsu);
-  if (!plan || !transactionNsu || !slug) {
-    return sendJson(res, 400, { error: { message: 'Pedido inválido.' } });
+  const paymentId = params.get('payment_id') || '';
+  if (!/^\d{1,20}$/.test(paymentId)) {
+    return sendJson(res, 400, { error: { message: 'Pagamento inválido.' } });
   }
 
   try {
-    const data = await postCheckout('payment_check', {
-      order_nsu: orderNsu,
-      transaction_nsu: transactionNsu,
-      slug,
-    });
-    const paid = Boolean(data.success && data.paid && Number(data.amount) >= plan.price);
+    const payment = await mercadoPago(`v1/payments/${paymentId}`);
+    // O plano vem da referência gravada no pagamento, não da URL.
+    const plan = planFromOrderRef(payment.external_reference);
+    if (!plan) {
+      return sendJson(res, 400, { error: { message: 'Pagamento inválido.' } });
+    }
+    const paid = payment.status === 'approved' && Number(payment.transaction_amount) >= plan.price;
 
     res.setHeader('Cache-Control', 'no-store');
     return sendJson(res, 200, {
       paid,
+      pending: ['pending', 'in_process'].includes(payment.status),
       plan: plan.name,
       amount: plan.price,
-      captureMethod: data.capture_method || null,
+      orderRef: payment.external_reference,
+      paymentType: payment.payment_type_id || null,
     });
   } catch (error) {
-    console.error('InfinitePay payment check failed:', error.message, error.details || '');
-    return sendJson(res, error.statusCode || 502, {
+    console.error('Mercado Pago payment check failed:', error.message, error.details || '');
+    return sendJson(res, error.statusCode === 404 ? 404 : 502, {
       error: { message: 'Não foi possível confirmar o pagamento agora.' },
     });
   }

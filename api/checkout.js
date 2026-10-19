@@ -1,7 +1,7 @@
 const { hasSameOrigin, sendJson } = require('../lib/serverApi');
-const { PLANS, createOrderNsu, postCheckout } = require('../lib/infinitepay');
+const { PLANS, STATEMENT_DESCRIPTOR, createOrderRef, mercadoPago } = require('../lib/mercadopago');
 
-// Cria um link de pagamento da InfinitePay (Pix ou cartão) para o plano escolhido.
+// Cria um pagamento no Checkout Pro do Mercado Pago (Pix ou cartão) para o plano escolhido.
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
@@ -20,20 +20,37 @@ module.exports = async function handler(req, res) {
 
   const host = req.headers['x-forwarded-host'] || req.headers.host;
   const protocol = req.headers['x-forwarded-proto'] || 'https';
+  const returnUrl = `${protocol}://${host}/obrigado`;
 
   try {
-    const data = await postCheckout('links', {
-      order_nsu: createOrderNsu(planId),
-      redirect_url: `${protocol}://${host}/obrigado`,
-      items: [{ quantity: 1, price: plan.price, description: `AGTV Plano ${plan.name}` }],
+    const data = await mercadoPago('checkout/preferences', {
+      method: 'POST',
+      body: {
+        items: [{
+          id: planId,
+          title: `AGTV Plano ${plan.name}`,
+          quantity: 1,
+          currency_id: 'BRL',
+          unit_price: plan.price,
+        }],
+        external_reference: createOrderRef(planId),
+        back_urls: { success: returnUrl, pending: returnUrl, failure: returnUrl },
+        auto_return: 'approved',
+        statement_descriptor: STATEMENT_DESCRIPTOR,
+        // Só Pix e cartão: sem boleto nem lotérica.
+        payment_methods: {
+          excluded_payment_types: [{ id: 'ticket' }, { id: 'atm' }],
+          installments: 12,
+        },
+      },
     });
-    if (!data.url) throw new Error('A InfinitePay não devolveu o link de pagamento.');
+    if (!data.init_point) throw new Error('O Mercado Pago não devolveu o link de pagamento.');
 
     res.setHeader('Cache-Control', 'no-store');
-    return sendJson(res, 200, { url: data.url });
+    return sendJson(res, 200, { url: data.init_point });
   } catch (error) {
-    console.error('InfinitePay checkout failed:', error.message, error.details || '');
-    return sendJson(res, error.statusCode || 502, {
+    console.error('Mercado Pago checkout failed:', error.message, error.details || '');
+    return sendJson(res, error.statusCode === 503 ? 503 : 502, {
       error: { message: 'Não foi possível gerar o pagamento. Tente de novo ou fale com a gente no WhatsApp.' },
     });
   }
