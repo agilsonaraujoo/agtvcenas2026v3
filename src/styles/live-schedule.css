@@ -563,3 +563,59 @@
   0%, 100% { opacity: 0.55; }
   50% { opacity: 1; }
 }
+
+/* Celular: os canais passam para o lado, um card por vez, com o próximo aparecendo na borda. */
+.epg-pager { display: none; }
+
+@media (max-width: 639px) {
+  .epg-grid {
+    display: flex;
+    gap: 0.85rem;
+    margin: 0 -1rem;
+    padding: 0.25rem 1rem 0.5rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding: 0 1rem;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .epg-grid::-webkit-scrollbar { display: none; }
+
+  .epg-grid > .epg-card {
+    flex: 0 0 86%;
+    scroll-snap-align: center;
+  }
+
+  .epg-pager {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 0.85rem;
+  }
+
+  .epg-pager-count {
+    min-width: 8rem;
+    color: var(--agtv-muted, #a7a9b4);
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .epg-pager-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border: 1px solid rgb(183 255 74 / 35%);
+    border-radius: 9999px;
+    background: rgb(183 255 74 / 10%);
+    color: var(--agtv-green, #b7ff4a);
+    font-size: 1.4rem;
+    line-height: 1;
+  }
+
+  .epg-pager-btn:disabled { opacity: 0.35; }
+}

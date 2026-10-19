@@ -367,3 +367,11 @@ footer {
     animation: none;
   }
 }
+
+/* Brilho que passa pelo botão "Teste grátis" do menu */
+@keyframes agtv-shine {
+  0%, 70% { transform: translateX(0) skewX(-20deg); }
+  100% { transform: translateX(520%) skewX(-20deg); }
+}
+.agtv-shine { animation: agtv-shine 3.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .agtv-shine { animation: none; display: none; } }

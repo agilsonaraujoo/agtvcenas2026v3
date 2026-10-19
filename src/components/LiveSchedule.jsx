@@ -283,6 +283,22 @@ const LiveSchedule = () => {
   const [group, setGroup] = useState('todos');
   const [now, setNow] = useState(Date.now());
   const [guide, setGuide] = useState(null);
+  // No celular a grade vira um carrossel lateral: guardamos qual card está à vista.
+  const gridRef = useRef(null);
+  const [slide, setSlide] = useState(0);
+  const onGridScroll = useCallback(() => {
+    const el = gridRef.current;
+    const first = el?.firstElementChild;
+    if (!el || !first) return;
+    const step = first.getBoundingClientRect().width + parseFloat(getComputedStyle(el).columnGap || '0');
+    setSlide(Math.round(el.scrollLeft / Math.max(1, step)));
+  }, []);
+  const goSlide = useCallback((index) => {
+    const el = gridRef.current;
+    const card = el?.children[index];
+    if (!el || !card) return;
+    el.scrollTo({ left: card.offsetLeft - (el.clientWidth - card.offsetWidth) / 2, behavior: 'smooth' });
+  }, []);
   const [shareStatus, setShareStatus] = useState('');
   const sharedDate = sharedDateFromLocation();
 
@@ -397,11 +413,21 @@ const LiveSchedule = () => {
               </div>
             </div>
 
-            <div className="epg-grid">
+            <div className="epg-grid" ref={gridRef} onScroll={onGridScroll}>
               {visible.map((channel) => (
                 <ChannelCard key={channel.slug} channel={channel} now={now} onOpen={setGuide} />
               ))}
             </div>
+
+            {visible.length > 1 && (
+              <div className="epg-pager" aria-label="Navegar entre os canais">
+                <button type="button" className="epg-pager-btn" onClick={() => goSlide(Math.max(0, slide - 1))} disabled={slide === 0} aria-label="Canal anterior">‹</button>
+                <span className="epg-pager-count" aria-live="polite">
+                  {Math.min(slide + 1, visible.length)} de {visible.length} canais
+                </span>
+                <button type="button" className="epg-pager-btn" onClick={() => goSlide(Math.min(visible.length - 1, slide + 1))} disabled={slide >= visible.length - 1} aria-label="Próximo canal">›</button>
+              </div>
+            )}
 
             {missing.length > 0 && (
               <p className="epg-footnote">
