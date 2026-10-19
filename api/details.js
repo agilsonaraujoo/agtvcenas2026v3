@@ -12,7 +12,9 @@ const pickTrailer = (videos = []) => {
       score += 100;
       if (/dublad|dub\b/.test(name)) score += 40;
       else if (/legendad|leg\b/.test(name)) score += 20;
-      if (video.iso_3166_1 === 'BR') score += 5;
+      // Português do Brasil antes do de Portugal (dublagens e legendas diferentes).
+      if (video.iso_3166_1 === 'BR') score += 30;
+      if (video.iso_3166_1 === 'PT' || /portugal/.test(name)) score -= 30;
     } else if (video.iso_639_1 === 'en') {
       score += 10;
     }
