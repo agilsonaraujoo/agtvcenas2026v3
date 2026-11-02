@@ -1,0 +1,139 @@
+#jogos {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgb(183 255 74 / 6%), transparent 50%),
+    var(--agtv-black);
+  scroll-margin-top: 4.5rem;
+}
+
+.games-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 56rem;
+  min-height: 6rem;
+  margin: 0 auto;
+  padding: 0;
+  list-style: none;
+}
+
+.games-row {
+  display: grid;
+  grid-template-columns: 5.5rem 1fr auto;
+  align-items: center;
+  gap: 1rem;
+  border: 1px solid rgb(154 123 255 / 18%);
+  border-radius: 1.1rem;
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 3%), transparent 48%),
+    var(--agtv-surface);
+  padding: 1rem 1.25rem;
+}
+
+.games-row--live {
+  border-color: rgb(255 77 77 / 55%);
+  box-shadow: 0 0 24px rgb(255 77 77 / 12%);
+}
+
+.games-row--done {
+  opacity: 0.5;
+}
+
+.games-time {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.games-time time {
+  color: var(--agtv-green);
+  font-size: 1.35rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.games-time .epg-badge {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.games-done {
+  color: var(--agtv-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.games-info {
+  min-width: 0;
+}
+
+.games-league {
+  color: var(--agtv-muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.games-teams {
+  margin: 0;
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.games-teams span {
+  margin: 0 0.25rem;
+  color: var(--agtv-muted);
+  font-weight: 600;
+}
+
+.games-desc {
+  margin: 0.2rem 0 0;
+  overflow: hidden;
+  color: var(--agtv-muted);
+  font-size: 0.8rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.games-channels {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.games-channels li {
+  border: 1px solid rgb(154 123 255 / 35%);
+  border-radius: 9999px;
+  background: rgb(154 123 255 / 12%);
+  padding: 0.3rem 0.7rem;
+  color: #e6e0ff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+@media (max-width: 639px) {
+  .games-row {
+    grid-template-columns: 4.75rem 1fr;
+    gap: 0.6rem 0.9rem;
+    padding: 0.9rem 1rem;
+  }
+
+  .games-time time {
+    font-size: 1.1rem;
+  }
+
+  .games-time .epg-badge {
+    gap: 0.3rem;
+    letter-spacing: 0.06em;
+  }
+
+  .games-channels {
+    grid-column: 2;
+    justify-content: flex-start;
+  }
+}

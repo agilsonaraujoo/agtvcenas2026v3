@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { FiMenu, FiX, FiHome, FiTv, FiDollarSign, FiTrendingUp, FiStar, FiHelpCircle, FiZap, FiPlayCircle, FiMessageSquare } from 'react-icons/fi';
+import { FiMenu, FiX, FiHome, FiTv, FiDollarSign, FiTrendingUp, FiStar, FiHelpCircle, FiZap, FiPlayCircle, FiMessageSquare, FiAward } from 'react-icons/fi';
 
 const TRIAL_URL = 'https://pagme.xyz/trial/eeebb22786aeac95e12e1b7bd37012a3d07f69721315fc2d';
 
@@ -8,6 +8,7 @@ const MENU = [
   { href: '#home', text: 'Início', Icon: FiHome, desktop: false },
   { href: '#servicos', text: 'Como funciona', Icon: FiPlayCircle },
   { href: '#programacao', text: 'Programação', Icon: FiTv, live: true },
+  { href: '#jogos', text: 'Jogos', Icon: FiAward },
   { href: '#trending', text: 'Em alta', Icon: FiTrendingUp },
   { href: '#recomendacoes', text: 'Recomendações', Icon: FiZap },
   { href: '#planos', text: 'Planos', Icon: FiDollarSign },
@@ -137,7 +138,7 @@ const Header = () => {
                     onClick={() => go(href)}
                     title={text}
                     aria-current={active ? 'location' : undefined}
-                    className={`group relative flex items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold transition-colors lg:px-3.5 ${active ? 'text-[#10130a]' : 'text-gray-300 hover:text-white'}`}
+                    className={`group relative flex items-center gap-2 whitespace-nowrap rounded-full px-3 py-2 text-sm font-semibold transition-colors xl:px-2.5 ${active ? 'text-[#10130a]' : 'text-gray-300 hover:text-white'}`}
                   >
                     {active && (
                       <motion.span
@@ -147,7 +148,7 @@ const Header = () => {
                       />
                     )}
                     <Icon aria-hidden="true" className="relative h-4 w-4 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110" />
-                    <span className="relative hidden lg:inline">{text}</span>
+                    <span className="relative hidden xl:inline">{text}</span>
                     {live && <LiveDot className="relative -ml-0.5" />}
                   </a>
                 </li>

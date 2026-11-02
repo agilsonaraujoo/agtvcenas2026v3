@@ -7,6 +7,9 @@ export const API_CONFIG = {
   PROGRAMACAO: {
     URL: '/api/programacao',
   },
+  JOGOS: {
+    URL: '/api/jogos',
+  },
   ASSISTANT: {
     URL: '/api/assistant',
   },

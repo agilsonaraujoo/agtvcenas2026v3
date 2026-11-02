@@ -12,6 +12,36 @@ const getQuery = (req) => (
 const POSTER_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const posterCache = new Map();
 
+// Faixas da grade que vêm antes do nome do filme ou novela ("Sessão da Tarde: Shrek").
+const SLOT_PREFIX = /^(maratona|programa duplo|vale a pena ver de novo|sess[aã]o da tarde|sess[aã]o de cinema|sess[aã]o de s[aá]bado|sess[aã]o comédia|tela quente|temperatura m[aá]xima|supercine|coruj[aã]o|domingo maior|cinema especial|cine [^:]{2,20}|super tela|tela de sucessos|campe[oõ]es de bilheteria|dia mundial do cinema|especial [^:]{2,30})\s*:\s*/i;
+
+// Títulos a tentar, do mais exato ao mais solto. "Quilos Mortais: Episódio" e "Reis - A Emboscada"
+// são o nome da série seguido do episódio, então o nome antes do separador também vale (só como série).
+const posterCandidates = (title) => {
+  const clean = title.replace(/\s*-\s*ao vivo\s*$/i, '').trim();
+  const candidates = [{ query: clean, types: ['movie', 'tv'] }];
+  const slot = SLOT_PREFIX.exec(clean);
+  if (slot) {
+    candidates.push({ query: clean.slice(slot[0].length).trim(), types: ['movie', 'tv'] });
+  } else {
+    const series = /^(.+?)(?:: | - )/.exec(clean);
+    if (series) candidates.push({ query: series[1].trim(), types: ['tv'] });
+  }
+  return candidates.filter((item) => item.query.length > 1);
+};
+
+const searchPoster = async ({ query, types }) => {
+  const key = normalizeTitle(query);
+  const data = await fetchTmdb('search/multi', { query });
+  const match = (data.results || []).find((item) => (
+    item.poster_path
+    && types.includes(item.media_type)
+    && [item.title, item.name, item.original_title, item.original_name]
+      .some((value) => value && normalizeTitle(value) === key)
+  ));
+  return match ? `https://image.tmdb.org/t/p/w500${match.poster_path}` : null;
+};
+
 const posterForTitle = async (title) => {
   if (!title || !process.env.TMDB_API_KEY) return null;
 
@@ -19,26 +49,24 @@ const posterForTitle = async (title) => {
   const cached = posterCache.get(key);
   if (cached && cached.expiresAt > Date.now()) return cached.posterUrl;
 
+  let posterUrl = null;
   try {
-    const data = await fetchTmdb('search/multi', { query: title });
-    const match = (data.results || []).find((item) => (
-      item.poster_path
-      && ['movie', 'tv'].includes(item.media_type)
-      && [item.title, item.name, item.original_title, item.original_name]
-        .some((value) => value && normalizeTitle(value) === key)
-    ));
-    const posterUrl = match ? `https://image.tmdb.org/t/p/w500${match.poster_path}` : null;
-    posterCache.set(key, { posterUrl, expiresAt: Date.now() + POSTER_CACHE_TTL_MS });
-    return posterUrl;
+    for (const candidate of posterCandidates(title)) {
+      posterUrl = await searchPoster(candidate);
+      if (posterUrl) break;
+    }
   } catch (error) {
     console.error('[EPG] TMDB poster lookup failed:', error.message);
-    posterCache.set(key, { posterUrl: null, expiresAt: Date.now() + POSTER_CACHE_TTL_MS });
-    return null;
   }
+  posterCache.set(key, { posterUrl, expiresAt: Date.now() + POSTER_CACHE_TTL_MS });
+  return posterUrl;
 };
 
-const enrichProgram = async (program) => {
-  if (!program) return program;
+// Canais abertos e de esporte ficam sem capa (jornal, programa local e jogo quase nunca têm,
+// e capa só em alguns cards fica desigual); o resto busca no catálogo de filmes e séries.
+const NO_POSTER_GROUPS = ['abertos', 'esportes'];
+const enrichProgram = async (program, group) => {
+  if (!program || NO_POSTER_GROUPS.includes(group) || /\sx\s/i.test(program.title)) return program;
   const posterUrl = await posterForTitle(program.title);
   return posterUrl ? { ...program, posterUrl } : program;
 };
@@ -48,7 +76,7 @@ const buildChannel = async (config, entry, { now, key, includePrograms, slug }) 
   const available = hasUpcomingData(programs, now);
   const { current, next } = available ? findCurrentAndNext(programs, now) : { current: null, next: null };
 
-  const enriched = await Promise.all([current, next].map(enrichProgram));
+  const enriched = await Promise.all([current, next].map((program) => enrichProgram(program, config.group)));
   const result = {
     slug: config.slug,
     channel: config.name,
@@ -64,7 +92,7 @@ const buildChannel = async (config, entry, { now, key, includePrograms, slug }) 
     result.date = key;
     result.programs = available ? programsForDate(programs, key) : [];
     if (slug && config.slug === slug) {
-      result.programs = await Promise.all(result.programs.map(enrichProgram));
+      result.programs = await Promise.all(result.programs.map((program) => enrichProgram(program, config.group)));
     }
   }
   return result;

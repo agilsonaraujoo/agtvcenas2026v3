@@ -42,6 +42,21 @@ const fetchJson = async (url) => {
   return { ok: response.ok, data };
 };
 
+// Capa do programa, quando o catálogo tem; sem capa (ou se a imagem falhar), o card fica só com o texto.
+const Artwork = ({ program, variant }) => {
+  const [failed, setFailed] = useState(false);
+  if (!program.posterUrl || failed) return null;
+  return (
+    <img
+      className={`epg-artwork epg-artwork--${variant}`}
+      src={program.posterUrl}
+      alt=""
+      loading="lazy"
+      onError={() => setFailed(true)}
+    />
+  );
+};
+
 const ChannelCard = ({ channel, now, onOpen }) => {
   const [showSynopsis, setShowSynopsis] = useState(false);
 
@@ -72,9 +87,7 @@ const ChannelCard = ({ channel, now, onOpen }) => {
               aria-label={`${showSynopsis ? 'Ocultar' : 'Ver'} sinopse: ${channel.current.title}`}
               onClick={() => setShowSynopsis((visible) => !visible)}
             >
-              {channel.current.posterUrl && (
-                <img className="epg-artwork epg-artwork--current" src={channel.current.posterUrl} alt="" loading="lazy" />
-              )}
+              <Artwork program={channel.current} variant="current" />
               <span className="epg-title">{channel.current.title}</span>
               <span className="epg-synopsis-toggle">{showSynopsis ? 'Ocultar sinopse' : 'Ver sinopse'}</span>
             </button>
@@ -99,9 +112,7 @@ const ChannelCard = ({ channel, now, onOpen }) => {
         <span className="epg-badge">A SEGUIR</span>
         {channel.next ? (
           <div className="epg-next-content">
-            {channel.next.posterUrl && (
-              <img className="epg-artwork epg-artwork--next" src={channel.next.posterUrl} alt="" loading="lazy" />
-            )}
+            <Artwork program={channel.next} variant="next" />
             <p className="epg-next-line">
               <strong>{formatTime(channel.next.start)}</strong> {channel.next.title}
             </p>
@@ -313,14 +324,7 @@ const DayGuide = ({ channel, channels = [], onNavigate, dates, initialDate, onCl
                   <li key={`${program.start}-${program.title}`} className={live ? 'is-live' : past ? 'is-past' : ''}>
                     <time>{formatTime(program.start)}</time>
                     <div className="epg-guide-entry">
-                      {program.posterUrl && (
-                        <img
-                          className="epg-artwork epg-artwork--guide"
-                          src={program.posterUrl}
-                          alt=""
-                          loading="lazy"
-                        />
-                      )}
+                      <Artwork program={program} variant="guide" />
                       <div className="epg-guide-details">
                         <p className="epg-title">
                         {program.title}
