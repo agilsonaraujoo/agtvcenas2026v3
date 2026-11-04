@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { FiTv, FiFilm, FiLayers, FiCompass } from 'react-icons/fi';
 import { API_CONFIG } from '../utils/api';
 import '../styles/live-schedule.css';
 
@@ -349,9 +350,17 @@ const DayGuide = ({ channel, channels = [], onNavigate, dates, initialDate, onCl
   );
 };
 
+// Abas da programação: canais abertos e de esporte juntos em "TV ao vivo".
+const FILTERS = [
+  { key: 'aovivo', label: 'TV ao vivo', Icon: FiTv, groups: ['abertos', 'esportes'] },
+  { key: 'filmes', label: 'Filmes', Icon: FiFilm, groups: ['filmes'] },
+  { key: 'series', label: 'Séries', Icon: FiLayers, groups: ['series'] },
+  { key: 'variedades', label: 'Variedades', Icon: FiCompass, groups: ['documentarios'] },
+];
+
 const LiveSchedule = () => {
   const [state, setState] = useState({ status: 'loading', data: null });
-  const [group, setGroup] = useState('todos');
+  const [group, setGroup] = useState('aovivo');
   const [now, setNow] = useState(Date.now());
   const [guide, setGuide] = useState(null);
   // No celular a grade vira um carrossel lateral: guardamos qual card está à vista.
@@ -418,13 +427,14 @@ const LiveSchedule = () => {
     () => (data ? data.channels.filter((channel) => channel.available) : []),
     [data],
   );
-  const groups = useMemo(() => {
-    if (!data) return [];
-    return Object.entries(data.groups || {}).filter(([key]) => available.some((channel) => channel.group === key));
-  }, [data, available]);
+  const filters = useMemo(
+    () => FILTERS.filter((item) => available.some((channel) => item.groups.includes(channel.group))),
+    [available],
+  );
   const visible = useMemo(() => {
     if (!data) return [];
-    return data.channels.filter((channel) => group === 'todos' || channel.group === group);
+    const active = FILTERS.find((item) => item.key === group) || FILTERS[0];
+    return data.channels.filter((channel) => active.groups.includes(channel.group));
   }, [data, group]);
   const missing = data ? data.channels.filter((channel) => !channel.available) : [];
 
@@ -466,7 +476,7 @@ const LiveSchedule = () => {
           <>
             <div className="epg-filters-sticky">
               <div className="epg-filters" role="tablist" aria-label="Categorias de canais">
-                {[['todos', 'Todos'], ...groups].map(([key, label]) => (
+                {filters.map(({ key, label, Icon }) => (
                   <button
                     key={key}
                     type="button"
@@ -475,12 +485,10 @@ const LiveSchedule = () => {
                     className={`epg-filter${group === key ? ' is-active' : ''}`}
                     onClick={() => setGroup(key)}
                   >
-                    {label}
+                    <Icon aria-hidden="true" />
+                    <span>{label}</span>
                   </button>
                 ))}
-                <button type="button" className="epg-share" onClick={() => copyScheduleLink(data.date)}>
-                  Compartilhar o dia
-                </button>
               </div>
             </div>
 

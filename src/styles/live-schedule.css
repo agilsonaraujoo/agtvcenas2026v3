@@ -62,6 +62,18 @@
   transition: border-color 0.2s, background 0.2s, color 0.2s;
 }
 
+.epg-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.epg-filter svg {
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+}
+
 .epg-filter:hover,
 .epg-day:hover {
   border-color: rgb(183 255 74 / 50%);
@@ -458,6 +470,28 @@
     flex: none;
     white-space: nowrap;
     scroll-snap-align: start;
+  }
+
+  /* as quatro abas cabem numa linha só no celular */
+  .epg-filters[aria-label="Categorias de canais"] {
+    justify-content: space-between;
+    gap: 0.3rem;
+    padding: 0.65rem 0.75rem;
+    overflow-x: visible;
+  }
+
+  .epg-filters[aria-label="Categorias de canais"] .epg-filter {
+    flex: 1 1 auto;
+    justify-content: center;
+    gap: 0.25rem;
+    min-width: 0;
+    padding: 0.45rem 0.35rem;
+    font-size: 0.7rem;
+  }
+
+  .epg-filters[aria-label="Categorias de canais"] .epg-filter svg {
+    width: 0.85rem;
+    height: 0.85rem;
   }
 }
 
