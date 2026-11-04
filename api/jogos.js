@@ -2,8 +2,10 @@ const { hasSameOrigin, sendJson } = require('../lib/serverApi');
 const { TIMEZONE, DAY_MS, dateKey, dayRange } = require('../lib/epg/time');
 const { gamesForDate } = require('../lib/epg/games');
 const { loadDataset } = require('../lib/epg/store');
+const { withScores } = require('../lib/epg/scores');
 
-// Jogos ao vivo de hoje e amanhã, tirados da mesma grade de /api/programacao.
+// Jogos ao vivo de hoje e amanhã, tirados da mesma grade de /api/programacao, com placar
+// do football-data.org quando FOOTBALL_DATA_KEY estiver configurada.
 module.exports = async function handler(req, res) {
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET');
@@ -28,12 +30,15 @@ module.exports = async function handler(req, res) {
   const tomorrow = dateKey(new Date(dayRange(today).start.getTime() + DAY_MS));
   const channels = Object.values(dataset.channels);
 
-  res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+  const days = await withScores([today, tomorrow].map((date) => ({ date, games: gamesForDate(channels, date) })));
+
+  res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
   return sendJson(res, 200, {
     timezone: TIMEZONE,
     now: new Date(now).toISOString(),
     generatedAt: dataset.generatedAt,
     stale,
-    days: [today, tomorrow].map((date) => ({ date, games: gamesForDate(channels, date) })),
+    scores: Boolean(process.env.FOOTBALL_DATA_KEY),
+    days,
   });
 };

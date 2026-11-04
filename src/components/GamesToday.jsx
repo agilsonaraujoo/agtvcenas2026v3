@@ -8,14 +8,29 @@ const REFRESH_MS = 60 * 1000;
 const timeFormatter = new Intl.DateTimeFormat('pt-BR', { timeZone: TIMEZONE, hour: '2-digit', minute: '2-digit' });
 const formatTime = (iso) => timeFormatter.format(new Date(iso));
 
+// O placar, quando existe, manda no status; sem placar vale o horário da transmissão.
 const statusOf = (game, now) => {
+  if (game.score) return game.score.status === 'finished' ? 'done' : 'live';
   if (now >= Date.parse(game.end)) return 'done';
   if (now >= Date.parse(game.start)) return 'live';
   return 'soon';
 };
 
+const Crest = ({ src }) => {
+  const [failed, setFailed] = useState(false);
+  if (!src || failed) return null;
+  return <img className="games-crest" src={src} alt="" loading="lazy" onError={() => setFailed(true)} />;
+};
+
+const liveLabel = (score) => {
+  if (!score) return null;
+  if (score.status === 'halftime') return 'Intervalo';
+  return score.minute ? `${score.minute}'` : null;
+};
+
 const GameRow = ({ game, now }) => {
   const status = statusOf(game, now);
+  const { score } = game;
   return (
     <li className={`games-row games-row--${status}`}>
       <div className="games-time">
@@ -24,12 +39,18 @@ const GameRow = ({ game, now }) => {
         ) : (
           <time dateTime={game.start}>{formatTime(game.start)}</time>
         )}
+        {status === 'live' && liveLabel(score) && <span className="games-minute">{liveLabel(score)}</span>}
         {status === 'done' && <span className="games-done">Encerrado</span>}
       </div>
       <div className="games-info">
-        {game.league && <span className="games-league">{game.league}</span>}
         <p className="games-teams">
-          {game.home} <span>x</span> {game.away}
+          <span className="games-team"><Crest src={game.homeCrest} />{game.home}</span>
+          {score ? (
+            <strong className="games-score">{score.home} <span>x</span> {score.away}</strong>
+          ) : (
+            <span className="games-vs">x</span>
+          )}
+          <span className="games-team"><Crest src={game.awayCrest} />{game.away}</span>
         </p>
         {game.description && <p className="games-desc">{game.description}</p>}
       </div>
@@ -65,11 +86,24 @@ const GamesToday = () => {
 
   const current = state.days[day];
   const games = current ? current.games : [];
-  // Os que já acabaram vão para o fim: o topo da lista é sempre o que está passando ou vem a seguir.
-  const ordered = [
-    ...games.filter((game) => statusOf(game, now) !== 'done'),
-    ...games.filter((game) => statusOf(game, now) === 'done'),
-  ];
+  // Um bloco por campeonato, na ordem de importância; dentro dele, os que já acabaram vão para o
+  // fim, então o topo é sempre o que está passando ou vem a seguir.
+  const groups = [];
+  for (const game of games) {
+    let group = groups.find((item) => item.name === game.competition.name);
+    if (!group) {
+      group = { name: game.competition.name, order: game.competition.order, games: [] };
+      groups.push(group);
+    }
+    group.games.push(game);
+  }
+  groups.sort((a, b) => a.order - b.order);
+  for (const group of groups) {
+    group.games = [
+      ...group.games.filter((game) => statusOf(game, now) !== 'done'),
+      ...group.games.filter((game) => statusOf(game, now) === 'done'),
+    ];
+  }
 
   return (
     <section id="jogos" className="relative px-4 py-12 text-white sm:py-16">
@@ -109,12 +143,21 @@ const GamesToday = () => {
               ))}
             </div>
 
-            {ordered.length === 0 ? (
+            {groups.length === 0 ? (
               <p className="epg-state" role="status">Nenhum jogo ao vivo na programação deste dia.</p>
             ) : (
-              <ul className="games-list">
-                {ordered.map((game) => <GameRow key={game.id} game={game} now={now} />)}
-              </ul>
+              <div className="games-groups">
+                {groups.map((group) => (
+                  <section key={group.name} className="games-group" aria-label={group.name}>
+                    <h3 className="games-group-title">
+                      {group.name} <span>{group.games.length} {group.games.length === 1 ? 'jogo' : 'jogos'}</span>
+                    </h3>
+                    <ul className="games-list">
+                      {group.games.map((game) => <GameRow key={game.id} game={game} now={now} />)}
+                    </ul>
+                  </section>
+                ))}
+              </div>
             )}
           </>
         )}
