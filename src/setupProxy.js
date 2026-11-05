@@ -3,6 +3,7 @@
 const handlers = {
   '/api/programacao': require('../api/programacao'),
   '/api/jogos': require('../api/jogos'),
+  '/api/tabela': require('../api/tabela'),
 };
 
 module.exports = function setupProxy(app) {

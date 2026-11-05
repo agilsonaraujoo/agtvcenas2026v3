@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { FiBarChart2, FiChevronDown } from 'react-icons/fi';
 import { API_CONFIG } from '../utils/api';
 import '../styles/games-today.css';
 
@@ -61,10 +62,70 @@ const GameRow = ({ game, now }) => {
   );
 };
 
+// Tabela de classificação, buscada só quando a pessoa abre (poupa o limite da API de placar).
+const Standings = ({ code, name }) => {
+  const [state, setState] = useState({ status: 'loading' });
+
+  useEffect(() => {
+    let alive = true;
+    fetch(`${API_CONFIG.JOGOS.TABELA_URL}?c=${code}`)
+      .then((response) => (response.ok ? response.json() : Promise.reject(new Error('indisponivel'))))
+      .then((data) => alive && setState({ status: 'ready', data }))
+      .catch(() => alive && setState({ status: 'error' }));
+    return () => { alive = false; };
+  }, [code]);
+
+  if (state.status === 'loading') return <div className="games-standings epg-skeleton" aria-busy="true" />;
+  if (state.status === 'error') {
+    return <p className="epg-state games-standings-msg" role="alert">Não foi possível carregar a tabela agora.</p>;
+  }
+
+  const { tables, matchday } = state.data;
+  return (
+    <div className="games-standings">
+      {matchday && <p className="games-standings-round">{matchday}ª rodada</p>}
+      {tables.map((table) => (
+        <div key={table.group || 'geral'} className="games-standings-table">
+          {table.group && <h4>{table.group}</h4>}
+          <table aria-label={`Classificação ${table.group || name}`}>
+            <thead>
+              <tr>
+                <th scope="col" className="pos">#</th>
+                <th scope="col" className="team">Time</th>
+                <th scope="col" title="Pontos">P</th>
+                <th scope="col" title="Jogos">J</th>
+                <th scope="col" className="wide" title="Vitórias">V</th>
+                <th scope="col" className="wide" title="Empates">E</th>
+                <th scope="col" className="wide" title="Derrotas">D</th>
+                <th scope="col" title="Saldo de gols">SG</th>
+              </tr>
+            </thead>
+            <tbody>
+              {table.rows.map((row) => (
+                <tr key={row.team}>
+                  <td className="pos">{row.position}</td>
+                  <td className="team"><Crest src={row.crest} /><span>{row.team}</span></td>
+                  <td className="pts">{row.points}</td>
+                  <td>{row.played}</td>
+                  <td className="wide">{row.won}</td>
+                  <td className="wide">{row.draw}</td>
+                  <td className="wide">{row.lost}</td>
+                  <td>{row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 const GamesToday = () => {
   const [state, setState] = useState({ status: 'loading', days: [] });
   const [day, setDay] = useState(0);
   const [now, setNow] = useState(Date.now());
+  const [openTable, setOpenTable] = useState(null);
 
   const load = useCallback(async () => {
     try {
@@ -92,9 +153,10 @@ const GamesToday = () => {
   for (const game of games) {
     let group = groups.find((item) => item.name === game.competition.name);
     if (!group) {
-      group = { name: game.competition.name, order: game.competition.order, games: [] };
+      group = { name: game.competition.name, order: game.competition.order, table: null, games: [] };
       groups.push(group);
     }
+    group.table = group.table || game.competition.table || null;
     group.games.push(game);
   }
   groups.sort((a, b) => a.order - b.order);
@@ -149,9 +211,22 @@ const GamesToday = () => {
               <div className="games-groups">
                 {groups.map((group) => (
                   <section key={group.name} className="games-group" aria-label={group.name}>
-                    <h3 className="games-group-title">
-                      {group.name} <span>{group.games.length} {group.games.length === 1 ? 'jogo' : 'jogos'}</span>
-                    </h3>
+                    <div className="games-group-head">
+                      <h3 className="games-group-title">
+                        {group.name} <span>{group.games.length} {group.games.length === 1 ? 'jogo' : 'jogos'}</span>
+                      </h3>
+                      {group.table && (
+                        <button
+                          type="button"
+                          className={`games-table-toggle${openTable === group.table ? ' is-open' : ''}`}
+                          aria-expanded={openTable === group.table}
+                          onClick={() => setOpenTable(openTable === group.table ? null : group.table)}
+                        >
+                          <FiBarChart2 aria-hidden="true" /> Tabela <FiChevronDown aria-hidden="true" className="chev" />
+                        </button>
+                      )}
+                    </div>
+                    {group.table && openTable === group.table && <Standings code={group.table} name={group.name} />}
                     <ul className="games-list">
                       {group.games.map((game) => <GameRow key={game.id} game={game} now={now} />)}
                     </ul>

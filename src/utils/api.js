@@ -9,6 +9,7 @@ export const API_CONFIG = {
   },
   JOGOS: {
     URL: '/api/jogos',
+    TABELA_URL: '/api/tabela',
   },
   ASSISTANT: {
     URL: '/api/assistant',
