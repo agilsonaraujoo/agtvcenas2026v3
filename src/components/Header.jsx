@@ -19,6 +19,7 @@ const MENU = [
 const QUICK = [
   { label: 'Início', href: '#home', Icon: FiHome },
   { label: 'Programação', href: '#programacao', Icon: FiTv, live: true },
+  { label: 'Jogos', href: '#jogos', Icon: FiAward },
   { label: 'Em alta', href: '#trending', Icon: FiTrendingUp },
   { label: 'Planos', href: '#planos', Icon: FiDollarSign },
 ];
@@ -245,7 +246,7 @@ const Header = () => {
       {/* ------------------------------------------------ Mobile: bottom quick bar with a sliding highlight */}
       <nav
         aria-label="Atalhos principais"
-        className="mobile-quick-nav fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-white/10 bg-[#090a0e]/95 text-white shadow-[0_-12px_35px_rgba(0,0,0,0.35)] backdrop-blur-xl md:hidden"
+        className="mobile-quick-nav fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-white/10 bg-[#090a0e]/95 text-white shadow-[0_-12px_35px_rgba(0,0,0,0.35)] backdrop-blur-xl md:hidden"
       >
         {QUICK.map(({ label, href, Icon, live }) => {
           const active = activeId === href;

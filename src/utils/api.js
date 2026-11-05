@@ -11,6 +11,9 @@ export const API_CONFIG = {
     URL: '/api/jogos',
     TABELA_URL: '/api/tabela',
   },
+  ADMIN: {
+    URL: '/api/admin',
+  },
   ASSISTANT: {
     URL: '/api/assistant',
   },

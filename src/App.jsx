@@ -16,12 +16,15 @@ import CookieBanner from './components/CookieBanner';
 import ScrollReveal from './components/ScrollReveal';
 import BackToTop from './components/BackToTop';
 import ChatAssistant from './components/ChatAssistant';
+import scrollToHash from './utils/scrollToHash';
 
 const App = () => {
   React.useEffect(() => {
     // Allow default browser actions (right-click, select, drag) so users can copy and inspect
     // Previously we blocked these actions as a deterrent; we've removed that restriction.
   }, []);
+
+  useEffect(() => scrollToHash(), []);
 
   useEffect(() => {
     // Initialize analytics listeners to capture clicks/touches site-wide
