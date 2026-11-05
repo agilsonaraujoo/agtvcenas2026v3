@@ -1,25 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { FiCheck, FiCopy, FiLink, FiLogOut, FiRefreshCw } from 'react-icons/fi';
+import { FiCheck, FiCopy, FiImage, FiLink, FiLogOut, FiRefreshCw } from 'react-icons/fi';
 import { API_CONFIG } from '../utils/api';
+import { formatDay, formatTime, gameEnded, gamesArt, moviesArt } from '../utils/adminArt';
 import '../styles/admin.css';
 
-const TIMEZONE = 'America/Sao_Paulo';
 const WHATSAPP_LIMIT = 65000;
-
-const timeFormatter = new Intl.DateTimeFormat('pt-BR', { timeZone: TIMEZONE, hour: '2-digit', minute: '2-digit' });
-const formatTime = (iso) => timeFormatter.format(new Date(iso));
-
-// "quinta-feira, 05/11" a partir de "2026-11-05".
-const formatDay = (key) => {
-  const date = new Date(`${key}T12:00:00-03:00`);
-  const weekday = new Intl.DateTimeFormat('pt-BR', { timeZone: TIMEZONE, weekday: 'long' }).format(date);
-  const dayMonth = new Intl.DateTimeFormat('pt-BR', { timeZone: TIMEZONE, day: '2-digit', month: '2-digit' }).format(date);
-  return `${weekday}, ${dayMonth}`;
-};
-
-const gameEnded = (game, now) => (
-  game.score ? game.score.status === 'finished' : now >= Date.parse(game.end)
-);
 
 const gameLine = (game) => {
   const channels = game.channels.map((channel) => channel.name).join(', ');
@@ -101,7 +86,46 @@ const LinkRow = ({ label, url }) => {
   );
 };
 
-const CopyPanel = ({ title, text, empty, children }) => {
+// Desenha a arte, baixa o PNG e deixa a prévia na tela para conferir.
+const ArtMaker = ({ label, fileName, draw }) => {
+  const [art, setArt] = useState({ status: 'idle', url: null });
+
+  useEffect(() => () => {
+    if (art.url) URL.revokeObjectURL(art.url);
+  }, [art.url]);
+
+  const generate = async () => {
+    setArt((previous) => ({ ...previous, status: 'working' }));
+    try {
+      const blob = await draw();
+      if (!blob) {
+        setArt({ status: 'empty', url: null });
+        return;
+      }
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      link.click();
+      setArt({ status: 'ready', url });
+    } catch {
+      setArt({ status: 'error', url: null });
+    }
+  };
+
+  return (
+    <div className="admin-art">
+      <button type="button" className="admin-chip" onClick={generate} disabled={art.status === 'working'}>
+        <FiImage aria-hidden="true" /> {art.status === 'working' ? 'Gerando...' : label}
+      </button>
+      {art.status === 'empty' && <p className="admin-count">Nada para mostrar nesse período.</p>}
+      {art.status === 'error' && <p className="admin-error" role="alert">Não foi possível gerar a imagem.</p>}
+      {art.url && <img src={art.url} alt={`Prévia: ${label}`} />}
+    </div>
+  );
+};
+
+const CopyPanel = ({ title, text, empty, children, art }) => {
   const [copied, copy] = useCopy(text);
 
   return (
@@ -119,6 +143,7 @@ const CopyPanel = ({ title, text, empty, children }) => {
         {text.length.toLocaleString('pt-BR')} caracteres
         {text.length > WHATSAPP_LIMIT && ' (grande demais para uma mensagem do WhatsApp; filtre por categoria ou canal)'}
       </p>
+      {art}
     </section>
   );
 };
@@ -245,8 +270,8 @@ const Admin = () => {
       </header>
 
       <section className="admin-panel admin-links" aria-label="Links para enviar">
-        <LinkRow label="Programação da TV" url={`${window.location.origin}/programacao`} />
         <LinkRow label="Jogos do dia" url={`${window.location.origin}/jogos`} />
+        <LinkRow label="Programação da TV" url={`${window.location.origin}/programacao`} />
       </section>
 
       <div className="admin-controls">
@@ -278,8 +303,32 @@ const Admin = () => {
       {state.error && <p className="admin-error" role="alert">{state.error}</p>}
 
       <div className="admin-grid">
-        <CopyPanel title="Jogos do dia" text={games} empty="Nenhum jogo para mostrar." />
-        <CopyPanel title="Programação" text={schedule} empty="Nenhum programa para mostrar.">
+        <CopyPanel
+          title="Jogos do dia"
+          text={games}
+          empty="Nenhum jogo para mostrar."
+          art={(
+            <ArtMaker
+              key={`jogos-${data.date}`}
+              label="Gerar imagem dos jogos"
+              fileName={`AGTV_jogos_${data.date}.png`}
+              draw={() => gamesArt(data, { onlyUpcoming, now: Date.now() })}
+            />
+          )}
+        />
+        <CopyPanel
+          title="Programação"
+          text={schedule}
+          empty="Nenhum programa para mostrar."
+          art={(
+            <ArtMaker
+              key={`filmes-${data.date}`}
+              label="Gerar imagem de filmes e séries"
+              fileName={`AGTV_filmes_series_${data.date}.png`}
+              draw={() => moviesArt(data, { onlyUpcoming, now: Date.now() })}
+            />
+          )}
+        >
           <div className="admin-filters">
             <select
               aria-label="Categoria"

@@ -216,6 +216,20 @@
   font-weight: 700;
 }
 
+.admin-art {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+.admin-art img {
+  width: min(100%, 16rem);
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 0.6rem;
+}
+
 @media (max-width: 767px) {
   .admin-grid,
   .admin-links {
