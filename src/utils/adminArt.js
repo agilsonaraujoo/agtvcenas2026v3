@@ -272,7 +272,7 @@ export const gamesArt = async (data, { onlyUpcoming, now }) => {
 const cleanTitle = (title) => title.replace(/^Aquecimento\s+/i, '');
 
 // Vinhetas da grade que não são filme nem série.
-const FILLER = /^(?:preview|intervalo)b/i;
+const FILLER = /^(?:preview|intervalo)\b/i;
 
 // Um destaque por canal, sem repetir título, começando no horário nobre. Lista única: o grupo do
 // canal não diz o tipo do programa (canal de séries também passa filme).
