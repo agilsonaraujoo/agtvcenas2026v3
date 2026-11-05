@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { FiCheck, FiCopy, FiImage, FiLink, FiLogOut, FiRefreshCw } from 'react-icons/fi';
 import { API_CONFIG } from '../utils/api';
-import { formatDay, formatTime, gameEnded, gamesArt, moviesArt } from '../utils/adminArt';
+import { ART_FORMATS, formatDay, formatTime, gameEnded, gamesArt, moviesArt } from '../utils/adminArt';
 import '../styles/admin.css';
 
 const WHATSAPP_LIMIT = 65000;
@@ -86,30 +86,37 @@ const LinkRow = ({ label, url }) => {
   );
 };
 
-// Desenha a arte, baixa o PNG e deixa a prévia na tela para conferir.
+// Desenha os dois tamanhos, baixa os PNGs e deixa as prévias na tela para conferir. O link de cada
+// prévia cobre o navegador que bloquear o segundo download automático.
 const ArtMaker = ({ label, fileName, draw }) => {
-  const [art, setArt] = useState({ status: 'idle', url: null });
+  const [art, setArt] = useState({ status: 'idle', files: [] });
 
   useEffect(() => () => {
-    if (art.url) URL.revokeObjectURL(art.url);
-  }, [art.url]);
+    art.files.forEach((file) => URL.revokeObjectURL(file.url));
+  }, [art.files]);
 
   const generate = async () => {
     setArt((previous) => ({ ...previous, status: 'working' }));
     try {
-      const blob = await draw();
-      if (!blob) {
-        setArt({ status: 'empty', url: null });
+      const blobs = await Promise.all(ART_FORMATS.map(draw));
+      if (blobs.some((blob) => !blob)) {
+        setArt({ status: 'empty', files: [] });
         return;
       }
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = fileName;
-      link.click();
-      setArt({ status: 'ready', url });
+      const files = blobs.map((blob, index) => ({
+        url: URL.createObjectURL(blob),
+        name: `${fileName}_${ART_FORMATS[index].key}.png`,
+        label: ART_FORMATS[index].label,
+      }));
+      files.forEach((file) => {
+        const link = document.createElement('a');
+        link.href = file.url;
+        link.download = file.name;
+        link.click();
+      });
+      setArt({ status: 'ready', files });
     } catch {
-      setArt({ status: 'error', url: null });
+      setArt({ status: 'error', files: [] });
     }
   };
 
@@ -120,7 +127,16 @@ const ArtMaker = ({ label, fileName, draw }) => {
       </button>
       {art.status === 'empty' && <p className="admin-count">Nada para mostrar nesse período.</p>}
       {art.status === 'error' && <p className="admin-error" role="alert">Não foi possível gerar a imagem.</p>}
-      {art.url && <img src={art.url} alt={`Prévia: ${label}`} />}
+      {art.files.length > 0 && (
+        <div className="admin-art-previews">
+          {art.files.map((file) => (
+            <a key={file.name} href={file.url} download={file.name}>
+              <img src={file.url} alt={`Prévia ${file.label}: ${label}`} />
+              <span>Baixar {file.label}</span>
+            </a>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
@@ -311,8 +327,8 @@ const Admin = () => {
             <ArtMaker
               key={`jogos-${data.date}`}
               label="Gerar imagem dos jogos"
-              fileName={`AGTV_jogos_${data.date}.png`}
-              draw={() => gamesArt(data, { onlyUpcoming, now: Date.now() })}
+              fileName={`AGTV_jogos_${data.date}`}
+              draw={(format) => gamesArt(data, { onlyUpcoming, now: Date.now(), format })}
             />
           )}
         />
@@ -324,8 +340,8 @@ const Admin = () => {
             <ArtMaker
               key={`filmes-${data.date}`}
               label="Gerar imagem de filmes e séries"
-              fileName={`AGTV_filmes_series_${data.date}.png`}
-              draw={() => moviesArt(data, { onlyUpcoming, now: Date.now() })}
+              fileName={`AGTV_filmes_series_${data.date}`}
+              draw={(format) => moviesArt(data, { onlyUpcoming, now: Date.now(), format })}
             />
           )}
         >
