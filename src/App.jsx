@@ -1,74 +1,31 @@
 import React, { useEffect } from 'react';
-import Header from './components/Header';
+import SiteShell from './components/SiteShell';
 import AGTVDevicesCarousel from './components/AGTVDevicesCarousel';
 import Hero from './components/Hero';
 import Features from './components/Features';
 import Pricing from './components/Pricing';
-import LiveSchedule from './components/LiveSchedule';
-import GamesToday from './components/GamesToday';
+import HomeHighlights from './components/HomeHighlights';
 import TrendingContent from './components/TrendingContent';
 import RecommendationEngine from './components/RecommendationEngine';
 import FAQ from './components/FAQ';
-import Footer from './components/Footer';
 import Testimonials from './components/Testimonials';
-import NewSubscriptionPopup from './components/NewSubscriptionPopup';
-import CookieBanner from './components/CookieBanner';
-import ScrollReveal from './components/ScrollReveal';
-import BackToTop from './components/BackToTop';
-import ChatAssistant from './components/ChatAssistant';
 import scrollToHash from './utils/scrollToHash';
 
 const App = () => {
-  React.useEffect(() => {
-    // Allow default browser actions (right-click, select, drag) so users can copy and inspect
-    // Previously we blocked these actions as a deterrent; we've removed that restriction.
-  }, []);
-
   useEffect(() => scrollToHash(), []);
 
-  useEffect(() => {
-    // Initialize analytics listeners to capture clicks/touches site-wide
-    let cleanup = null;
-    try {
-      // dynamic import so this doesn't break SSR (if any)
-      const analytics = require('./utils/analytics');
-      if (analytics && analytics.initAnalyticsListeners) {
-        cleanup = analytics.initAnalyticsListeners();
-        console.log('Analytics listeners initialized');
-      }
-    } catch (e) {
-      // eslint-disable-next-line no-console
-      console.error('Could not initialize analytics listeners', e);
-    }
-
-    return () => {
-      if (cleanup) cleanup();
-    };
-  }, []);
   return (
-    <div className="relative min-h-screen">
-      <ScrollReveal />
-      <div className="absolute inset-0 bg-gradient-to-r from-gray-900/50 to-black/50"></div>
-      <div className="relative pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-0">
-  <Header />
-  <Hero />
-           <Features />
-           {/* ...existing code... */}
-           <AGTVDevicesCarousel />
-  <LiveSchedule />
-  <GamesToday />
-  <TrendingContent />
-  <RecommendationEngine />
-  <Pricing />
-  <Testimonials />
-  <FAQ />
-  <Footer />
-  {/* <NewSubscriptionPopup /> */}
-  <CookieBanner />
-  <BackToTop />
-  <ChatAssistant />
-      </div>
-    </div>
+    <SiteShell>
+      <Hero />
+      <Features />
+      <AGTVDevicesCarousel />
+      <HomeHighlights />
+      <TrendingContent />
+      <RecommendationEngine />
+      <Pricing />
+      <Testimonials />
+      <FAQ />
+    </SiteShell>
   );
 };
 

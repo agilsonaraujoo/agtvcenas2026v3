@@ -4,6 +4,7 @@ import { FiMessageCircle, FiX, FiSend, FiChevronLeft, FiStar, FiDollarSign, FiTv
 import { FaWhatsapp } from 'react-icons/fa';
 import { API_CONFIG } from '../utils/api';
 import { WHATSAPP_NUMBER } from '../utils/whatsapp';
+import { sectionHref } from '../utils/routes';
 
 const TRIAL_URL = 'https://pagme.xyz/trial/eeebb22786aeac95e12e1b7bd37012a3d07f69721315fc2d';
 const STORE_KEY = 'agtv-chat-v1';
@@ -14,11 +15,11 @@ const SUGGESTIONS = ['Como funciona o teste grátis?', 'Quanto custa?', 'Funcion
 const ACTIONS = {
   whatsapp: { label: 'Falar no WhatsApp', Icon: FaWhatsapp, href: () => `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Olá, vim pelo assistente do site AGTV e tenho uma dúvida.')}`, external: true, primary: true },
   teste: { label: 'Fazer teste grátis', Icon: FiStar, href: () => TRIAL_URL, external: true, primary: true },
-  planos: { label: 'Ver planos', Icon: FiDollarSign, href: () => '#planos' },
-  programacao: { label: 'Programação ao vivo', Icon: FiTv, href: () => '#programacao' },
-  em_alta: { label: 'Em alta', Icon: FiTrendingUp, href: () => '#trending' },
-  recomendacoes: { label: 'Recomendações com IA', Icon: FiZap, href: () => '#recomendacoes' },
-  faq: { label: 'Perguntas frequentes', Icon: FiHelpCircle, href: () => '#faq' },
+  planos: { label: 'Ver planos', Icon: FiDollarSign, href: () => sectionHref('#planos') },
+  programacao: { label: 'Programação ao vivo', Icon: FiTv, href: () => '/programacao' },
+  em_alta: { label: 'Em alta', Icon: FiTrendingUp, href: () => sectionHref('#trending') },
+  recomendacoes: { label: 'Recomendações com IA', Icon: FiZap, href: () => sectionHref('#recomendacoes') },
+  faq: { label: 'Perguntas frequentes', Icon: FiHelpCircle, href: () => sectionHref('#faq') },
 };
 
 const load = () => {

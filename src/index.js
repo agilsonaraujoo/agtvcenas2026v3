@@ -5,16 +5,25 @@ import './styles/agtv-theme.css';
 import App from './App';
 import ThankYou from './components/ThankYou';
 import Admin from './components/Admin';
+import { GamesPage, SchedulePage } from './components/SectionPage';
+import { currentPath, movedSectionUrl } from './utils/routes';
 
 // O site não tem roteador: /obrigado é a volta do pagamento do Mercado Pago e /admin é a página do dono.
-const PAGES = { '/obrigado': ThankYou, '/admin': Admin };
-const Page = PAGES[window.location.pathname.replace(/\/+$/, '')] || App;
+const PAGES = {
+  '/obrigado': ThankYou,
+  '/admin': Admin,
+  '/jogos': GamesPage,
+  '/programacao': SchedulePage,
+};
+const Page = PAGES[currentPath()] || App;
 
-const container = document.getElementById('root');
-const root = createRoot(container);
-
-root.render(
-  <React.StrictMode>
-    <Page />
-  </React.StrictMode>
-);
+const moved = movedSectionUrl();
+if (moved) {
+  window.location.replace(moved);
+} else {
+  createRoot(document.getElementById('root')).render(
+    <React.StrictMode>
+      <Page />
+    </React.StrictMode>
+  );
+}

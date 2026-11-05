@@ -398,7 +398,6 @@ const LiveSchedule = () => {
   const copyScheduleLink = useCallback(async (date) => {
     const url = new URL(window.location.href);
     url.searchParams.set('date', date);
-    url.hash = 'programacao';
     try {
       await navigator.clipboard.writeText(url.toString());
       setShareStatus('Link copiado!');
@@ -413,14 +412,6 @@ const LiveSchedule = () => {
     const timer = setInterval(load, REFRESH_MS);
     return () => clearInterval(timer);
   }, [load]);
-
-  useEffect(() => {
-    if (!sharedDate || state.status !== 'ready') return undefined;
-    const timer = window.setTimeout(() => {
-      document.getElementById('programacao')?.scrollIntoView({ block: 'start' });
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, [sharedDate, state.status]);
 
   const { data } = state;
   const available = useMemo(
@@ -443,9 +434,9 @@ const LiveSchedule = () => {
       <div className="container mx-auto">
         <div className="agtv-section-heading">
           <span className="agtv-section-kicker">PROGRAMAÇÃO DE TV</span>
-          <h2 className="agtv-section-title">
+          <h1 className="agtv-section-title">
             No ar <span>agora</span>
-          </h2>
+          </h1>
         </div>
         <p className="agtv-section-description mb-8">
           Veja o que está passando e o que vem a seguir nos principais canais. Horários de Brasília.

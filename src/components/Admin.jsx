@@ -245,8 +245,8 @@ const Admin = () => {
       </header>
 
       <section className="admin-panel admin-links" aria-label="Links para enviar">
-        <LinkRow label="Programação da TV" url={`${window.location.origin}/#programacao`} />
-        <LinkRow label="Jogos do dia" url={`${window.location.origin}/#jogos`} />
+        <LinkRow label="Programação da TV" url={`${window.location.origin}/programacao`} />
+        <LinkRow label="Jogos do dia" url={`${window.location.origin}/jogos`} />
       </section>
 
       <div className="admin-controls">

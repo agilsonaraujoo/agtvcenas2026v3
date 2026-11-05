@@ -1,4 +1,4 @@
-// Links diretos (/#jogos, /#programacao): a seção nasce depois do React e o conteúdo acima dela
+// Links diretos para seções da página inicial (/#planos): a seção nasce depois do React e o conteúdo acima dela
 // ainda muda de altura ao carregar, então reposicionamos algumas vezes. Parar ao primeiro toque
 // ou rolagem da pessoa evita puxar a tela de volta.
 const RETRY_DELAYS_MS = [0, 300, 800, 1500, 2500, 4000];

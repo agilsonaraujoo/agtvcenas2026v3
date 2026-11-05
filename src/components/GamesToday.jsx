@@ -10,7 +10,7 @@ const timeFormatter = new Intl.DateTimeFormat('pt-BR', { timeZone: TIMEZONE, hou
 const formatTime = (iso) => timeFormatter.format(new Date(iso));
 
 // O placar, quando existe, manda no status; sem placar vale o horário da transmissão.
-const statusOf = (game, now) => {
+export const statusOf = (game, now) => {
   if (game.score) return game.score.status === 'finished' ? 'done' : 'live';
   if (now >= Date.parse(game.end)) return 'done';
   if (now >= Date.parse(game.start)) return 'live';
@@ -29,7 +29,7 @@ const liveLabel = (score) => {
   return score.minute ? `${score.minute}'` : null;
 };
 
-const GameRow = ({ game, now }) => {
+export const GameRow = ({ game, now }) => {
   const status = statusOf(game, now);
   const { score } = game;
   return (
@@ -172,9 +172,9 @@ const GamesToday = () => {
       <div className="container mx-auto">
         <div className="agtv-section-heading">
           <span className="agtv-section-kicker">ESPORTES AO VIVO</span>
-          <h2 className="agtv-section-title">
+          <h1 className="agtv-section-title">
             Jogos de <span>hoje</span>
-          </h2>
+          </h1>
         </div>
         <p className="agtv-section-description mb-8">
           As partidas transmitidas ao vivo nos canais, conforme a programação das emissoras. Horários de Brasília.

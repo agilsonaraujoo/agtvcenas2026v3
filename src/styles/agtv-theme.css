@@ -128,6 +128,7 @@ section:not(#home) {
   scroll-margin-top: 5rem;
 }
 
+section:not(#home) h1,
 section:not(#home) h2 {
   font-family: Manrope, sans-serif;
   letter-spacing: -0.035em;

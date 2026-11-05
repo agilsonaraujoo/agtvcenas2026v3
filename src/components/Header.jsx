@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { currentPath, sectionHref } from '../utils/routes';
 import { FiMenu, FiX, FiHome, FiTv, FiDollarSign, FiTrendingUp, FiStar, FiHelpCircle, FiZap, FiPlayCircle, FiMessageSquare, FiAward } from 'react-icons/fi';
 
-const TRIAL_URL = 'https://pagme.xyz/trial/eeebb22786aeac95e12e1b7bd37012a3d07f69721315fc2d';
+export const TRIAL_URL = 'https://pagme.xyz/trial/eeebb22786aeac95e12e1b7bd37012a3d07f69721315fc2d';
 
 const MENU = [
   { href: '#home', text: 'Início', Icon: FiHome, desktop: false },
   { href: '#servicos', text: 'Como funciona', Icon: FiPlayCircle },
-  { href: '#programacao', text: 'Programação', Icon: FiTv, live: true },
-  { href: '#jogos', text: 'Jogos', Icon: FiAward },
+  { href: '/programacao', text: 'Programação', Icon: FiTv, live: true },
+  { href: '/jogos', text: 'Jogos', Icon: FiAward },
   { href: '#trending', text: 'Em alta', Icon: FiTrendingUp },
   { href: '#recomendacoes', text: 'Recomendações', Icon: FiZap },
   { href: '#planos', text: 'Planos', Icon: FiDollarSign },
@@ -18,11 +19,13 @@ const MENU = [
 
 const QUICK = [
   { label: 'Início', href: '#home', Icon: FiHome },
-  { label: 'Programação', href: '#programacao', Icon: FiTv, live: true },
-  { label: 'Jogos', href: '#jogos', Icon: FiAward },
+  { label: 'Programação', href: '/programacao', Icon: FiTv, live: true },
+  { label: 'Jogos', href: '/jogos', Icon: FiAward },
   { label: 'Em alta', href: '#trending', Icon: FiTrendingUp },
   { label: 'Planos', href: '#planos', Icon: FiDollarSign },
 ];
+
+const urlOf = (href) => (href.startsWith('#') ? sectionHref(href) : href);
 
 // Pulsing red dot that marks the live schedule.
 const LiveDot = ({ className = '' }) => (
@@ -35,7 +38,7 @@ const LiveDot = ({ className = '' }) => (
 const Header = () => {
   const reduce = useReducedMotion();
   const [isOpen, setIsOpen] = useState(false);
-  const [activeId, setActiveId] = useState('#home');
+  const [activeId, setActiveId] = useState(currentPath() || '#home');
   const [compact, setCompact] = useState(false);     // shrinks once the page is scrolled
   const [progress, setProgress] = useState(0);       // page reading progress, 0..1
   const navRef = useRef(null);
@@ -52,9 +55,12 @@ const Header = () => {
         setProgress(Math.min(1, y / max));
         setCompact(y > 60);
 
+        // Só a página inicial tem seções; nas outras, o item aceso é a própria página.
+        if (currentPath()) return;
         const center = window.innerHeight / 2;
         let current = '#home';
         for (const { href } of MENU) {
+          if (!href.startsWith('#')) continue;
           const el = document.querySelector(href);
           if (!el) continue;
           const r = el.getBoundingClientRect();
@@ -116,7 +122,7 @@ const Header = () => {
           {/* reading progress along the bottom edge */}
           <span aria-hidden="true" className="pointer-events-none absolute bottom-0 left-0 h-[2px] bg-gradient-to-r from-[#b7ff4a] to-[#9a7bff]" style={{ width: `${progress * 100}%` }} />
 
-          <a href="#home" onClick={() => go('#home')} className="relative flex shrink-0 items-center gap-3" aria-label="AGTV - Início">
+          <a href={urlOf('#home')} onClick={() => go('#home')} className="relative flex shrink-0 items-center gap-3" aria-label="AGTV - Início">
             <motion.span
               whileHover={reduce ? undefined : { rotate: -6, scale: 1.06 }}
               className={`relative block overflow-hidden rounded-xl ring-1 ring-white/20 shadow-[0_0_24px_rgba(154,123,255,0.3)] transition-all duration-300 ${compact ? 'h-9 w-9' : 'h-11 w-11'}`}
@@ -135,7 +141,7 @@ const Header = () => {
               return (
                 <li key={href} className="relative">
                   <a
-                    href={href}
+                    href={urlOf(href)}
                     onClick={() => go(href)}
                     title={text}
                     aria-current={active ? 'location' : undefined}
@@ -174,7 +180,7 @@ const Header = () => {
       {/* ------------------------------------------------ Mobile: top bar */}
       <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#090a0e]/90 text-white shadow-lg backdrop-blur-xl md:hidden">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4">
-          <a href="#home" aria-label="AGTV - Início" onClick={() => go('#home')} className="flex min-w-0 items-center gap-2.5">
+          <a href={urlOf('#home')} aria-label="AGTV - Início" onClick={() => go('#home')} className="flex min-w-0 items-center gap-2.5">
             <img src="/agtv-neon-logo.jpg" alt="" className="h-10 w-10 shrink-0 rounded-xl border border-white/15 object-cover shadow-[0_0_18px_rgba(154,123,255,0.2)]" />
             <span className="brand-copy flex min-w-0 flex-col">
               <strong>AGTV</strong>
@@ -222,7 +228,7 @@ const Header = () => {
                 return (
                   <motion.a
                     key={href}
-                    href={href}
+                    href={urlOf(href)}
                     onClick={() => go(href)}
                     aria-current={active ? 'location' : undefined}
                     initial={reduce ? false : { opacity: 0, x: -16 }}
@@ -253,7 +259,7 @@ const Header = () => {
           return (
             <a
               key={href}
-              href={href}
+              href={urlOf(href)}
               onClick={() => go(href)}
               aria-current={active ? 'location' : undefined}
               className={`relative flex min-h-14 flex-col items-center justify-center gap-1 px-1 py-2 text-[10px] font-bold transition ${active ? 'text-[#b7ff4a]' : 'text-gray-300 hover:text-white'}`}
