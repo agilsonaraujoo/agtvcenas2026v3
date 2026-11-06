@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { FiTv, FiFilm, FiLayers, FiCompass } from 'react-icons/fi';
+import { FiChevronRight, FiCompass, FiFilm, FiLayers, FiSearch, FiTv } from 'react-icons/fi';
 import { API_CONFIG } from '../utils/api';
 import '../styles/live-schedule.css';
 
@@ -22,6 +22,12 @@ const dateFormatter = new Intl.DateTimeFormat('pt-BR', {
 
 const formatTime = (iso) => timeFormatter.format(new Date(iso));
 const formatDay = (key) => dateFormatter.format(new Date(`${key}T12:00:00-03:00`)).replace('.', '');
+
+const dayKeyFormatter = new Intl.DateTimeFormat('en-CA', { timeZone: TIMEZONE });
+const dayKeyOf = (ms) => dayKeyFormatter.format(new Date(ms));
+
+// Busca sem diferenciar acento nem maiúscula ("sbt", "Globo", "jornal nacional").
+const normalize = (value) => (value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
 const isDateKey = (value) => /^\d{4}-\d{2}-\d{2}$/.test(value || '');
 const sharedDateFromLocation = () => {
@@ -58,77 +64,28 @@ const Artwork = ({ program, variant }) => {
   );
 };
 
-const ChannelCard = ({ channel, now, onOpen }) => {
-  const [showSynopsis, setShowSynopsis] = useState(false);
-
-  if (!channel.available) {
-    return (
-      <article className="epg-card epg-card--empty">
-        <h3 className="epg-channel">{channel.channel}</h3>
-        <p className="epg-unavailable">Programação indisponível no momento.</p>
-      </article>
-    );
-  }
-
-  return (
-    <article className="epg-card">
-      <h3 className="epg-channel">{channel.channel}</h3>
-
-      <div className="epg-now">
-        <span className="epg-badge epg-badge--live">
-          <i aria-hidden="true" /> AO VIVO AGORA
+// Uma linha por canal: dá para comparar vários canais na mesma tela e tocar para abrir a grade.
+const ChannelRow = ({ channel, main, after, now, live, onOpen }) => (
+  <li>
+    <button type="button" className="epg-row" onClick={() => onOpen(channel)} aria-label={`Ver grade do dia: ${channel.channel}`}>
+      <span className="epg-row-channel">{channel.channel}</span>
+      <Artwork program={main || {}} variant="row" />
+      <span className="epg-row-body">
+        <span className="epg-row-title">{main ? main.title : 'Sem informação do programa'}</span>
+        <span className="epg-row-meta">
+          {main && `${formatTime(main.start)} – ${formatTime(main.end)}`}
+          {after && <span className="epg-row-next"> · Depois: {formatTime(after.start)} {after.title}</span>}
         </span>
-        {channel.current ? (
-          <>
-            <button
-              type="button"
-              className="epg-current-trigger"
-              aria-expanded={showSynopsis}
-              aria-controls={`epg-synopsis-${channel.slug}`}
-              aria-label={`${showSynopsis ? 'Ocultar' : 'Ver'} sinopse: ${channel.current.title}`}
-              onClick={() => setShowSynopsis((visible) => !visible)}
-            >
-              <Artwork program={channel.current} variant="current" />
-              <span className="epg-title">{channel.current.title}</span>
-              <span className="epg-synopsis-toggle">{showSynopsis ? 'Ocultar sinopse' : 'Ver sinopse'}</span>
-            </button>
-            <p className="epg-time">
-              {formatTime(channel.current.start)} – {formatTime(channel.current.end)}
-            </p>
-            <div className="epg-progress" aria-hidden="true">
-              <span style={{ width: `${progressOf(channel.current, now)}%` }} />
-            </div>
-            {showSynopsis && (
-              <p id={`epg-synopsis-${channel.slug}`} className="epg-desc epg-current-synopsis">
-                {channel.current.description || 'Sinopse não disponível para este programa.'}
-              </p>
-            )}
-          </>
-        ) : (
-          <p className="epg-muted">Sem informação do programa atual.</p>
+        {live && main && (
+          <span className="epg-progress" aria-hidden="true">
+            <span style={{ width: `${progressOf(main, now)}%` }} />
+          </span>
         )}
-      </div>
-
-      <div className="epg-next">
-        <span className="epg-badge">A SEGUIR</span>
-        {channel.next ? (
-          <div className="epg-next-content">
-            <Artwork program={channel.next} variant="next" />
-            <p className="epg-next-line">
-              <strong>{formatTime(channel.next.start)}</strong> {channel.next.title}
-            </p>
-          </div>
-        ) : (
-          <p className="epg-muted">Sem informação do próximo programa.</p>
-        )}
-      </div>
-
-      <button type="button" className="epg-link" onClick={() => onOpen(channel)}>
-        Ver grade do dia
-      </button>
-    </article>
-  );
-};
+      </span>
+      <FiChevronRight aria-hidden="true" className="epg-row-arrow" />
+    </button>
+  </li>
+);
 
 const DayGuide = ({ channel, channels = [], onNavigate, dates, initialDate, onClose, onShare, shareStatus }) => {
   // Passar para o canal anterior/próximo sem fechar: setas, deslizar com o dedo ou ← →.
@@ -358,27 +315,18 @@ const FILTERS = [
   { key: 'variedades', label: 'Variedades', Icon: FiCompass, groups: ['documentarios'] },
 ];
 
+const NIGHT_TIME = '21:00';
+const nightOf = (key) => Date.parse(`${key}T${NIGHT_TIME}:00-03:00`);
+
 const LiveSchedule = () => {
   const [state, setState] = useState({ status: 'loading', data: null });
   const [group, setGroup] = useState('aovivo');
+  const [when, setWhen] = useState('agora');
+  const [query, setQuery] = useState('');
   const [now, setNow] = useState(Date.now());
   const [guide, setGuide] = useState(null);
-  // No celular a grade vira um carrossel lateral: guardamos qual card está à vista.
-  const gridRef = useRef(null);
-  const [slide, setSlide] = useState(0);
-  const onGridScroll = useCallback(() => {
-    const el = gridRef.current;
-    const first = el?.firstElementChild;
-    if (!el || !first) return;
-    const step = first.getBoundingClientRect().width + parseFloat(getComputedStyle(el).columnGap || '0');
-    setSlide(Math.round(el.scrollLeft / Math.max(1, step)));
-  }, []);
-  const goSlide = useCallback((index) => {
-    const el = gridRef.current;
-    const card = el?.children[index];
-    if (!el || !card) return;
-    el.scrollTo({ left: card.offsetLeft - (el.clientWidth - card.offsetWidth) / 2, behavior: 'smooth' });
-  }, []);
+  // Grade completa de cada dia, buscada só quando a pessoa escolhe a noite: { 'AAAA-MM-DD': { slug: programas } }.
+  const [days, setDays] = useState({});
   const [shareStatus, setShareStatus] = useState('');
   const sharedDate = sharedDateFromLocation();
 
@@ -414,6 +362,32 @@ const LiveSchedule = () => {
   }, [load]);
 
   const { data } = state;
+  const today = dayKeyOf(now);
+  const tomorrow = data ? (data.availableDates || []).find((key) => key > today) : null;
+
+  // Depois das 21h, "Hoje à noite" seria igual a "Agora".
+  const moments = useMemo(() => [
+    { key: 'agora', label: 'Agora' },
+    ...(now < nightOf(today) ? [{ key: 'noite', label: 'Hoje à noite', date: today }] : []),
+    ...(tomorrow ? [{ key: 'amanha', label: 'Amanhã à noite', date: tomorrow }] : []),
+  ], [now, today, tomorrow]);
+  const moment = moments.find((item) => item.key === when) || moments[0];
+  const momentDate = moment.date;
+
+  useEffect(() => {
+    if (!momentDate || days[momentDate]) return undefined;
+    let active = true;
+    fetchJson(`${API_CONFIG.PROGRAMACAO.URL}?date=${momentDate}`)
+      .then(({ ok, data: day }) => {
+        if (!active) return;
+        if (!ok || !day || !Array.isArray(day.channels)) throw new Error('indisponivel');
+        const programs = Object.fromEntries(day.channels.map((channel) => [channel.slug, channel.programs || []]));
+        setDays((previous) => ({ ...previous, [momentDate]: programs }));
+      })
+      .catch(() => active && setDays((previous) => ({ ...previous, [momentDate]: 'erro' })));
+    return () => { active = false; };
+  }, [momentDate, days]);
+
   const available = useMemo(
     () => (data ? data.channels.filter((channel) => channel.available) : []),
     [data],
@@ -422,31 +396,50 @@ const LiveSchedule = () => {
     () => FILTERS.filter((item) => available.some((channel) => item.groups.includes(channel.group))),
     [available],
   );
+
+  const dayPrograms = momentDate ? days[momentDate] : null;
+  const dayLoading = Boolean(momentDate) && !dayPrograms;
+  const dayFailed = dayPrograms === 'erro';
+
+  // O programa principal e o seguinte de cada canal no momento escolhido.
+  const rows = useMemo(() => available.map((channel) => {
+    if (!momentDate) return { channel, main: channel.current || channel.next, after: channel.current ? channel.next : null };
+    const programs = (dayPrograms && dayPrograms !== 'erro' && dayPrograms[channel.slug]) || [];
+    const at = nightOf(momentDate);
+    const main = programs.find((item) => Date.parse(item.start) <= at && at < Date.parse(item.end))
+      || programs.find((item) => Date.parse(item.start) > at);
+    const after = main ? programs.find((item) => Date.parse(item.start) >= Date.parse(main.end)) : null;
+    return { channel, main, after };
+  }), [available, momentDate, dayPrograms]);
+
+  // Com busca, olha todas as categorias: quem procura "Band" não precisa saber em qual aba ela está.
+  const term = normalize(query.trim());
   const visible = useMemo(() => {
-    if (!data) return [];
+    if (term) {
+      return rows.filter(({ channel, main, after }) => (
+        [channel.channel, main && main.title, after && after.title].some((value) => normalize(value).includes(term))
+      ));
+    }
     const active = FILTERS.find((item) => item.key === group) || FILTERS[0];
-    return data.channels.filter((channel) => active.groups.includes(channel.group));
-  }, [data, group]);
+    return rows.filter(({ channel }) => active.groups.includes(channel.group));
+  }, [rows, term, group]);
+
   const missing = data ? data.channels.filter((channel) => !channel.available) : [];
 
   return (
     <section id="programacao" className="relative px-4 py-12 text-white sm:py-16">
       <div className="container mx-auto">
         <div className="agtv-section-heading">
-          <span className="agtv-section-kicker">PROGRAMAÇÃO DE TV</span>
+          <span className="agtv-section-kicker">GUIA DE TV</span>
           <h1 className="agtv-section-title">
-            No ar <span>agora</span>
+            Programação <span>da TV</span>
           </h1>
         </div>
         <p className="agtv-section-description mb-8">
-          Veja o que está passando e o que vem a seguir nos principais canais. Horários de Brasília.
+          Veja o que passa agora e mais tarde. Toque em um canal para abrir a grade completa. Horários de Brasília.
         </p>
 
-        {state.status === 'loading' && (
-          <div className="epg-grid" aria-busy="true" aria-live="polite">
-            {Array.from({ length: 6 }, (_, index) => <div key={index} className="epg-card epg-skeleton" />)}
-          </div>
-        )}
+        {state.status === 'loading' && <div className="epg-rows epg-skeleton" aria-busy="true" aria-live="polite" />}
 
         {state.status === 'error' && (
           <p className="epg-state epg-error" role="alert">
@@ -465,6 +458,33 @@ const LiveSchedule = () => {
 
         {state.status === 'ready' && available.length > 0 && (
           <>
+            <div className="epg-tools">
+              <label className="epg-search">
+                <FiSearch aria-hidden="true" />
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Buscar canal ou programa"
+                  aria-label="Buscar canal ou programa"
+                />
+              </label>
+              <div className="epg-moments" role="tablist" aria-label="Quando">
+                {moments.map((item) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    role="tab"
+                    aria-selected={moment.key === item.key}
+                    className={`epg-moment${moment.key === item.key ? ' is-active' : ''}`}
+                    onClick={() => setWhen(item.key)}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="epg-filters-sticky">
               <div className="epg-filters" role="tablist" aria-label="Categorias de canais">
                 {filters.map(({ key, label, Icon }) => (
@@ -472,9 +492,9 @@ const LiveSchedule = () => {
                     key={key}
                     type="button"
                     role="tab"
-                    aria-selected={group === key}
-                    className={`epg-filter${group === key ? ' is-active' : ''}`}
-                    onClick={() => setGroup(key)}
+                    aria-selected={!term && group === key}
+                    className={`epg-filter${!term && group === key ? ' is-active' : ''}`}
+                    onClick={() => { setGroup(key); setQuery(''); }}
                   >
                     <Icon aria-hidden="true" />
                     <span>{label}</span>
@@ -483,20 +503,34 @@ const LiveSchedule = () => {
               </div>
             </div>
 
-            <div className="epg-grid" ref={gridRef} onScroll={onGridScroll}>
-              {visible.map((channel) => (
-                <ChannelCard key={channel.slug} channel={channel} now={now} onOpen={setGuide} />
-              ))}
-            </div>
+            {momentDate && !dayLoading && !dayFailed && (
+              <p className="epg-moment-note">O que passa às 21h de {formatDay(momentDate)}</p>
+            )}
 
-            {visible.length > 1 && (
-              <div className="epg-pager" aria-label="Navegar entre os canais">
-                <button type="button" className="epg-pager-btn" onClick={() => goSlide(Math.max(0, slide - 1))} disabled={slide === 0} aria-label="Canal anterior">‹</button>
-                <span className="epg-pager-count" aria-live="polite">
-                  {Math.min(slide + 1, visible.length)} de {visible.length} canais
-                </span>
-                <button type="button" className="epg-pager-btn" onClick={() => goSlide(Math.min(visible.length - 1, slide + 1))} disabled={slide >= visible.length - 1} aria-label="Próximo canal">›</button>
-              </div>
+            {dayLoading && <div className="epg-rows epg-skeleton" aria-busy="true" />}
+
+            {dayFailed && (
+              <p className="epg-state epg-error" role="alert">Não foi possível carregar esse horário agora. Tente novamente em instantes.</p>
+            )}
+
+            {!dayLoading && !dayFailed && visible.length === 0 && (
+              <p className="epg-state" role="status">Nada encontrado para “{query.trim()}”.</p>
+            )}
+
+            {!dayLoading && !dayFailed && visible.length > 0 && (
+              <ul className="epg-rows">
+                {visible.map(({ channel, main, after }) => (
+                  <ChannelRow
+                    key={channel.slug}
+                    channel={channel}
+                    main={main}
+                    after={after}
+                    now={now}
+                    live={!momentDate && Boolean(channel.current)}
+                    onOpen={setGuide}
+                  />
+                ))}
+              </ul>
             )}
 
             {missing.length > 0 && (
@@ -511,13 +545,13 @@ const LiveSchedule = () => {
       {guide && data && (
         <DayGuide
           channel={guide}
-          channels={visible.filter((c) => c.available !== false)}
+          channels={visible.map((row) => row.channel)}
           onNavigate={setGuide}
           dates={Array.from(new Set([
             ...(sharedDate ? [sharedDate] : []),
             ...(data.availableDates && data.availableDates.length ? data.availableDates : [data.date]),
           ]))}
-          initialDate={sharedDate || data.date}
+          initialDate={sharedDate || momentDate || data.date}
           onClose={() => setGuide(null)}
           onShare={copyScheduleLink}
           shareStatus={shareStatus}
