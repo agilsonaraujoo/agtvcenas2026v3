@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { FiChevronRight, FiCompass, FiFilm, FiLayers, FiSearch, FiTv } from 'react-icons/fi';
+import { FiChevronDown, FiChevronRight, FiCompass, FiFilm, FiLayers, FiSearch, FiShare2, FiTv } from 'react-icons/fi';
 import { API_CONFIG } from '../utils/api';
 import '../styles/live-schedule.css';
 
@@ -28,6 +28,13 @@ const dayKeyOf = (ms) => dayKeyFormatter.format(new Date(ms));
 
 // Busca sem diferenciar acento nem maiúscula ("sbt", "Globo", "jornal nacional").
 const normalize = (value) => (value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const dayLabel = (key, now) => {
+  if (key === dayKeyOf(now)) return 'Hoje';
+  if (key === dayKeyOf(now + DAY_MS)) return 'Amanhã';
+  return formatDay(key);
+};
 
 const isDateKey = (value) => /^\d{4}-\d{2}-\d{2}$/.test(value || '');
 const sharedDateFromLocation = () => {
@@ -106,6 +113,11 @@ const DayGuide = ({ channel, channels = [], onNavigate, dates, initialDate, onCl
   const [date, setDate] = useState(initialDate);
   const [state, setState] = useState({ status: 'loading', programs: [] });
   const [now, setNow] = useState(Date.now());
+  // Hoje a grade começa no que está passando; o que já passou fica atrás de um botão.
+  const [showPast, setShowPast] = useState(false);
+  // Sinopses abertas ou fechadas pela pessoa; a do programa no ar começa aberta.
+  const [opened, setOpened] = useState({});
+  const listRef = useRef(null);
   const closeButtonRef = useRef(null);
 
   useEffect(() => {
@@ -147,6 +159,9 @@ const DayGuide = ({ channel, channels = [], onNavigate, dates, initialDate, onCl
   useEffect(() => {
     let active = true;
     setState({ status: 'loading', programs: [] });
+    setShowPast(false);
+    setOpened({});
+    if (listRef.current) listRef.current.scrollTop = 0;
     fetchJson(`${API_CONFIG.PROGRAMACAO.URL}?channel=${channel.slug}&date=${date}`)
       .then(({ ok, data }) => {
         if (!active) return;
@@ -170,40 +185,6 @@ const DayGuide = ({ channel, channels = [], onNavigate, dates, initialDate, onCl
     const timer = setInterval(() => setNow(Date.now()), REFRESH_MS);
     return () => clearInterval(timer);
   }, []);
-
-  // Ao abrir (ou trocar de dia), a lista já começa no que está passando agora, lá em cima.
-  // Programas que já passaram continuam acima, a uma rolagem de distância.
-  const listRef = useRef(null);
-  useEffect(() => {
-    if (state.status !== 'ready') return;
-    const list = listRef.current;
-    const target = list?.querySelector('li.is-live') || list?.querySelector('li:not(.is-past)');
-    if (!list || !target) return undefined;
-    const content = list.firstElementChild;
-    const pin = () => {
-      // No fim do dia sobra pouca lista abaixo do programa atual; um espaço no fim deixa ele subir até o topo.
-      if (content) {
-        content.style.paddingBottom = '0px';
-        const below = content.getBoundingClientRect().bottom - target.getBoundingClientRect().top;
-        content.style.paddingBottom = `${Math.max(0, list.clientHeight - below - 8)}px`;
-      }
-      list.scrollTop += target.getBoundingClientRect().top - list.getBoundingClientRect().top - 8;
-    };
-    pin();
-    // As capas acima terminam de carregar depois e empurram a lista: mantém o programa atual
-    // no topo até a pessoa mexer na lista (ou por alguns segundos).
-    let touched = false;
-    const stop = () => { touched = true; };
-    const ro = content && typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => { if (!touched) pin(); }) : null;
-    if (ro) ro.observe(content);
-    ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach((ev) => list.addEventListener(ev, stop, { passive: true }));
-    const timer = setTimeout(() => ro && ro.disconnect(), 4000);
-    return () => {
-      clearTimeout(timer);
-      if (ro) ro.disconnect();
-      ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach((ev) => list.removeEventListener(ev, stop));
-    };
-  }, [state.status, date]);
 
   useEffect(() => {
     const onKey = (event) => {
@@ -233,28 +214,36 @@ const DayGuide = ({ channel, channels = [], onNavigate, dates, initialDate, onCl
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose, goTo, next, prev]);
 
+  const pastCount = date === dayKeyOf(now)
+    ? state.programs.filter((program) => Date.parse(program.end) <= now).length
+    : 0;
+  const hiddenPast = showPast ? 0 : pastCount;
+  const shownPrograms = hiddenPast ? state.programs.slice(hiddenPast) : state.programs;
+
   return createPortal(
     <div className="epg-overlay" role="dialog" aria-modal="true" aria-label={`Grade do dia: ${channel.channel}`} onClick={onClose}>
       <div className="epg-modal" onClick={(event) => event.stopPropagation()} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         <header className="epg-modal-header">
-          <div className="epg-modal-heading">
+          <div className="epg-guide-bar">
             {channels.length > 1 && (
-              <div className="epg-channel-nav">
-                <button type="button" className="epg-pager-btn" onClick={() => goTo(prev, -1)} disabled={!prev} aria-label={prev ? `Canal anterior: ${prev.channel}` : 'Sem canal anterior'}>‹</button>
-                <span className="epg-channel-count">{index + 1} de {channels.length}</span>
-                <button type="button" className="epg-pager-btn" onClick={() => goTo(next, 1)} disabled={!next} aria-label={next ? `Próximo canal: ${next.channel}` : 'Sem próximo canal'}>›</button>
-              </div>
+              <button type="button" className="epg-pager-btn" onClick={() => goTo(prev, -1)} disabled={!prev} aria-label={prev ? `Canal anterior: ${prev.channel}` : 'Sem canal anterior'}>‹</button>
             )}
-            <h3 key={channel.slug} className={`epg-guide-title${direction > 0 ? ' from-right' : direction < 0 ? ' from-left' : ''}`}>{channel.channel}</h3>
-            <button type="button" className="epg-share epg-share--modal" onClick={() => onShare(date)}>
-              Compartilhar este dia
-            </button>
-            {shareStatus && <span className="epg-share-status" role="status">{shareStatus}</span>}
+            <div className="epg-guide-name">
+              <h3 key={channel.slug} className={`epg-guide-title${direction > 0 ? ' from-right' : direction < 0 ? ' from-left' : ''}`}>{channel.channel}</h3>
+              {channels.length > 1 && <span>Canal {index + 1} de {channels.length}</span>}
+            </div>
+            {channels.length > 1 && (
+              <button type="button" className="epg-pager-btn" onClick={() => goTo(next, 1)} disabled={!next} aria-label={next ? `Próximo canal: ${next.channel}` : 'Sem próximo canal'}>›</button>
+            )}
           </div>
-          <button ref={closeButtonRef} type="button" className="epg-close" onClick={onClose} aria-label="Fechar grade">×</button>
+          <button type="button" className="epg-icon-btn" onClick={() => onShare(date)} aria-label="Copiar link deste dia" title="Copiar link deste dia">
+            <FiShare2 aria-hidden="true" />
+          </button>
+          <button ref={closeButtonRef} type="button" className="epg-icon-btn epg-close" onClick={onClose} aria-label="Fechar grade">×</button>
         </header>
+        {shareStatus && <p className="epg-share-status" role="status">{shareStatus}</p>}
 
-        <div className="epg-days" role="tablist">
+        <div className="epg-days" role="tablist" aria-label="Dia">
           {dates.map((key) => (
             <button
               key={key}
@@ -264,7 +253,7 @@ const DayGuide = ({ channel, channels = [], onNavigate, dates, initialDate, onCl
               className={`epg-day${key === date ? ' is-active' : ''}`}
               onClick={() => setDate(key)}
             >
-              {formatDay(key)}
+              {dayLabel(key, now)}
             </button>
           ))}
         </div>
@@ -274,31 +263,52 @@ const DayGuide = ({ channel, channels = [], onNavigate, dates, initialDate, onCl
           {state.status === 'error' && <p className="epg-error">Não foi possível carregar a grade deste dia.</p>}
           {state.status === 'empty' && <p className="epg-muted">Sem programação disponível para este dia.</p>}
           {state.status === 'ready' && (
-            <ul>
-              {state.programs.map((program) => {
-                const live = Date.parse(program.start) <= now && now < Date.parse(program.end);
-                const past = Date.parse(program.end) <= now;
-                return (
-                  <li key={`${program.start}-${program.title}`} className={live ? 'is-live' : past ? 'is-past' : ''}>
-                    <time>{formatTime(program.start)}</time>
-                    <div className="epg-guide-entry">
-                      <Artwork program={program} variant="guide" />
-                      <div className="epg-guide-details">
-                        <p className="epg-title">
-                        {program.title}
-                        {live && <span className="epg-badge epg-badge--live epg-badge--inline">AO VIVO</span>}
-                      </p>
-                      <p className="epg-time">
-                        até {formatTime(program.end)} · {program.duration} min
-                        {program.rating ? ` · ${program.rating}` : ''}
-                      </p>
-                        {program.description && <p className="epg-desc">{program.description}</p>}
-                      </div>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+            <>
+              {hiddenPast > 0 && (
+                <button type="button" className="epg-past-toggle" onClick={() => setShowPast(true)}>
+                  Ver o que já passou ({hiddenPast})
+                </button>
+              )}
+              <ul>
+                {shownPrograms.map((program) => {
+                  const key = `${program.start}-${program.title}`;
+                  const live = Date.parse(program.start) <= now && now < Date.parse(program.end);
+                  const past = Date.parse(program.end) <= now;
+                  const open = Boolean(program.description) && (key in opened ? opened[key] : live);
+                  return (
+                    <li key={key} className={live ? 'is-live' : past ? 'is-past' : ''}>
+                      <button
+                        type="button"
+                        className="epg-entry"
+                        aria-expanded={program.description ? open : undefined}
+                        disabled={!program.description}
+                        onClick={() => setOpened((previous) => ({ ...previous, [key]: !open }))}
+                      >
+                        <time>{formatTime(program.start)}</time>
+                        <Artwork program={program} variant="guide" />
+                        <span className="epg-entry-body">
+                          <span className="epg-title">
+                            {program.title}
+                            {live && <span className="epg-badge epg-badge--live epg-badge--inline">AO VIVO</span>}
+                          </span>
+                          <span className="epg-time">
+                            até {formatTime(program.end)} · {program.duration} min
+                            {program.rating ? ` · ${program.rating}` : ''}
+                          </span>
+                        </span>
+                        {program.description && <FiChevronDown aria-hidden="true" className={`epg-entry-arrow${open ? ' is-open' : ''}`} />}
+                      </button>
+                      {live && (
+                        <div className="epg-progress" aria-hidden="true">
+                          <span style={{ width: `${progressOf(program, now)}%` }} />
+                        </div>
+                      )}
+                      {open && <p className="epg-desc">{program.description}</p>}
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
           )}
         </div>
       </div>
