@@ -192,8 +192,10 @@
 }
 
 .epg-modal {
+  position: relative;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   width: min(100%, 40rem);
   max-height: 88vh;
   min-height: 0;
@@ -745,4 +747,48 @@
 .epg-list li .epg-desc {
   margin: 0.5rem 0 0.1rem;
   white-space: normal;
+}
+
+/* Dica de deslizar: a grade recua de leve e mostra a ponta do próximo canal */
+.epg-swipe-peek {
+  position: absolute;
+  top: 0;
+  right: -3.75rem;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  width: 3.75rem;
+  border-left: 1px solid rgb(183 255 74 / 30%);
+  background: var(--agtv-surface-raised);
+  padding: 0 0.35rem;
+  color: var(--agtv-green);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-align: center;
+  animation: epg-swipe-peek 1.7s cubic-bezier(0.45, 0, 0.25, 1) 0.45s both;
+}
+
+.epg-swipe-peek b {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.epg-modal.is-hinting .epg-list,
+.epg-modal.is-hinting .epg-days,
+.epg-modal.is-hinting .epg-modal-header {
+  animation: epg-swipe-nudge 1.7s cubic-bezier(0.45, 0, 0.25, 1) 0.45s both;
+}
+
+@keyframes epg-swipe-peek {
+  0%, 100% { transform: translateX(0); }
+  35%, 60% { transform: translateX(-3.75rem); }
+}
+
+@keyframes epg-swipe-nudge {
+  0%, 100% { transform: translateX(0); }
+  35%, 60% { transform: translateX(-3.75rem); }
 }

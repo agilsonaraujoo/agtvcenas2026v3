@@ -36,6 +36,29 @@ const dayLabel = (key, now) => {
   return formatDay(key);
 };
 
+// A dica de deslizar aparece até a pessoa usar o gesto uma vez.
+const SWIPE_LEARNED_KEY = 'agtv-swipe-learned';
+const HINT_MS = 2600;
+const swipeLearned = () => {
+  try {
+    return localStorage.getItem(SWIPE_LEARNED_KEY) === '1';
+  } catch {
+    return false;
+  }
+};
+const rememberSwipe = () => {
+  try {
+    localStorage.setItem(SWIPE_LEARNED_KEY, '1');
+  } catch {
+    // Sem armazenamento, a dica só continua aparecendo.
+  }
+};
+const shouldHintSwipe = () => (
+  navigator.maxTouchPoints > 0
+  && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  && !swipeLearned()
+);
+
 const isDateKey = (value) => /^\d{4}-\d{2}-\d{2}$/.test(value || '');
 const sharedDateFromLocation = () => {
   if (typeof window === 'undefined') return null;
@@ -102,13 +125,22 @@ const DayGuide = ({ channel, channels = [], onNavigate, dates, initialDate, onCl
   const [direction, setDirection] = useState(0);
   const goTo = useCallback((target, dir) => { if (target && onNavigate) { setDirection(dir); onNavigate(target); } }, [onNavigate]);
   const touchRef = useRef(null);
-  const onTouchStart = (event) => { if (event.target.closest('.epg-days')) { touchRef.current = null; return; } const t = event.touches[0]; touchRef.current = { x: t.clientX, y: t.clientY }; };
+  const [hint, setHint] = useState(() => Boolean(next) && shouldHintSwipe());
+  useEffect(() => {
+    if (!hint) return undefined;
+    const timer = setTimeout(() => setHint(false), HINT_MS);
+    return () => clearTimeout(timer);
+  }, [hint]);
+  const onTouchStart = (event) => { setHint(false); if (event.target.closest('.epg-days')) { touchRef.current = null; return; } const t = event.touches[0]; touchRef.current = { x: t.clientX, y: t.clientY }; };
   const onTouchEnd = (event) => {
     const start = touchRef.current; touchRef.current = null;
     if (!start) return;
     const t = event.changedTouches[0];
     const dx = t.clientX - start.x, dy = t.clientY - start.y;
-    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) goTo(dx < 0 ? next : prev, dx < 0 ? 1 : -1);
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      rememberSwipe();
+      goTo(dx < 0 ? next : prev, dx < 0 ? 1 : -1);
+    }
   };
   const [date, setDate] = useState(initialDate);
   const [state, setState] = useState({ status: 'loading', programs: [] });
@@ -222,7 +254,8 @@ const DayGuide = ({ channel, channels = [], onNavigate, dates, initialDate, onCl
 
   return createPortal(
     <div className="epg-overlay" role="dialog" aria-modal="true" aria-label={`Grade do dia: ${channel.channel}`} onClick={onClose}>
-      <div className="epg-modal" onClick={(event) => event.stopPropagation()} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      <div className={`epg-modal${hint ? ' is-hinting' : ''}`} onClick={(event) => event.stopPropagation()} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+        {hint && next && <div className="epg-swipe-peek" aria-hidden="true"><span>{next.channel}</span><b>›</b></div>}
         <header className="epg-modal-header">
           <div className="epg-guide-bar">
             {channels.length > 1 && (
