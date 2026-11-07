@@ -1,0 +1,27 @@
+name: Manter central de ajuda ativa
+
+# O plano grátis do Supabase pausa o projeto sem uso, e aí os tutoriais somem do site.
+# Esta consulta diária passa pela função do site, que lê o banco, então não precisa de chave.
+on:
+  schedule:
+    - cron: '17 12 * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  consultar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Consultar um tutorial
+        run: |
+          status=$(curl -s -o /dev/null -w '%{http_code}' --retry 3 --retry-delay 20 --retry-all-errors -m 30 \
+            -A 'WhatsApp/2.0' \
+            'https://agtv-central-ajuda.vercel.app/tutorial/0bcaa385-2277-4d82-ad5b-dcc51c741ce1' || true)
+          echo "Resposta: $status"
+          # 404 só quer dizer que esse tutorial foi removido; o banco respondeu do mesmo jeito.
+          if [ "$status" != '200' ] && [ "$status" != '404' ]; then
+            echo '::error::A central de ajuda não conseguiu ler o banco. Veja se o projeto foi pausado no Supabase.'
+            exit 1
+          fi
