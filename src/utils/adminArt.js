@@ -344,3 +344,36 @@ export const moviesArt = async (data, options) => {
   paintFooter(ctx, 'Grade completa:', 'agtvcenas.com.br/programacao', format);
   return toBlob(canvas);
 };
+
+// Legendas que acompanham as imagens: só dados do dia, mais o link do site.
+const SITE = 'agtvcenas.com.br';
+const dayWord = (data) => (data.date === data.today ? 'hoje' : 'amanhã');
+const CAPTION_LINES = 5;
+
+export const gamesCaption = (data, { onlyUpcoming, now }) => {
+  const games = data.games.filter((game) => !onlyUpcoming || !gameEnded(game, now));
+  if (!games.length) return '';
+  const lines = games.slice(0, CAPTION_LINES).map((game) => `${formatTime(game.start)} • ${game.home} x ${game.away}`);
+  const more = games.length - lines.length;
+  return [
+    `⚽ Jogos de ${dayWord(data)} na AGTV, ${formatDay(data.date)}`,
+    '',
+    ...lines,
+    ...(more > 0 ? [`+ ${more} ${more === 1 ? 'jogo' : 'jogos'}`] : []),
+    '',
+    `📺 Horários e onde assistir, em tempo real: ${SITE}/jogos`,
+  ].join('\n');
+};
+
+export const moviesCaption = (data, { onlyUpcoming, now }) => {
+  const picks = primeTimePicks(data, { onlyUpcoming, now, format: ART_FORMATS[0] });
+  if (!picks.length) return '';
+  const lines = picks.slice(0, CAPTION_LINES).map((item) => `${formatTime(item.start)} • ${item.title}`);
+  return [
+    `🎬🍿 Filmes e séries de ${dayWord(data)} à noite na AGTV, das 20h às 23h`,
+    '',
+    ...lines,
+    '',
+    `📺 Grade completa, em tempo real: ${SITE}/programacao`,
+  ].join('\n');
+};

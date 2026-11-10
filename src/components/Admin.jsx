@@ -1,7 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { FiCheck, FiCopy, FiDownload, FiImage, FiLink, FiLogOut, FiRefreshCw, FiShare } from 'react-icons/fi';
 import { API_CONFIG } from '../utils/api';
-import { ART_FORMATS, formatDay, formatTime, gameEnded, gamesArt, moviesArt } from '../utils/adminArt';
+import {
+  ART_FORMATS, formatDay, formatTime, gameEnded, gamesArt, gamesCaption, moviesArt, moviesCaption,
+} from '../utils/adminArt';
 import '../styles/admin.css';
 
 const WHATSAPP_LIMIT = 65000;
@@ -99,7 +101,7 @@ const canShareImage = (file) => {
   }
 };
 
-const ArtPreview = ({ file, label }) => {
+const ArtPreview = ({ file, label, caption }) => {
   const [done, setDone] = useState('');
 
   useEffect(() => {
@@ -120,7 +122,8 @@ const ArtPreview = ({ file, label }) => {
 
   const share = async () => {
     try {
-      await navigator.share({ files: [file.shareFile] });
+      // A legenda vai junto; se o app de destino ignorar o texto, o botão Copiar legenda cobre.
+      await navigator.share(caption ? { files: [file.shareFile], text: caption } : { files: [file.shareFile] });
     } catch (error) {
       if (error?.name !== 'AbortError') setDone('Não deu para enviar');
     }
@@ -152,8 +155,19 @@ const ArtPreview = ({ file, label }) => {
 
 // Desenha os dois tamanhos e deixa as prévias na tela, cada uma com Copiar, Enviar e Baixar.
 // No computador também baixa os PNGs na hora.
-const ArtMaker = ({ label, fileName, draw }) => {
+const ArtMaker = ({ label, fileName, draw, caption }) => {
   const [art, setArt] = useState({ status: 'idle', files: [] });
+  const [captionCopied, setCaptionCopied] = useState(false);
+
+  useEffect(() => {
+    if (!captionCopied) return undefined;
+    const timer = setTimeout(() => setCaptionCopied(false), 2500);
+    return () => clearTimeout(timer);
+  }, [captionCopied]);
+
+  const copyCaption = async () => {
+    setCaptionCopied(await copyText(caption));
+  };
 
   useEffect(() => () => {
     art.files.forEach((file) => URL.revokeObjectURL(file.url));
@@ -200,7 +214,16 @@ const ArtMaker = ({ label, fileName, draw }) => {
       {art.status === 'error' && <p className="admin-error" role="alert">Não foi possível gerar a imagem.</p>}
       {art.files.length > 0 && (
         <div className="admin-art-previews">
-          {art.files.map((file) => <ArtPreview key={file.name} file={file} label={label} />)}
+          {art.files.map((file) => <ArtPreview key={file.name} file={file} label={label} caption={caption} />)}
+        </div>
+      )}
+      {art.files.length > 0 && caption && (
+        <div className="admin-art-caption">
+          <textarea readOnly value={caption} rows={Math.min(10, caption.split('\n').length)} aria-label="Legenda pronta" />
+          <button type="button" className="admin-chip" onClick={copyCaption}>
+            {captionCopied ? <FiCheck aria-hidden="true" /> : <FiCopy aria-hidden="true" />}
+            {captionCopied ? ' Legenda copiada' : ' Copiar legenda'}
+          </button>
         </div>
       )}
     </div>
@@ -395,6 +418,7 @@ const Admin = () => {
               label="Gerar imagem dos jogos"
               fileName={`AGTV_jogos_${data.date}`}
               draw={(format) => gamesArt(data, { onlyUpcoming, now: Date.now(), format })}
+              caption={gamesCaption(data, { onlyUpcoming, now: Date.now() })}
             />
           )}
         />
@@ -408,6 +432,7 @@ const Admin = () => {
               label="Gerar imagem de filmes e séries"
               fileName={`AGTV_filmes_series_${data.date}`}
               draw={(format) => moviesArt(data, { onlyUpcoming, now: Date.now(), format })}
+              caption={moviesCaption(data, { onlyUpcoming, now: Date.now() })}
             />
           )}
         >
