@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { FiCheck, FiCopy, FiDownload, FiImage, FiLink, FiLogOut, FiRefreshCw, FiShare } from 'react-icons/fi';
 import { API_CONFIG } from '../utils/api';
+import { SCHEDULE_TABS, scheduleTabPath } from '../utils/routes';
 import {
   ART_FORMATS, formatDay, formatTime, gameEnded, gamesArt, gamesCaption, moviesArt, moviesCaption,
 } from '../utils/adminArt';
@@ -377,6 +378,9 @@ const Admin = () => {
       <section className="admin-panel admin-links" aria-label="Links para enviar">
         <LinkRow label="Jogos do dia" url={`${window.location.origin}/jogos`} />
         <LinkRow label="Programação da TV" url={`${window.location.origin}/programacao`} />
+        {SCHEDULE_TABS.map((tab) => (
+          <LinkRow key={tab.key} label={`Programação: ${tab.label}`} url={`${window.location.origin}${scheduleTabPath(tab.key)}`} />
+        ))}
       </section>
 
       <div className="admin-controls">

@@ -3,6 +3,7 @@ import SiteShell from './SiteShell';
 import LiveSchedule from './LiveSchedule';
 import GamesToday from './GamesToday';
 import { TRIAL_URL } from './Header';
+import { scheduleTabFromPath, scheduleTabPath } from '../utils/routes';
 import '../styles/section-page.css';
 
 const setMeta = (selector, attribute, value) => {
@@ -41,12 +42,22 @@ export const GamesPage = () => (
   </SectionPage>
 );
 
-export const SchedulePage = () => (
-  <SectionPage
-    title="Programação da TV ao vivo | AGTV"
-    description="Veja o que está passando agora e o que vem a seguir nos canais abertos, de esporte, filmes, séries e variedades. Horários de Brasília."
-    path="/programacao"
-  >
-    <LiveSchedule />
-  </SectionPage>
-);
+const SCHEDULE_TITLES = {
+  filmes: 'Filmes na TV hoje | AGTV',
+  series: 'Séries na TV hoje | AGTV',
+  variedades: 'Variedades na TV hoje | AGTV',
+  aovivo: 'TV ao vivo: canais abertos e de esporte | AGTV',
+};
+
+export const SchedulePage = () => {
+  const tab = scheduleTabFromPath();
+  return (
+    <SectionPage
+      title={SCHEDULE_TITLES[tab] || 'Programação da TV ao vivo | AGTV'}
+      description="Veja o que está passando agora e o que vem a seguir nos canais abertos, de esporte, filmes, séries e variedades. Horários de Brasília."
+      path={tab ? scheduleTabPath(tab) : '/programacao'}
+    >
+      <LiveSchedule />
+    </SectionPage>
+  );
+};

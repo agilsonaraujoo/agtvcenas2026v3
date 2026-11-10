@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom';
 import { FiChevronDown, FiChevronRight, FiCompass, FiFilm, FiLayers, FiSearch, FiShare2, FiTv } from 'react-icons/fi';
 import { API_CONFIG } from '../utils/api';
+import { isSchedulePath, scheduleTabFromPath, scheduleTabPath } from '../utils/routes';
 import '../styles/live-schedule.css';
 
 const TIMEZONE = 'America/Sao_Paulo';
@@ -358,12 +359,19 @@ const FILTERS = [
   { key: 'variedades', label: 'Variedades', Icon: FiCompass, groups: ['documentarios'] },
 ];
 
+// Na página da programação, o endereço acompanha a aba: copiar o link da barra já leva à categoria.
+const showTabInAddress = (key) => {
+  if (!isSchedulePath()) return;
+  const { search, hash } = window.location;
+  window.history.replaceState(window.history.state, '', `${scheduleTabPath(key)}${search}${hash}`);
+};
+
 const NIGHT_TIME = '21:00';
 const nightOf = (key) => Date.parse(`${key}T${NIGHT_TIME}:00-03:00`);
 
 const LiveSchedule = () => {
   const [state, setState] = useState({ status: 'loading', data: null });
-  const [group, setGroup] = useState('aovivo');
+  const [group, setGroup] = useState(() => scheduleTabFromPath() || 'aovivo');
   const [when, setWhen] = useState('agora');
   const [query, setQuery] = useState('');
   const [now, setNow] = useState(Date.now());
@@ -537,7 +545,7 @@ const LiveSchedule = () => {
                     role="tab"
                     aria-selected={!term && group === key}
                     className={`epg-filter${!term && group === key ? ' is-active' : ''}`}
-                    onClick={() => { setGroup(key); setQuery(''); }}
+                    onClick={() => { setGroup(key); setQuery(''); showTabInAddress(key); }}
                   >
                     <Icon aria-hidden="true" />
                     <span>{label}</span>

@@ -3,4 +3,8 @@
   <url><loc>https://agtvcenas.com.br/</loc></url>
   <url><loc>https://agtvcenas.com.br/jogos</loc><changefreq>daily</changefreq></url>
   <url><loc>https://agtvcenas.com.br/programacao</loc><changefreq>daily</changefreq></url>
+  <url><loc>https://agtvcenas.com.br/programacao/ao-vivo</loc><changefreq>daily</changefreq></url>
+  <url><loc>https://agtvcenas.com.br/programacao/filmes</loc><changefreq>daily</changefreq></url>
+  <url><loc>https://agtvcenas.com.br/programacao/series</loc><changefreq>daily</changefreq></url>
+  <url><loc>https://agtvcenas.com.br/programacao/variedades</loc><changefreq>daily</changefreq></url>
 </urlset>

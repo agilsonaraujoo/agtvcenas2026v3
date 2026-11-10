@@ -6,7 +6,7 @@ import App from './App';
 import ThankYou from './components/ThankYou';
 import Admin from './components/Admin';
 import { GamesPage, SchedulePage } from './components/SectionPage';
-import { currentPath, movedSectionUrl } from './utils/routes';
+import { currentPath, isSchedulePath, movedSectionUrl } from './utils/routes';
 
 // O site não tem roteador: /obrigado é a volta do pagamento do Mercado Pago e /admin é a página do dono.
 const PAGES = {
@@ -15,7 +15,7 @@ const PAGES = {
   '/jogos': GamesPage,
   '/programacao': SchedulePage,
 };
-const Page = PAGES[currentPath()] || App;
+const Page = PAGES[currentPath()] || (isSchedulePath() ? SchedulePage : App);
 
 const moved = movedSectionUrl();
 if (moved) {
