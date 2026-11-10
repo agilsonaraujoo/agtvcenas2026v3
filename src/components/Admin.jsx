@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { FiCheck, FiCopy, FiImage, FiLink, FiLogOut, FiRefreshCw } from 'react-icons/fi';
+import { FiCheck, FiCopy, FiDownload, FiImage, FiLink, FiLogOut, FiRefreshCw, FiShare } from 'react-icons/fi';
 import { API_CONFIG } from '../utils/api';
 import { ART_FORMATS, formatDay, formatTime, gameEnded, gamesArt, moviesArt } from '../utils/adminArt';
 import '../styles/admin.css';
@@ -86,8 +86,72 @@ const LinkRow = ({ label, url }) => {
   );
 };
 
-// Desenha os dois tamanhos, baixa os PNGs e deixa as prévias na tela para conferir. O link de cada
-// prévia cobre o navegador que bloquear o segundo download automático.
+// No celular, baixar sozinho faz o Safari abrir a imagem e sair do admin; lá a pessoa copia ou envia.
+const isTouchDevice = () => window.matchMedia('(pointer: coarse)').matches;
+
+const canCopyImage = () => typeof window.ClipboardItem === 'function' && Boolean(navigator.clipboard?.write);
+
+const canShareImage = (file) => {
+  try {
+    return Boolean(navigator.canShare?.({ files: [file] }));
+  } catch {
+    return false;
+  }
+};
+
+const ArtPreview = ({ file, label }) => {
+  const [done, setDone] = useState('');
+
+  useEffect(() => {
+    if (!done) return undefined;
+    const timer = setTimeout(() => setDone(''), 2500);
+    return () => clearTimeout(timer);
+  }, [done]);
+
+  // Copia direto para a área de transferência: dá para colar no WhatsApp sem salvar na galeria.
+  const copy = async () => {
+    try {
+      await navigator.clipboard.write([new window.ClipboardItem({ 'image/png': file.blob })]);
+      setDone('Copiada');
+    } catch {
+      setDone('Não deu para copiar');
+    }
+  };
+
+  const share = async () => {
+    try {
+      await navigator.share({ files: [file.shareFile] });
+    } catch (error) {
+      if (error?.name !== 'AbortError') setDone('Não deu para enviar');
+    }
+  };
+
+  return (
+    <figure className="admin-art-preview">
+      <img src={file.url} alt={`Prévia ${file.label}: ${label}`} />
+      <figcaption>{file.label}</figcaption>
+      <div className="admin-art-actions">
+        {canCopyImage() && (
+          <button type="button" className="admin-chip" onClick={copy}>
+            {done === 'Copiada' ? <FiCheck aria-hidden="true" /> : <FiCopy aria-hidden="true" />} Copiar
+          </button>
+        )}
+        {canShareImage(file.shareFile) && (
+          <button type="button" className="admin-chip" onClick={share}>
+            <FiShare aria-hidden="true" /> Enviar
+          </button>
+        )}
+        <a className="admin-chip" href={file.url} download={file.name}>
+          <FiDownload aria-hidden="true" /> Baixar
+        </a>
+      </div>
+      {done && <p className="admin-art-status" role="status">{done}</p>}
+    </figure>
+  );
+};
+
+// Desenha os dois tamanhos e deixa as prévias na tela, cada uma com Copiar, Enviar e Baixar.
+// No computador também baixa os PNGs na hora.
 const ArtMaker = ({ label, fileName, draw }) => {
   const [art, setArt] = useState({ status: 'idle', files: [] });
 
@@ -103,17 +167,24 @@ const ArtMaker = ({ label, fileName, draw }) => {
         setArt({ status: 'empty', files: [] });
         return;
       }
-      const files = blobs.map((blob, index) => ({
-        url: URL.createObjectURL(blob),
-        name: `${fileName}_${ART_FORMATS[index].key}.png`,
-        label: ART_FORMATS[index].label,
-      }));
-      files.forEach((file) => {
-        const link = document.createElement('a');
-        link.href = file.url;
-        link.download = file.name;
-        link.click();
+      const files = blobs.map((blob, index) => {
+        const name = `${fileName}_${ART_FORMATS[index].key}.png`;
+        return {
+          blob,
+          shareFile: new File([blob], name, { type: 'image/png' }),
+          url: URL.createObjectURL(blob),
+          name,
+          label: ART_FORMATS[index].label,
+        };
       });
+      if (!isTouchDevice()) {
+        files.forEach((file) => {
+          const link = document.createElement('a');
+          link.href = file.url;
+          link.download = file.name;
+          link.click();
+        });
+      }
       setArt({ status: 'ready', files });
     } catch {
       setArt({ status: 'error', files: [] });
@@ -129,12 +200,7 @@ const ArtMaker = ({ label, fileName, draw }) => {
       {art.status === 'error' && <p className="admin-error" role="alert">Não foi possível gerar a imagem.</p>}
       {art.files.length > 0 && (
         <div className="admin-art-previews">
-          {art.files.map((file) => (
-            <a key={file.name} href={file.url} download={file.name}>
-              <img src={file.url} alt={`Prévia ${file.label}: ${label}`} />
-              <span>Baixar {file.label}</span>
-            </a>
-          ))}
+          {art.files.map((file) => <ArtPreview key={file.name} file={file} label={label} />)}
         </div>
       )}
     </div>

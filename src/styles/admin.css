@@ -231,17 +231,41 @@
   gap: 0.75rem;
 }
 
-.admin-art-previews a {
+.admin-art-preview {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.45rem;
+  width: 12rem;
+  margin: 0;
+}
+
+.admin-art-preview figcaption {
+  color: var(--agtv-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.admin-art-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.admin-art-actions .admin-chip {
+  text-decoration: none;
+}
+
+.admin-art-status {
+  margin: 0;
   color: var(--agtv-green);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 700;
 }
 
 .admin-art img {
-  width: 10rem;
+  display: block;
+  width: 100%;
+  height: auto;
   border: 1px solid rgb(255 255 255 / 12%);
   border-radius: 0.6rem;
 }
