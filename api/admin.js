@@ -1,4 +1,4 @@
-const { hasSameOrigin, sendJson } = require('../lib/serverApi');
+const { GEMINI_BASE_URL, hasSameOrigin, sendJson } = require('../lib/serverApi');
 const { CHANNELS, GROUPS } = require('../lib/epg/channels');
 const { TIMEZONE, DAY_MS, dateKey, dayRange, isValidDateKey } = require('../lib/epg/time');
 const { gamesForDate } = require('../lib/epg/games');
@@ -19,6 +19,83 @@ const failuresByIp = createLimiter({ limit: 5, windowMs: LOCK_MS });
 const failuresTotal = createLimiter({ limit: 30, windowMs: LOCK_MS });
 // Cada leitura consulta o placar, que tem cota de 10 chamadas por minuto.
 const reads = createLimiter({ limit: 30, windowMs: 60 * 1000 });
+
+// A IA escolhe só entre os programas da grade que o admin manda; os nomes da arte nunca vêm dela.
+const MAX_CANDIDATES = 150;
+const highlightsLimiter = createLimiter({ limit: 20, windowMs: 60 * 1000 });
+
+const readBody = async (req) => {
+  if (req.body && typeof req.body === 'object') return req.body;
+  if (typeof req.body === 'string') return JSON.parse(req.body);
+  let raw = '';
+  for await (const chunk of req) {
+    raw += chunk;
+    if (raw.length > 100000) throw new Error('Corpo grande demais.');
+  }
+  return raw ? JSON.parse(raw) : {};
+};
+
+const cleanCandidates = (list) => (Array.isArray(list) ? list : [])
+  .slice(0, MAX_CANDIDATES)
+  .map((item) => ({
+    id: Number(item && item.id),
+    title: String((item && item.title) || '').slice(0, 120),
+    channel: String((item && item.channel) || '').slice(0, 60),
+    time: String((item && item.time) || '').slice(0, 5),
+  }))
+  .filter((item) => Number.isInteger(item.id) && item.title);
+
+const highlights = async (req, res) => {
+  const limitedFor = highlightsLimiter.hit(clientIp(req));
+  if (limitedFor) return tooMany(res, limitedFor);
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return sendJson(res, 503, { error: { message: 'IA não configurada.' } });
+
+  let body;
+  try {
+    body = await readBody(req);
+  } catch {
+    return sendJson(res, 400, { error: { message: 'Pedido inválido.' } });
+  }
+  const candidates = cleanCandidates(body.candidates);
+  const limit = Math.min(Math.max(Number(body.limit) || 10, 1), 20);
+  if (!candidates.length) return sendJson(res, 200, { ids: [] });
+
+  const lines = candidates.map((item) => `${item.id} | ${item.time} | ${item.title} | ${item.channel}`).join('\n');
+  const prompt = [
+    'Você escolhe destaques de filmes e séries da TV paga para uma arte de divulgação no Brasil.',
+    `Da lista abaixo (id | horário | título | canal), escolha até ${limit} programas que mais chamam atenção do público:`,
+    'filmes conhecidos ou lançamentos recentes, séries populares e títulos com grande elenco ou franquia famosa.',
+    'Evite reprises fracas, programas de bastidores, chamadas, vinhetas e títulos genéricos.',
+    'Prefira variedade de canais e gêneros. Responda só com os ids da lista, do melhor para o pior.',
+    '',
+    lines,
+  ].join('\n');
+
+  try {
+    const response = await fetch(GEMINI_BASE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseMimeType: 'application/json',
+          responseSchema: { type: 'OBJECT', properties: { ids: { type: 'ARRAY', items: { type: 'INTEGER' } } }, required: ['ids'] },
+        },
+      }),
+    });
+    if (!response.ok) throw new Error(`Gemini ${response.status}`);
+    const result = await response.json();
+    const text = result?.candidates?.[0]?.content?.parts?.map((part) => part.text).join('') || '';
+    const valid = new Set(candidates.map((item) => item.id));
+    const ids = [...new Set((JSON.parse(text).ids || []).map(Number))].filter((id) => valid.has(id)).slice(0, limit);
+    if (!ids.length) throw new Error('Resposta sem ids válidos.');
+    return sendJson(res, 200, { ids });
+  } catch (error) {
+    console.error('[admin] destaques da IA falharam:', error.message);
+    return sendJson(res, 502, { error: { message: 'A IA não respondeu agora.' } });
+  }
+};
 
 const wait = (ms) => new Promise((resolve) => { setTimeout(resolve, ms); });
 
@@ -67,6 +144,13 @@ module.exports = async function handler(req, res) {
     });
   }
 
+  // POST com a sessão e o cabeçalho de ação pede os destaques à IA; sem ele, é o login.
+  if (req.method === 'POST' && req.headers['x-admin-acao'] === 'destaques') {
+    if (!validSession(readSession(req), password)) {
+      return sendJson(res, 401, { error: { message: 'Entre com a senha.' } });
+    }
+    return highlights(req, res);
+  }
   if (req.method === 'POST') return login(req, res, password);
   if (req.method === 'DELETE') {
     res.setHeader('Set-Cookie', sessionCookie(req, '', 0));

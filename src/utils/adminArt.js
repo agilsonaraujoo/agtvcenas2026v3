@@ -16,9 +16,9 @@ const SURFACE = '#101116';
 const DISPLAY = 'Manrope, sans-serif';
 const UI = '"DM Sans", sans-serif';
 
-// Horário nobre da arte de filmes e séries.
-const PRIME_START = '20:00';
-const PRIME_END = '23:00';
+// Horário padrão da arte de filmes e séries quando não é hoje (no dia de hoje começa na hora atual).
+export const PRIME_START = '20:00';
+export const PRIME_END = '23:00';
 const MOVIE_GROUPS = ['filmes', 'series'];
 
 const timeFormatter = new Intl.DateTimeFormat('pt-BR', { timeZone: TIMEZONE, hour: '2-digit', minute: '2-digit' });
@@ -293,28 +293,58 @@ const cleanTitle = (title) => title.replace(/^Aquecimento\s+/i, '');
 // Vinhetas da grade que não são filme nem série.
 const FILLER = /^(?:preview|intervalo)\b/i;
 
-// Um destaque por canal, sem repetir título, começando no horário nobre. Lista única: o grupo do
-// canal não diz o tipo do programa (canal de séries também passa filme).
-const primeTimePicks = (data, { onlyUpcoming, now, format }) => {
+const toMinutes = (hhmm) => {
+  const [hours, minutes] = String(hhmm).split(':').map(Number);
+  return hours * 60 + (minutes || 0);
+};
+
+const sameTitle = (title) => title.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+
+export const movieRowsFor = (format) => Math.floor((format.contentBottom - format.contentTop) / (MOVIE_ROW + ROW_GAP));
+
+// "das 14h às 17h30" para o cabeçalho e a legenda.
+const hourLabel = (hhmm) => {
+  const [hours, minutes] = hhmm.split(':');
+  return `${Number(hours)}h${minutes === '00' ? '' : minutes}`;
+};
+export const windowLabel = ({ start, end }) => `das ${hourLabel(start)} às ${hourLabel(end === '23:59' ? '00:00' : end)}`;
+
+// Filmes e séries que começam dentro do horário pedido, sem vinhetas e sem repetir título. São os únicos
+// nomes que vão para a arte: a IA só ordena esta lista, nunca inventa programa.
+export const movieCandidates = (data, { start, end, onlyUpcoming, now }) => {
+  const from = toMinutes(start);
+  const until = toMinutes(end) > from ? toMinutes(end) : 24 * 60;
   const seen = new Set();
-  const picks = [];
+  const list = [];
   for (const channel of data.channels.filter((item) => MOVIE_GROUPS.includes(item.group))) {
-    const program = channel.programs.find((item) => {
-      const time = formatTime(item.start);
-      return time >= PRIME_START && time < PRIME_END
-        && !FILLER.test(item.title)
-        && !seen.has(cleanTitle(item.title))
-        && (!onlyUpcoming || Date.parse(item.end) > now);
-    });
-    if (program) {
+    for (const program of channel.programs) {
+      const minute = toMinutes(formatTime(program.start));
+      if (minute < from || minute >= until || FILLER.test(program.title)) continue;
+      if (onlyUpcoming && Date.parse(program.end) <= now) continue;
       const title = cleanTitle(program.title);
-      seen.add(title);
-      picks.push({ ...program, title, channel: channel.name });
+      const key = sameTitle(title);
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      list.push({ id: list.length, title, channel: channel.name, start: program.start, end: program.end });
     }
   }
-  const rows = Math.floor((format.contentBottom - format.contentTop) / (MOVIE_ROW + ROW_GAP));
-  return picks.sort((a, b) => Date.parse(a.start) - Date.parse(b.start)).slice(0, rows);
+  return list;
 };
+
+// Sem IA: um destaque por canal (o primeiro do horário) e depois o resto, por ordem de canal.
+export const simpleRanking = (candidates) => {
+  const channels = new Set();
+  const first = [];
+  const rest = [];
+  for (const item of candidates) {
+    if (channels.has(item.channel)) rest.push(item);
+    else { channels.add(item.channel); first.push(item); }
+  }
+  return [...first, ...rest];
+};
+
+// Os melhores que cabem no formato, na ordem do horário.
+const picksFor = (ranked, rows) => ranked.slice(0, rows).sort((a, b) => Date.parse(a.start) - Date.parse(b.start));
 
 const paintMovieRow = (ctx, item, y) => {
   paintRowBox(ctx, y, MOVIE_ROW, formatTime(item.start));
@@ -327,15 +357,14 @@ const paintMovieRow = (ctx, item, y) => {
   ctx.fillText(item.channel, TEXT_X, y + 78);
 };
 
-export const moviesArt = async (data, options) => {
-  const items = primeTimePicks(data, options);
+export const moviesArt = async (data, { ranked, window, format }) => {
+  const items = picksFor(ranked, movieRowsFor(format));
   if (!items.length) return null;
 
   const [logo] = await Promise.all([loadImage('/agtv-logo-192.png'), loadFonts()]);
-  const { format } = options;
   const [canvas, ctx] = createCanvas(format);
   paintBackground(ctx, format);
-  paintHeader(ctx, logo, 'FILMES E SÉRIES', `${formatDay(data.date)} · das 20h às 23h`, format);
+  paintHeader(ctx, logo, 'FILMES E SÉRIES', `${formatDay(data.date)} · ${windowLabel(window)}`, format);
   let y = format.contentTop;
   for (const item of items) {
     paintMovieRow(ctx, item, y);
@@ -365,12 +394,12 @@ export const gamesCaption = (data, { onlyUpcoming, now }) => {
   ].join('\n');
 };
 
-export const moviesCaption = (data, { onlyUpcoming, now }) => {
-  const picks = primeTimePicks(data, { onlyUpcoming, now, format: ART_FORMATS[0] });
+export const moviesCaption = (data, { ranked, window }) => {
+  const picks = picksFor(ranked, CAPTION_LINES);
   if (!picks.length) return '';
-  const lines = picks.slice(0, CAPTION_LINES).map((item) => `${formatTime(item.start)} • ${item.title}`);
+  const lines = picks.map((item) => `${formatTime(item.start)} • ${item.title}`);
   return [
-    `🎬🍿 Filmes e séries de ${dayWord(data)} à noite na AGTV, das 20h às 23h`,
+    `🎬🍿 Filmes e séries de ${dayWord(data)} na AGTV, ${windowLabel(window)}`,
     '',
     ...lines,
     '',

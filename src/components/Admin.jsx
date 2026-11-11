@@ -3,7 +3,8 @@ import { FiCheck, FiCopy, FiDownload, FiImage, FiLink, FiLogOut, FiRefreshCw, Fi
 import { API_CONFIG } from '../utils/api';
 import { SCHEDULE_TABS, scheduleTabPath } from '../utils/routes';
 import {
-  ART_FORMATS, formatDay, formatTime, gameEnded, gamesArt, gamesCaption, moviesArt, moviesCaption,
+  ART_FORMATS, PRIME_END, PRIME_START, formatDay, formatTime, gameEnded, gamesArt, gamesCaption,
+  movieCandidates, movieRowsFor, moviesArt, moviesCaption, simpleRanking,
 } from '../utils/adminArt';
 import '../styles/admin.css';
 
@@ -156,7 +157,44 @@ const ArtPreview = ({ file, label, caption }) => {
 
 // Desenha os dois tamanhos e deixa as prévias na tela, cada uma com Copiar, Enviar e Baixar.
 // No computador também baixa os PNGs na hora.
-const ArtMaker = ({ label, fileName, draw, caption }) => {
+// Horário padrão da arte de filmes: hoje, da próxima meia hora até 3 horas depois; outro dia, 20h às 23h.
+const defaultArtWindow = (data) => {
+  if (data.date !== data.today) return { start: PRIME_START, end: PRIME_END };
+  const [hours, minutes] = formatTime(new Date().toISOString()).split(':').map(Number);
+  const start = Math.min(Math.ceil((hours * 60 + minutes) / 30) * 30, 23 * 60);
+  const end = Math.min(start + 180, 23 * 60 + 59);
+  const hhmm = (total) => `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+  return { start: hhmm(start), end: hhmm(end) };
+};
+
+// Destaques de filmes e séries do horário: a IA ordena os programas da grade (nunca inventa nome);
+// sem resposta dela, um por canal.
+const pickMovies = async (data, { start, end, onlyUpcoming, useAi }) => {
+  const window = { start, end };
+  const candidates = movieCandidates(data, { start, end, onlyUpcoming, now: Date.now() });
+  if (!candidates.length) return { ranked: [], window, note: '' };
+  const automatic = { ranked: simpleRanking(candidates), window, note: 'Seleção automática: um destaque por canal.' };
+  if (!useAi) return automatic;
+  try {
+    const response = await fetch(API_CONFIG.ADMIN.URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Acao': 'destaques' },
+      body: JSON.stringify({
+        limit: movieRowsFor(ART_FORMATS[0]),
+        candidates: candidates.map(({ id, title, channel, start: at }) => ({ id, title, channel, time: formatTime(at) })),
+      }),
+    });
+    const result = await response.json().catch(() => ({}));
+    const byId = new Map(candidates.map((item) => [item.id, item]));
+    const ranked = response.ok && Array.isArray(result.ids) ? result.ids.map((id) => byId.get(id)).filter(Boolean) : [];
+    if (ranked.length) return { ranked, window, note: `A IA escolheu ${ranked.length} destaques entre ${candidates.length} programas desse horário.` };
+  } catch {
+    // cai na seleção automática
+  }
+  return { ...automatic, note: 'A IA não respondeu agora; usei a seleção automática (um por canal).' };
+};
+
+const ArtMaker = ({ label, fileName, draw, caption, prepare, controls }) => {
   const [art, setArt] = useState({ status: 'idle', files: [] });
   const [captionCopied, setCaptionCopied] = useState(false);
 
@@ -167,7 +205,7 @@ const ArtMaker = ({ label, fileName, draw, caption }) => {
   }, [captionCopied]);
 
   const copyCaption = async () => {
-    setCaptionCopied(await copyText(caption));
+    setCaptionCopied(await copyText(art.caption));
   };
 
   useEffect(() => () => {
@@ -177,7 +215,9 @@ const ArtMaker = ({ label, fileName, draw, caption }) => {
   const generate = async () => {
     setArt((previous) => ({ ...previous, status: 'working' }));
     try {
-      const blobs = await Promise.all(ART_FORMATS.map(draw));
+      // prepare() roda uma vez (ex.: a IA escolhe os destaques) e vale para os dois formatos e a legenda.
+      const context = prepare ? await prepare() : undefined;
+      const blobs = await Promise.all(ART_FORMATS.map((format) => draw(format, context)));
       if (blobs.some((blob) => !blob)) {
         setArt({ status: 'empty', files: [] });
         return;
@@ -200,7 +240,8 @@ const ArtMaker = ({ label, fileName, draw, caption }) => {
           link.click();
         });
       }
-      setArt({ status: 'ready', files });
+      const text = typeof caption === 'function' ? caption(context) : caption;
+      setArt({ status: 'ready', files, caption: text || '', note: (context && context.note) || '' });
     } catch {
       setArt({ status: 'error', files: [] });
     }
@@ -208,19 +249,21 @@ const ArtMaker = ({ label, fileName, draw, caption }) => {
 
   return (
     <div className="admin-art">
+      {controls}
       <button type="button" className="admin-chip" onClick={generate} disabled={art.status === 'working'}>
         <FiImage aria-hidden="true" /> {art.status === 'working' ? 'Gerando...' : label}
       </button>
       {art.status === 'empty' && <p className="admin-count">Nada para mostrar nesse período.</p>}
       {art.status === 'error' && <p className="admin-error" role="alert">Não foi possível gerar a imagem.</p>}
+      {art.files.length > 0 && art.note && <p className="admin-count">{art.note}</p>}
       {art.files.length > 0 && (
         <div className="admin-art-previews">
-          {art.files.map((file) => <ArtPreview key={file.name} file={file} label={label} caption={caption} />)}
+          {art.files.map((file) => <ArtPreview key={file.name} file={file} label={label} caption={art.caption} />)}
         </div>
       )}
-      {art.files.length > 0 && caption && (
+      {art.files.length > 0 && art.caption && (
         <div className="admin-art-caption">
-          <textarea readOnly value={caption} rows={Math.min(10, caption.split('\n').length)} aria-label="Legenda pronta" />
+          <textarea readOnly value={art.caption} rows={Math.min(10, art.caption.split('\n').length)} aria-label="Legenda pronta" />
           <button type="button" className="admin-chip" onClick={copyCaption}>
             {captionCopied ? <FiCheck aria-hidden="true" /> : <FiCopy aria-hidden="true" />}
             {captionCopied ? ' Legenda copiada' : ' Copiar legenda'}
@@ -258,6 +301,13 @@ const Admin = () => {
   const [password, setPassword] = useState('');
   const [state, setState] = useState({ status: 'checking', error: null, data: null });
   const [onlyUpcoming, setOnlyUpcoming] = useState(true);
+  const [artWindow, setArtWindow] = useState({ start: PRIME_START, end: PRIME_END });
+  const [useAi, setUseAi] = useState(true);
+  const loadedDate = state.data ? state.data.date : null;
+  const loadedToday = state.data ? state.data.today : null;
+  useEffect(() => {
+    if (loadedDate) setArtWindow(defaultArtWindow({ date: loadedDate, today: loadedToday }));
+  }, [loadedDate, loadedToday]);
   const [group, setGroup] = useState('');
   const [channel, setChannel] = useState('');
 
@@ -435,8 +485,23 @@ const Admin = () => {
               key={`filmes-${data.date}`}
               label="Gerar imagem de filmes e séries"
               fileName={`AGTV_filmes_series_${data.date}`}
-              draw={(format) => moviesArt(data, { onlyUpcoming, now: Date.now(), format })}
-              caption={moviesCaption(data, { onlyUpcoming, now: Date.now() })}
+              prepare={() => pickMovies(data, { ...artWindow, onlyUpcoming, useAi })}
+              draw={(format, picks) => moviesArt(data, { ...picks, format })}
+              caption={(picks) => moviesCaption(data, picks)}
+              controls={(
+                <div className="admin-art-window">
+                  <label>
+                    De <input type="time" value={artWindow.start} onChange={(event) => setArtWindow((previous) => ({ ...previous, start: event.target.value || previous.start }))} />
+                  </label>
+                  <label>
+                    até <input type="time" value={artWindow.end} onChange={(event) => setArtWindow((previous) => ({ ...previous, end: event.target.value || previous.end }))} />
+                  </label>
+                  <label className="admin-check">
+                    <input type="checkbox" checked={useAi} onChange={(event) => setUseAi(event.target.checked)} />
+                    Escolher os melhores com IA
+                  </label>
+                </div>
+              )}
             />
           )}
         >
