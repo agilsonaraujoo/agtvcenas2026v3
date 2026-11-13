@@ -123,16 +123,12 @@ const Header = () => {
           <span aria-hidden="true" className="pointer-events-none absolute bottom-0 left-0 h-[2px] bg-gradient-to-r from-[#b7ff4a] to-[#9a7bff]" style={{ width: `${progress * 100}%` }} />
 
           <a href={urlOf('#home')} onClick={() => go('#home')} className="relative flex shrink-0 items-center gap-3" aria-label="AGTV - Início">
-            <motion.span
-              whileHover={reduce ? undefined : { rotate: -6, scale: 1.06 }}
-              className={`relative block overflow-hidden rounded-xl ring-1 ring-white/20 shadow-[0_0_24px_rgba(154,123,255,0.3)] transition-all duration-300 ${compact ? 'h-9 w-9' : 'h-11 w-11'}`}
-            >
-              <img src="/agtv-neon-logo.jpg" alt="Logo AGTV" className="h-full w-full object-cover" />
-            </motion.span>
-            <span className="brand-copy hidden flex-col xl:flex">
-              <strong>AGTV</strong>
-              <small>ENTRETENIMENTO</small>
-            </span>
+            <motion.img
+              src="/marca/agtv-horizontal-slogan.svg"
+              alt="AGTV: entretenimento sem limites"
+              whileHover={reduce ? undefined : { scale: 1.04 }}
+              className={`block w-auto transition-all duration-300 ${compact ? 'h-9' : 'h-11'}`}
+            />
           </a>
 
           <ul className="relative flex items-center gap-0.5 lg:gap-1">
@@ -181,11 +177,7 @@ const Header = () => {
       <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#090a0e]/90 text-white shadow-lg backdrop-blur-xl md:hidden">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4">
           <a href={urlOf('#home')} aria-label="AGTV - Início" onClick={() => go('#home')} className="flex min-w-0 items-center gap-2.5">
-            <img src="/agtv-neon-logo.jpg" alt="" className="h-10 w-10 shrink-0 rounded-xl border border-white/15 object-cover shadow-[0_0_18px_rgba(154,123,255,0.2)]" />
-            <span className="brand-copy flex min-w-0 flex-col">
-              <strong>AGTV</strong>
-              <small>ENTRETENIMENTO</small>
-            </span>
+            <img src="/marca/agtv-horizontal-slogan.svg" alt="AGTV: entretenimento sem limites" className="block h-10 w-auto shrink-0" />
           </a>
           <div className="flex shrink-0 items-center gap-2">
             <a

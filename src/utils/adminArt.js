@@ -214,14 +214,34 @@ const paintGameRow = (ctx, game, crests, y) => {
   ctx.fillText(ellipsis(ctx, `${status}${channels}`, TEXT_WIDTH), TEXT_X, y + 88);
 };
 
-// Monta os blocos que cabem: futebol e campeonatos principais primeiro.
-const fitGames = (games, format) => {
-  const sorted = [...games].sort((a, b) => (
-    Number(b.competition.football) - Number(a.competition.football)
-    || a.competition.order - b.competition.order
-    || Date.parse(a.start) - Date.parse(b.start)
-  ));
+const byCompetition = (a, b) => (
+  Number(b.competition.football) - Number(a.competition.football)
+  || a.competition.order - b.competition.order
+  || Date.parse(a.start) - Date.parse(b.start)
+);
+
+const layoutCost = (games) => {
+  let used = 0;
+  let last = null;
+  for (const game of games) {
+    used += GAME_ROW + ROW_GAP + (last === game.competition.name ? 0 : GROUP_TITLE + GROUP_GAP);
+    last = game.competition.name;
+  }
+  return used;
+};
+
+// Monta os blocos que cabem: futebol e campeonatos principais primeiro. Com `ranked` (ordem da IA),
+// entram os mais bem colocados que couberem, e a arte continua agrupada por campeonato.
+const fitGames = (games, format, ranked = null) => {
   const limit = format.contentBottom - format.contentTop - 40;
+  if (ranked) {
+    for (let count = ranked.length; count > 0; count -= 1) {
+      const chosen = ranked.slice(0, count).sort(byCompetition);
+      if (layoutCost(chosen) <= limit) return fitGames(chosen, format);
+    }
+    return { groups: [], hidden: ranked.length };
+  }
+  const sorted = [...games].sort(byCompetition);
   const groups = [];
   let used = 0;
   let shown = 0;
@@ -247,17 +267,22 @@ const createCanvas = ({ height }) => {
 
 const toBlob = (canvas) => new Promise((resolve) => { canvas.toBlob(resolve, 'image/png'); });
 
-export const gamesArt = async (data, { onlyUpcoming, now, format }) => {
-  const games = data.games.filter((game) => !onlyUpcoming || !gameEnded(game, now));
+export const upcomingGames = (data, { onlyUpcoming, now }) => data.games.filter((game) => !onlyUpcoming || !gameEnded(game, now));
+
+export const gamesArt = async (data, { onlyUpcoming, now, format, ranked }) => {
+  const games = ranked || upcomingGames(data, { onlyUpcoming, now });
   if (!games.length) return null;
-  const { groups, hidden } = fitGames(games, format);
+  const fitted = fitGames(games, format, ranked);
+  // Com a IA, "+ N jogos" conta todos os que ficaram de fora da arte.
+  const groups = fitted.groups;
+  const hidden = ranked ? upcomingGames(data, { onlyUpcoming, now }).length - groups.reduce((n, g) => n + g.games.length, 0) : fitted.hidden;
 
   // Só escudos do próprio site: imagem de outro domínio impediria exportar o PNG.
   const sources = [...new Set(groups.flatMap((group) => group.games)
     .flatMap((game) => [game.homeCrest, game.awayCrest])
     .filter((src) => src && src.startsWith('/')))];
   const [logo, images] = await Promise.all([
-    loadImage('/agtv-logo-192.png'),
+    loadImage('/marca/favicon-192.png'),
     Promise.all(sources.map(loadImage)),
     loadFonts(),
   ]);
@@ -361,7 +386,7 @@ export const moviesArt = async (data, { ranked, window, format }) => {
   const items = picksFor(ranked, movieRowsFor(format));
   if (!items.length) return null;
 
-  const [logo] = await Promise.all([loadImage('/agtv-logo-192.png'), loadFonts()]);
+  const [logo] = await Promise.all([loadImage('/marca/favicon-192.png'), loadFonts()]);
   const [canvas, ctx] = createCanvas(format);
   paintBackground(ctx, format);
   paintHeader(ctx, logo, 'FILMES E SÉRIES', `${formatDay(data.date)} · ${windowLabel(window)}`, format);
@@ -379,11 +404,15 @@ const SITE = 'agtvcenas.com.br';
 const dayWord = (data) => (data.date === data.today ? 'hoje' : 'amanhã');
 const CAPTION_LINES = 5;
 
-export const gamesCaption = (data, { onlyUpcoming, now }) => {
-  const games = data.games.filter((game) => !onlyUpcoming || !gameEnded(game, now));
-  if (!games.length) return '';
-  const lines = games.slice(0, CAPTION_LINES).map((game) => `${formatTime(game.start)} • ${game.home} x ${game.away}`);
-  const more = games.length - lines.length;
+export const gamesCaption = (data, { onlyUpcoming, now, ranked }) => {
+  const all = upcomingGames(data, { onlyUpcoming, now });
+  if (!all.length) return '';
+  // Com a IA, a legenda traz só os escolhidos por ela, na ordem do horário.
+  const top = ranked && ranked.length
+    ? ranked.slice(0, CAPTION_LINES).sort((a, b) => Date.parse(a.start) - Date.parse(b.start))
+    : all.slice(0, CAPTION_LINES);
+  const lines = top.map((game) => `${formatTime(game.start)} • ${game.home} x ${game.away}`);
+  const more = all.length - lines.length;
   return [
     `⚽ Jogos de ${dayWord(data)} na AGTV, ${formatDay(data.date)}`,
     '',

@@ -4,7 +4,7 @@ import { API_CONFIG } from '../utils/api';
 import { SCHEDULE_TABS, scheduleTabPath } from '../utils/routes';
 import {
   ART_FORMATS, PRIME_END, PRIME_START, formatDay, formatTime, gameEnded, gamesArt, gamesCaption,
-  movieCandidates, movieRowsFor, moviesArt, moviesCaption, simpleRanking,
+  movieCandidates, movieRowsFor, moviesArt, moviesCaption, simpleRanking, upcomingGames,
 } from '../utils/adminArt';
 import '../styles/admin.css';
 
@@ -167,6 +167,36 @@ const defaultArtWindow = (data) => {
   return { start: hhmm(start), end: hhmm(end) };
 };
 
+// Pede à IA a ordem dos itens da grade (só ids; nomes e horários continuam os da grade). null = sem resposta.
+const askAiRanking = async (kind, candidates, limit) => {
+  try {
+    const response = await fetch(API_CONFIG.ADMIN.URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Acao': 'destaques' },
+      body: JSON.stringify({ kind, limit, candidates }),
+    });
+    const result = await response.json().catch(() => ({}));
+    return response.ok && Array.isArray(result.ids) && result.ids.length ? result.ids : null;
+  } catch {
+    return null;
+  }
+};
+
+// Jogos de maior audiência para a arte: a IA ordena os jogos do dia; sem ela, a ordem por campeonato.
+const pickGames = async (data, { onlyUpcoming, useAi }) => {
+  const games = upcomingGames(data, { onlyUpcoming, now: Date.now() });
+  if (!useAi || !games.length) return { ranked: null, note: '' };
+  const ids = await askAiRanking('jogos', games.map((game, id) => ({
+    id,
+    time: formatTime(game.start),
+    title: `${game.home} x ${game.away} (${game.competition.name})`,
+    channel: game.channels.map((channel) => channel.name).join(', '),
+  })), 16);
+  if (!ids) return { ranked: null, note: 'A IA não respondeu agora; usei a ordem por campeonato.' };
+  const ranked = ids.map((id) => games[id]).filter(Boolean);
+  return { ranked, note: `A IA escolheu os jogos de maior audiência entre ${games.length} do dia.` };
+};
+
 // Destaques de filmes e séries do horário: a IA ordena os programas da grade (nunca inventa nome);
 // sem resposta dela, um por canal.
 const pickMovies = async (data, { start, end, onlyUpcoming, useAi }) => {
@@ -175,22 +205,10 @@ const pickMovies = async (data, { start, end, onlyUpcoming, useAi }) => {
   if (!candidates.length) return { ranked: [], window, note: '' };
   const automatic = { ranked: simpleRanking(candidates), window, note: 'Seleção automática: um destaque por canal.' };
   if (!useAi) return automatic;
-  try {
-    const response = await fetch(API_CONFIG.ADMIN.URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Admin-Acao': 'destaques' },
-      body: JSON.stringify({
-        limit: movieRowsFor(ART_FORMATS[0]),
-        candidates: candidates.map(({ id, title, channel, start: at }) => ({ id, title, channel, time: formatTime(at) })),
-      }),
-    });
-    const result = await response.json().catch(() => ({}));
-    const byId = new Map(candidates.map((item) => [item.id, item]));
-    const ranked = response.ok && Array.isArray(result.ids) ? result.ids.map((id) => byId.get(id)).filter(Boolean) : [];
-    if (ranked.length) return { ranked, window, note: `A IA escolheu ${ranked.length} destaques entre ${candidates.length} programas desse horário.` };
-  } catch {
-    // cai na seleção automática
-  }
+  const ids = await askAiRanking('filmes', candidates.map(({ id, title, channel, start: at }) => ({ id, title, channel, time: formatTime(at) })), movieRowsFor(ART_FORMATS[0]));
+  const byId = new Map(candidates.map((item) => [item.id, item]));
+  const ranked = ids ? ids.map((id) => byId.get(id)).filter(Boolean) : [];
+  if (ranked.length) return { ranked, window, note: `A IA escolheu ${ranked.length} destaques entre ${candidates.length} programas desse horário.` };
   return { ...automatic, note: 'A IA não respondeu agora; usei a seleção automática (um por canal).' };
 };
 
@@ -303,6 +321,7 @@ const Admin = () => {
   const [onlyUpcoming, setOnlyUpcoming] = useState(true);
   const [artWindow, setArtWindow] = useState({ start: PRIME_START, end: PRIME_END });
   const [useAi, setUseAi] = useState(true);
+  const [useAiGames, setUseAiGames] = useState(true);
   const loadedDate = state.data ? state.data.date : null;
   const loadedToday = state.data ? state.data.today : null;
   useEffect(() => {
@@ -471,8 +490,17 @@ const Admin = () => {
               key={`jogos-${data.date}`}
               label="Gerar imagem dos jogos"
               fileName={`AGTV_jogos_${data.date}`}
-              draw={(format) => gamesArt(data, { onlyUpcoming, now: Date.now(), format })}
-              caption={gamesCaption(data, { onlyUpcoming, now: Date.now() })}
+              prepare={() => pickGames(data, { onlyUpcoming, useAi: useAiGames })}
+              draw={(format, picks) => gamesArt(data, { onlyUpcoming, now: Date.now(), format, ranked: picks && picks.ranked })}
+              caption={(picks) => gamesCaption(data, { onlyUpcoming, now: Date.now(), ranked: picks && picks.ranked })}
+              controls={(
+                <div className="admin-art-window">
+                  <label className="admin-check">
+                    <input type="checkbox" checked={useAiGames} onChange={(event) => setUseAiGames(event.target.checked)} />
+                    Escolher os jogos de maior audiência com IA
+                  </label>
+                </div>
+              )}
             />
           )}
         />

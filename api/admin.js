@@ -62,15 +62,21 @@ const highlights = async (req, res) => {
   if (!candidates.length) return sendJson(res, 200, { ids: [] });
 
   const lines = candidates.map((item) => `${item.id} | ${item.time} | ${item.title} | ${item.channel}`).join('\n');
-  const prompt = [
+  const games = body.kind === 'jogos';
+  const prompt = (games ? [
+    'Você escolhe os jogos de hoje com maior audiência no Brasil para uma arte de divulgação de uma TV por assinatura.',
+    `Da lista abaixo (id | horário | jogo e campeonato | canais), escolha até ${limit} jogos que o público brasileiro mais quer ver:`,
+    'clubes grandes do Brasil e clássicos, Seleção Brasileira, Libertadores, Copa do Brasil, Brasileirão,',
+    'jogos decisivos e seleções e clubes famosos da Europa (Liga das Nações, Champions, Premier League, La Liga).',
+    'Depois do futebol, só NBA, NFL ou vôlei se forem jogos de destaque. Evite jogos de pouca audiência.',
+    'Responda só com os ids da lista, do jogo de maior audiência para o de menor.',
+  ] : [
     'Você escolhe destaques de filmes e séries da TV paga para uma arte de divulgação no Brasil.',
     `Da lista abaixo (id | horário | título | canal), escolha até ${limit} programas que mais chamam atenção do público:`,
     'filmes conhecidos ou lançamentos recentes, séries populares e títulos com grande elenco ou franquia famosa.',
     'Evite reprises fracas, programas de bastidores, chamadas, vinhetas e títulos genéricos.',
     'Prefira variedade de canais e gêneros. Responda só com os ids da lista, do melhor para o pior.',
-    '',
-    lines,
-  ].join('\n');
+  ]).concat(['', lines]).join('\n');
 
   try {
     const response = await fetch(GEMINI_BASE_URL, {
