@@ -5,10 +5,12 @@ import { FaWhatsapp } from 'react-icons/fa';
 import { API_CONFIG } from '../utils/api';
 import { WHATSAPP_NUMBER } from '../utils/whatsapp';
 import { sectionHref } from '../utils/routes';
+import ZapMascot from './ZapMascot';
+import '../styles/zap.css';
 
 const TRIAL_URL = 'https://pagme.xyz/trial/eeebb22786aeac95e12e1b7bd37012a3d07f69721315fc2d';
 const STORE_KEY = 'agtv-chat-v1';
-const GREETING = { role: 'assistant', text: 'Oi! 👋 Sou o assistente da AGTV. Posso tirar suas dúvidas sobre planos, aparelhos, teste grátis e mais. Como posso ajudar?', actions: ['teste', 'planos'] };
+const GREETING = { role: 'assistant', text: 'Oi! 👋 Sou o Zap, o assistente da AGTV. Posso tirar suas dúvidas sobre planos, aparelhos, teste grátis e mais. Como posso ajudar?', actions: ['teste', 'planos'] };
 const SUGGESTIONS = ['Como funciona o teste grátis?', 'Quanto custa?', 'Funciona na minha TV?', 'Qual internet eu preciso?'];
 
 // Botões que o assistente pode oferecer. O site define o destino de cada um.
@@ -60,15 +62,23 @@ const ChatAssistant = () => {
   useEffect(() => { try { sessionStorage.setItem(STORE_KEY, JSON.stringify(messages.slice(-30))); } catch { /* sem armazenamento */ } }, [messages]);
   useEffect(() => { const el = listRef.current; if (el) el.scrollTop = el.scrollHeight; }, [messages, busy, open]);
   useEffect(() => { if (open) setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 250); }, [open]);
-  // Balãozinho de convite depois de alguns segundos, só uma vez por visita.
+  // Convite do Zap (embaixo, no centro), uma vez por visita. Espera o aviso de cookies ser respondido
+  // para os dois não ficarem um em cima do outro.
   useEffect(() => {
     let seen = false;
     try { seen = sessionStorage.getItem(`${STORE_KEY}-nudge`) === '1'; } catch { /* ignore */ }
     if (seen) return undefined;
-    const t = setTimeout(() => { setNudge(true); try { sessionStorage.setItem(`${STORE_KEY}-nudge`, '1'); } catch { /* ignore */ } }, 12000);
-    const hide = setTimeout(() => setNudge(false), 22000);
-    return () => { clearTimeout(t); clearTimeout(hide); };
+    let show = null;
+    const cookiesAnswered = () => { try { return Boolean(localStorage.getItem('cookieChoice')); } catch { return true; } };
+    const schedule = () => {
+      show = setTimeout(() => { setNudge(true); try { sessionStorage.setItem(`${STORE_KEY}-nudge`, '1'); } catch { /* ignore */ } }, 2500);
+    };
+    let poll = null;
+    if (cookiesAnswered()) schedule();
+    else poll = setInterval(() => { if (cookiesAnswered()) { clearInterval(poll); poll = null; schedule(); } }, 1000);
+    return () => { clearTimeout(show); if (poll) clearInterval(poll); };
   }, []);
+  const acceptInvite = () => { setNudge(false); setOpen(true); };
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (e) => { if (e.key === 'Escape') setOpen(false); };
@@ -147,20 +157,6 @@ const ChatAssistant = () => {
         style={{ x: bx, y: by, touchAction: 'none' }}
         className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] right-4 z-50 md:bottom-6 md:right-6"
       >
-        <AnimatePresence>
-          {nudge && !open && (
-            <motion.button
-              type="button"
-              onClick={() => { setNudge(false); setOpen(true); }}
-              initial={reduce ? false : { opacity: 0, y: 10, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={reduce ? undefined : { opacity: 0, y: 10, scale: 0.9 }}
-              className="absolute bottom-[4.4rem] right-0 w-56 rounded-2xl rounded-br-md border border-white/10 bg-[#14161d] px-4 py-3 text-left text-sm text-white shadow-2xl"
-            >
-              Ficou com alguma dúvida? Posso te ajudar agora 😉
-            </motion.button>
-          )}
-        </AnimatePresence>
         <motion.button
           type="button"
           onClick={() => { if (draggedRef.current) return; setNudge(false); setOpen((o) => !o); }}
@@ -179,6 +175,31 @@ const ChatAssistant = () => {
       </motion.div>
       )}
 
+      {/* convite do Zap */}
+      <AnimatePresence>
+        {nudge && !open && (
+          <motion.div
+            role="dialog"
+            aria-label="Zap, assistente da AGTV"
+            className="zap-invite"
+            initial={reduce ? false : { opacity: 0, y: 40, x: '-50%', scale: 0.92 }}
+            animate={{ opacity: 1, y: 0, x: '-50%', scale: 1 }}
+            exit={reduce ? { opacity: 0, x: '-50%' } : { opacity: 0, y: 30, x: '-50%', scale: 0.95 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 22 }}
+          >
+            <ZapMascot />
+            <div className="zap-invite-text">
+              <strong>Oi! Eu sou o Zap 👋</strong>
+              <span>Posso te ajudar a escolher um plano ou tirar alguma dúvida?</span>
+              <button type="button" className="zap-invite-yes" onClick={acceptInvite} data-analytics="zap_invite_yes">Sim, quero ajuda</button>
+            </div>
+            <button type="button" className="zap-invite-close" onClick={() => setNudge(false)} aria-label="Fechar" data-analytics="zap_invite_close">
+              <FiX aria-hidden="true" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* janela do chat */}
       <AnimatePresence>
         {open && (
@@ -192,9 +213,11 @@ const ChatAssistant = () => {
             className="fixed inset-x-2 bottom-[calc(8.6rem+env(safe-area-inset-bottom))] top-20 z-50 flex flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#0d0e14]/[0.98] text-white shadow-[0_24px_80px_rgba(0,0,0,0.6)] backdrop-blur-xl md:inset-x-auto md:bottom-24 md:right-6 md:top-auto md:h-[min(36rem,calc(100vh-8rem))] md:w-[24rem]"
           >
             <header className="flex items-center gap-3 border-b border-white/10 bg-gradient-to-r from-[#1a2410] to-[#1b1530] px-4 py-3">
-              <img src="/agtv-neon-logo.jpg" alt="" className="h-10 w-10 rounded-full object-cover ring-2 ring-[#b7ff4a]/50" />
+              <span className="flex h-11 w-11 flex-none items-center justify-center rounded-full bg-[#07080b] ring-2 ring-[#b7ff4a]/50">
+                <ZapMascot waving={false} className="h-9 w-9" />
+              </span>
               <div className="min-w-0 flex-1">
-                <p className="font-extrabold leading-tight">Assistente AGTV</p>
+                <p className="font-extrabold leading-tight">Zap · Assistente AGTV</p>
                 <p className="flex items-center gap-1.5 text-xs text-[#c9ff83]"><span className="h-2 w-2 rounded-full bg-[#b7ff4a]" /> Online agora</p>
               </div>
               {!onlyGreeting && <button type="button" onClick={reset} className="rounded-full px-2 py-1 text-xs text-gray-300 hover:text-white">Nova conversa</button>}
