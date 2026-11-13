@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AnimatePresence, animate, motion, useMotionValue, useReducedMotion } from 'framer-motion';
-import { FiMessageCircle, FiX, FiSend, FiChevronLeft, FiStar, FiDollarSign, FiTv, FiTrendingUp, FiZap, FiHelpCircle } from 'react-icons/fi';
+import { AnimatePresence, animate, motion, useDragControls, useMotionValue, useReducedMotion } from 'framer-motion';
+import { FiMessageCircle, FiX, FiSend, FiChevronLeft, FiChevronDown, FiStar, FiDollarSign, FiTv, FiTrendingUp, FiZap, FiHelpCircle, FiTool, FiCheck, FiPlayCircle } from 'react-icons/fi';
 import { FaWhatsapp } from 'react-icons/fa';
 import { API_CONFIG } from '../utils/api';
 import { WHATSAPP_NUMBER } from '../utils/whatsapp';
@@ -10,8 +10,17 @@ import '../styles/zap.css';
 
 const TRIAL_URL = 'https://pagme.xyz/trial/eeebb22786aeac95e12e1b7bd37012a3d07f69721315fc2d';
 const STORE_KEY = 'agtv-chat-v1';
-const GREETING = { role: 'assistant', text: 'Oi! 👋 Sou o Zap, o assistente da AGTV. Posso tirar suas dúvidas sobre planos, aparelhos, teste grátis e mais. Como posso ajudar?', actions: ['teste', 'planos'] };
-const SUGGESTIONS = ['Como funciona o teste grátis?', 'Quanto custa?', 'Funciona na minha TV?', 'Qual internet eu preciso?'];
+const GREETING = { role: 'assistant', text: 'Oi! 👋 Sou o Zap. Te ajudo a escolher o plano, instalar no seu aparelho e tirar qualquer dúvida. Escolhe uma opção ou escreve aqui embaixo.' };
+const HELP_URL = 'https://agtv-central-ajuda.vercel.app/';
+// Atalhos grandes do começo da conversa: perguntas viram mensagem; links abrem direto.
+const SHORTCUTS = [
+  { label: 'Ajuda pra instalar', hint: 'A gente instala com você', Icon: FiTool, ask: 'Vocês me ajudam a instalar no meu aparelho?' },
+  { label: 'Planos e preços', hint: 'A partir de R$ 20,82/mês', Icon: FiDollarSign, ask: 'Quais são os planos e preços?' },
+  { label: 'Teste grátis', hint: '3 horas, sem compromisso', Icon: FiStar, href: TRIAL_URL, primary: true },
+  { label: 'Falar com uma pessoa', hint: 'WhatsApp, 7 dias por semana', Icon: FaWhatsapp, whatsapp: true },
+];
+const PERKS = ['Ajudamos a instalar', 'Suporte 7 dias por semana', 'Sem fidelidade', 'TV, celular e computador'];
+const SUGGESTIONS = ['Funciona na minha TV?', 'Qual internet eu preciso?', 'Tem jogos de futebol?', 'Como faço o pagamento?', 'Como funciona a indicação?'];
 
 // Botões que o assistente pode oferecer. O site define o destino de cada um.
 const ACTIONS = {
@@ -22,6 +31,8 @@ const ACTIONS = {
   em_alta: { label: 'Em alta', Icon: FiTrendingUp, href: () => sectionHref('#trending') },
   recomendacoes: { label: 'Recomendações com IA', Icon: FiZap, href: () => sectionHref('#recomendacoes') },
   faq: { label: 'Perguntas frequentes', Icon: FiHelpCircle, href: () => sectionHref('#faq') },
+  jogos: { label: 'Jogos de hoje', Icon: FiTv, href: () => '/jogos' },
+  ajuda: { label: 'Tutoriais de instalação', Icon: FiPlayCircle, href: () => HELP_URL, external: true },
 };
 
 const load = () => {
@@ -31,6 +42,15 @@ const load = () => {
 const ChatAssistant = () => {
   const reduce = useReducedMotion();
   const [open, setOpen] = useState(false);
+  // No celular o chat é uma gaveta que sobe de baixo; arrastar para baixo fecha.
+  const sheetDrag = useDragControls();
+  const [isPhone, setIsPhone] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches);
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 767px)');
+    const update = () => setIsPhone(media.matches);
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
   const [messages, setMessages] = useState(load);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
@@ -60,7 +80,11 @@ const ChatAssistant = () => {
   const inputRef = useRef(null);
 
   useEffect(() => { try { sessionStorage.setItem(STORE_KEY, JSON.stringify(messages.slice(-30))); } catch { /* sem armazenamento */ } }, [messages]);
-  useEffect(() => { const el = listRef.current; if (el) el.scrollTop = el.scrollHeight; }, [messages, busy, open]);
+  // Só a saudação: abre no topo para ela e os atalhos aparecerem; com conversa, desce até a última mensagem.
+  useEffect(() => {
+    const el = listRef.current;
+    if (el) el.scrollTop = messages.length === 1 && !busy ? 0 : el.scrollHeight;
+  }, [messages, busy, open]);
   useEffect(() => { if (open) setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 250); }, [open]);
   // Convite do Zap (embaixo, no centro), uma vez por visita. Espera o aviso de cookies ser respondido
   // para os dois não ficarem um em cima do outro.
@@ -202,20 +226,51 @@ const ChatAssistant = () => {
 
       {/* janela do chat */}
       <AnimatePresence>
+        {/* No celular, fundo escuro atrás da gaveta: tocar fora fecha */}
+        {open && (
+          <motion.button
+            key="chat-backdrop"
+            type="button"
+            aria-label="Fechar assistente"
+            tabIndex={-1}
+            onClick={() => setOpen(false)}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[65] bg-black/55 md:hidden"
+          />
+        )}
         {open && (
           <motion.div
+            key="chat-window"
             role="dialog"
             aria-label="Assistente da AGTV"
-            initial={reduce ? false : { opacity: 0, y: 24, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={reduce ? undefined : { opacity: 0, y: 24, scale: 0.98 }}
-            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed inset-x-2 bottom-[calc(8.6rem+env(safe-area-inset-bottom))] top-20 z-50 flex flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#0d0e14]/[0.98] text-white shadow-[0_24px_80px_rgba(0,0,0,0.6)] backdrop-blur-xl md:inset-x-auto md:bottom-24 md:right-6 md:top-auto md:h-[min(36rem,calc(100vh-8rem))] md:w-[24rem]"
+            drag={isPhone ? 'y' : false}
+            dragControls={sheetDrag}
+            dragListener={false}
+            dragConstraints={{ top: 0, bottom: 0 }}
+            dragElastic={{ top: 0, bottom: 0.6 }}
+            onDragEnd={(_, info) => { if (info.offset.y > 110 || info.velocity.y > 600) setOpen(false); }}
+            initial={reduce ? false : (isPhone ? { y: '100%' } : { opacity: 0, y: 24, scale: 0.98 })}
+            animate={isPhone ? { y: 0 } : { opacity: 1, y: 0, scale: 1 }}
+            exit={reduce ? undefined : (isPhone ? { y: '100%' } : { opacity: 0, y: 24, scale: 0.98 })}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            className="fixed inset-x-0 bottom-0 top-[10vh] z-[70] flex flex-col overflow-hidden rounded-t-3xl border border-white/10 bg-[#0d0e14] pb-[env(safe-area-inset-bottom)] text-white shadow-[0_-20px_60px_rgba(0,0,0,0.6)] md:inset-x-auto md:bottom-24 md:right-6 md:top-auto md:z-50 md:h-[min(38rem,calc(100vh-8rem))] md:w-[25rem] md:rounded-3xl md:bg-[#0d0e14]/[0.98] md:pb-0 md:shadow-[0_24px_80px_rgba(0,0,0,0.6)] md:backdrop-blur-xl"
           >
-            <header className="flex items-center gap-3 border-b border-white/10 bg-gradient-to-r from-[#1a2410] to-[#1b1530] px-4 py-3">
-              <span className="flex h-11 w-11 flex-none items-center justify-center rounded-full bg-[#07080b] ring-2 ring-[#b7ff4a]/50">
-                <ZapMascot waving={false} className="h-9 w-9" />
-              </span>
+            <div
+              className="flex justify-center pb-1 pt-2 md:hidden"
+              onPointerDown={(e) => sheetDrag.start(e)}
+              style={{ touchAction: 'none' }}
+              aria-hidden="true"
+            >
+              <span className="h-1.5 w-12 rounded-full bg-white/25" />
+            </div>
+            <header
+              className="flex items-center gap-3 border-b border-white/10 bg-gradient-to-r from-[#1a2410] to-[#1b1530] px-4 py-3"
+              onPointerDown={(e) => { if (isPhone && !e.target.closest('button')) sheetDrag.start(e); }}
+              style={isPhone ? { touchAction: 'none' } : undefined}
+            >
+              <ZapMascot waving={false} className="h-12 w-12 flex-none" />
               <div className="min-w-0 flex-1">
                 <p className="font-extrabold leading-tight">Zap · Assistente AGTV</p>
                 <p className="flex items-center gap-1.5 text-xs text-[#c9ff83]"><span className="h-2 w-2 rounded-full bg-[#b7ff4a]" /> Online agora</p>
@@ -260,12 +315,37 @@ const ChatAssistant = () => {
                 </div>
               )}
               {onlyGreeting && !busy && (
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {SUGGESTIONS.map((s) => (
-                    <button key={s} type="button" onClick={() => send(s)} className="rounded-full border border-white/15 bg-white/5 px-3 py-2 text-left text-xs text-gray-200 hover:border-[#b7ff4a]/50 hover:text-white">
-                      {s}
-                    </button>
-                  ))}
+                <div className="space-y-4 pt-1">
+                  <div className="grid grid-cols-2 gap-2">
+                    {SHORTCUTS.map(({ label, hint, Icon, ask, href, whatsapp, primary }) => {
+                      const cls = `flex min-h-[4.5rem] flex-col items-start gap-1 rounded-2xl border p-3 text-left transition hover:scale-[1.02] ${primary ? 'border-[#b7ff4a] bg-[#b7ff4a] text-[#10130a]' : 'border-white/10 bg-[#171820] text-white hover:border-[#b7ff4a]/50'}`;
+                      const body = (
+                        <>
+                          <Icon aria-hidden="true" className={`h-5 w-5 ${primary ? '' : 'text-[#b7ff4a]'}`} />
+                          <span className="text-sm font-extrabold leading-tight">{label}</span>
+                          <span className={`text-[11px] leading-tight ${primary ? 'text-[#10130a]/75' : 'text-gray-400'}`}>{hint}</span>
+                        </>
+                      );
+                      if (ask) return <button key={label} type="button" onClick={() => send(ask)} className={cls} data-analytics="chat_shortcut">{body}</button>;
+                      const url = whatsapp ? ACTIONS.whatsapp.href() : href;
+                      return <a key={label} href={url} target="_blank" rel="noopener noreferrer" className={cls} data-analytics="chat_shortcut">{body}</a>;
+                    })}
+                  </div>
+                  <ul className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs text-gray-300">
+                    {PERKS.map((perk) => (
+                      <li key={perk} className="flex items-center gap-1.5"><FiCheck aria-hidden="true" className="h-3.5 w-3.5 flex-none text-[#b7ff4a]" /> {perk}</li>
+                    ))}
+                  </ul>
+                  <div>
+                    <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-gray-500">Outras dúvidas comuns</p>
+                    <div className="flex flex-wrap gap-2">
+                      {SUGGESTIONS.map((q) => (
+                        <button key={q} type="button" onClick={() => send(q)} className="rounded-full border border-white/15 bg-white/5 px-3 py-2 text-left text-xs text-gray-200 hover:border-[#b7ff4a]/50 hover:text-white">
+                          {q}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -274,6 +354,9 @@ const ChatAssistant = () => {
               onSubmit={(e) => { e.preventDefault(); send(input); }}
               className="flex items-end gap-2 border-t border-white/10 p-3"
             >
+              <button type="button" onClick={() => setOpen(false)} aria-label="Fechar assistente" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/5 text-gray-200 md:hidden">
+                <FiChevronDown aria-hidden="true" className="h-5 w-5" />
+              </button>
               <label className="sr-only" htmlFor="agtv-chat-input">Sua mensagem</label>
               <textarea
                 id="agtv-chat-input"
@@ -290,7 +373,7 @@ const ChatAssistant = () => {
                 <FiSend aria-hidden="true" />
               </button>
             </form>
-            <p className="px-4 pb-2 text-center text-[10px] text-gray-500">Assistente com IA. Para atendimento humano, toque em "Falar no WhatsApp".</p>
+            <p className="px-4 pb-2 text-center text-[10px] text-gray-500">Assistente com IA. Para falar com uma pessoa, use o WhatsApp.</p>
           </motion.div>
         )}
       </AnimatePresence>
