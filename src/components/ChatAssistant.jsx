@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, animate, motion, useDragControls, useMotionValue, useReducedMotion } from 'framer-motion';
-import { FiMessageCircle, FiX, FiSend, FiChevronLeft, FiChevronDown, FiStar, FiDollarSign, FiTv, FiTrendingUp, FiZap, FiHelpCircle, FiTool, FiCheck, FiPlayCircle } from 'react-icons/fi';
+import { FiMessageCircle, FiX, FiSend, FiChevronLeft, FiChevronDown, FiStar, FiDollarSign, FiTv, FiTrendingUp, FiZap, FiHelpCircle, FiTool, FiCheck, FiPlayCircle, FiCornerUpLeft } from 'react-icons/fi';
 import { FaWhatsapp } from 'react-icons/fa';
 import { API_CONFIG } from '../utils/api';
 import { WHATSAPP_NUMBER } from '../utils/whatsapp';
@@ -54,6 +54,7 @@ const ChatAssistant = () => {
   const [messages, setMessages] = useState(load);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [nudge, setNudge] = useState(false);
   const listRef = useRef(null);
   // Bolinha arrastável: solta onde quiser; jogada com força para a direita, some e vira uma aba na borda.
@@ -84,7 +85,7 @@ const ChatAssistant = () => {
   useEffect(() => {
     const el = listRef.current;
     if (el) el.scrollTop = messages.length === 1 && !busy ? 0 : el.scrollHeight;
-  }, [messages, busy, open]);
+  }, [messages, busy, open, menuOpen]);
   useEffect(() => { if (open) setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 250); }, [open]);
   // Convite do Zap (embaixo, no centro), uma vez por visita. Espera o aviso de cookies ser respondido
   // para os dois não ficarem um em cima do outro.
@@ -115,6 +116,7 @@ const ChatAssistant = () => {
     if (!question || busy) return;
     const next = [...messages, { role: 'user', text: question }];
     setMessages(next);
+    setMenuOpen(false);
     setInput('');
     setBusy(true);
     try {
@@ -133,8 +135,10 @@ const ChatAssistant = () => {
     }
   };
 
-  const reset = () => setMessages([GREETING]);
+  const reset = () => { setMessages([GREETING]); setMenuOpen(false); };
   const onlyGreeting = messages.length === 1;
+  // O menu de atalhos aparece no começo e sempre que a pessoa pede para voltar a ele, sem perder a conversa.
+  const showMenu = onlyGreeting || menuOpen;
 
   return (
     <>
@@ -272,8 +276,8 @@ const ChatAssistant = () => {
             >
               <ZapMascot waving={false} className="h-12 w-12 flex-none" />
               <div className="min-w-0 flex-1">
-                <p className="font-extrabold leading-tight">Zap · Assistente AGTV</p>
-                <p className="flex items-center gap-1.5 text-xs text-[#c9ff83]"><span className="h-2 w-2 rounded-full bg-[#b7ff4a]" /> Online agora</p>
+                <p className="truncate font-extrabold leading-tight">Zap</p>
+                <p className="flex items-center gap-1.5 text-xs text-[#c9ff83]"><span className="h-2 w-2 flex-none rounded-full bg-[#b7ff4a]" /> Assistente AGTV · online</p>
               </div>
               {!onlyGreeting && <button type="button" onClick={reset} className="rounded-full px-2 py-1 text-xs text-gray-300 hover:text-white">Nova conversa</button>}
               <button type="button" onClick={() => setOpen(false)} aria-label="Fechar assistente" className="rounded-full p-2 text-gray-300 hover:bg-white/10 hover:text-white">
@@ -314,8 +318,21 @@ const ChatAssistant = () => {
                   {[0, 1, 2].map((d) => <span key={d} className="h-2 w-2 animate-bounce rounded-full bg-gray-300" style={{ animationDelay: `${d * 0.15}s` }} />)}
                 </div>
               )}
-              {onlyGreeting && !busy && (
+              {!onlyGreeting && !busy && !menuOpen && (
+                <button
+                  type="button"
+                  onClick={() => setMenuOpen(true)}
+                  className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-bold text-gray-100 hover:border-[#b7ff4a]/50 hover:text-white"
+                  data-analytics="chat_back_menu"
+                >
+                  <FiCornerUpLeft aria-hidden="true" /> Voltar ao menu
+                </button>
+              )}
+              {showMenu && !busy && (
                 <div className="space-y-4 pt-1">
+                  {menuOpen && !onlyGreeting && (
+                    <p className="text-sm font-bold text-[#c9ff83]">Menu principal: escolhe uma opção 👇</p>
+                  )}
                   <div className="grid grid-cols-2 gap-2">
                     {SHORTCUTS.map(({ label, hint, Icon, ask, href, whatsapp, primary }) => {
                       const cls = `flex min-h-[4.5rem] flex-col items-start gap-1 rounded-2xl border p-3 text-left transition hover:scale-[1.02] ${primary ? 'border-[#b7ff4a] bg-[#b7ff4a] text-[#10130a]' : 'border-white/10 bg-[#171820] text-white hover:border-[#b7ff4a]/50'}`;
