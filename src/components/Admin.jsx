@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { FiCheck, FiCopy, FiDownload, FiImage, FiLink, FiLogOut, FiRefreshCw, FiShare } from 'react-icons/fi';
+import {
+  FiCheck, FiCopy, FiDownload, FiImage, FiKey, FiLink, FiLogOut, FiRefreshCw, FiShare, FiUsers,
+} from 'react-icons/fi';
 import { API_CONFIG } from '../utils/api';
 import { SCHEDULE_TABS, scheduleTabPath } from '../utils/routes';
 import { PAINEL_SUPABASE_KEY, PAINEL_SUPABASE_URL } from '../utils/painelConfig';
@@ -340,6 +342,178 @@ const readRecovery = () => {
   return null;
 };
 
+// E-mail da última conta que entrou neste aparelho, só para preencher o campo de "Alterar minha senha".
+const EMAIL_KEY = 'painel-email';
+const rememberEmail = (email) => {
+  try {
+    if (email) localStorage.setItem(EMAIL_KEY, email);
+  } catch {
+    // Navegador sem armazenamento: a pessoa digita o e-mail.
+  }
+};
+const rememberedEmail = () => {
+  try {
+    return localStorage.getItem(EMAIL_KEY) || '';
+  } catch {
+    return '';
+  }
+};
+
+const passwordProblem = (password, confirm) => {
+  if (password.length < 8) return 'A senha nova precisa ter pelo menos 8 caracteres.';
+  if (password !== confirm) return 'As duas senhas novas não são iguais.';
+  return '';
+};
+
+// Qualquer conta troca a própria senha: confere a senha atual no Supabase e grava a nova.
+const ChangeOwnPassword = ({ onDone }) => {
+  const [form, setForm] = useState({ email: rememberedEmail(), current: '', password: '', confirm: '' });
+  const [status, setStatus] = useState({ busy: false, error: '', info: '' });
+  const set = (key) => (event) => setForm((previous) => ({ ...previous, [key]: event.target.value }));
+
+  const submit = async (event) => {
+    event.preventDefault();
+    const problem = passwordProblem(form.password, form.confirm);
+    if (problem) return setStatus({ busy: false, error: problem, info: '' });
+    setStatus({ busy: true, error: '', info: '' });
+    try {
+      const email = form.email.trim();
+      const auth = await supabaseAuth('token?grant_type=password', { body: { email, password: form.current } });
+      if (!auth.ok || !auth.result.access_token) {
+        throw new Error(auth.status === 429 ? 'Muitas tentativas. Espere alguns minutos.' : 'E-mail ou senha atual incorretos.');
+      }
+      const update = await supabaseAuth('user', { method: 'PUT', token: auth.result.access_token, body: { password: form.password } });
+      if (!update.ok) {
+        const msg = (update.result && update.result.msg) || '';
+        throw new Error(/different from the old/i.test(msg) ? 'A senha nova precisa ser diferente da atual.' : 'Não foi possível trocar a senha agora.');
+      }
+      rememberEmail(email);
+      setForm({ email, current: '', password: '', confirm: '' });
+      setStatus({ busy: false, error: '', info: 'Senha trocada! Use a nova no próximo acesso.' });
+      if (onDone) setTimeout(onDone, 2500);
+    } catch (error) {
+      setStatus({ busy: false, error: error.message, info: '' });
+    }
+    return undefined;
+  };
+
+  return (
+    <form className="admin-account-form" onSubmit={submit}>
+      <h2>Alterar minha senha</h2>
+      <label htmlFor="own-email">E-mail da conta</label>
+      <input id="own-email" type="email" autoComplete="username" value={form.email} onChange={set('email')} required />
+      <label htmlFor="own-current">Senha atual</label>
+      <input id="own-current" type="password" autoComplete="current-password" value={form.current} onChange={set('current')} required />
+      <label htmlFor="own-new">Senha nova</label>
+      <input id="own-new" type="password" autoComplete="new-password" minLength={8} value={form.password} onChange={set('password')} required />
+      <label htmlFor="own-confirm">Repita a senha nova</label>
+      <input id="own-confirm" type="password" autoComplete="new-password" minLength={8} value={form.confirm} onChange={set('confirm')} required />
+      {status.error && <p className="admin-error" role="alert">{status.error}</p>}
+      {status.info && <p className="admin-count" role="status">{status.info}</p>}
+      <button type="submit" className="admin-copy" disabled={status.busy}>{status.busy ? 'Salvando...' : 'Salvar senha nova'}</button>
+    </form>
+  );
+};
+
+// Dono do painel (conta AGTV): define a senha nova de qualquer conta do painel, sem depender de e-mail.
+const AccountRow = ({ account }) => {
+  const [value, setValue] = useState('');
+  const [status, setStatus] = useState({ busy: false, error: '', info: '' });
+
+  const save = async (event) => {
+    event.preventDefault();
+    if (value.length < 8) return setStatus({ busy: false, error: 'Use pelo menos 8 caracteres.', info: '' });
+    setStatus({ busy: true, error: '', info: '' });
+    try {
+      const response = await fetch(API_CONFIG.ADMIN.URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Acao': 'senha' },
+        body: JSON.stringify({ email: account.email, password: value }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error ? data.error.message : 'Não foi possível trocar a senha.');
+      setValue('');
+      setStatus({ busy: false, error: '', info: 'Senha trocada. Mande a nova para a pessoa.' });
+    } catch (error) {
+      setStatus({ busy: false, error: error.message, info: '' });
+    }
+    return undefined;
+  };
+
+  return (
+    <form className="admin-account-row" onSubmit={save}>
+      <div>
+        <strong>{account.email}</strong>
+        <span>{brandFor(account.marca).name}</span>
+      </div>
+      <input
+        type="text"
+        autoComplete="off"
+        spellCheck={false}
+        placeholder="Senha nova"
+        aria-label={`Senha nova para ${account.email}`}
+        value={value}
+        onChange={(event) => setValue(event.target.value)}
+      />
+      <button type="submit" className="admin-chip" disabled={status.busy}>{status.busy ? 'Salvando...' : 'Definir senha'}</button>
+      {status.error && <p className="admin-error" role="alert">{status.error}</p>}
+      {status.info && <p className="admin-count" role="status">{status.info}</p>}
+    </form>
+  );
+};
+
+const ManageAccounts = () => {
+  const [state, setState] = useState({ status: 'loading', accounts: [], ready: true, error: '' });
+
+  useEffect(() => {
+    let active = true;
+    fetch(API_CONFIG.ADMIN.URL, { headers: { 'X-Admin-Acao': 'contas' } })
+      .then(async (response) => {
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error ? data.error.message : 'Não foi possível carregar as contas.');
+        if (active) setState({ status: 'ready', accounts: data.accounts || [], ready: data.ready, error: '' });
+      })
+      .catch((error) => active && setState({ status: 'error', accounts: [], ready: true, error: error.message }));
+    return () => { active = false; };
+  }, []);
+
+  return (
+    <div className="admin-account-form">
+      <h2>Contas do painel</h2>
+      <p className="admin-count">Defina uma senha nova para quem esqueceu. Ela vale na hora, sem precisar de e-mail.</p>
+      {!state.ready && (
+        <p className="admin-error" role="alert">
+          Para trocar senhas daqui, falta colocar a chave SUPABASE_SERVICE_ROLE_KEY na Vercel.
+        </p>
+      )}
+      {state.status === 'loading' && <p className="admin-count">Carregando...</p>}
+      {state.error && <p className="admin-error" role="alert">{state.error}</p>}
+      {state.accounts.map((account) => <AccountRow key={account.email} account={account} />)}
+    </div>
+  );
+};
+
+const AccountTools = ({ isOwner }) => {
+  const [open, setOpen] = useState('');
+  const toggle = (key) => setOpen((previous) => (previous === key ? '' : key));
+  return (
+    <section className="admin-panel admin-account" aria-label="Conta">
+      <div className="admin-controls">
+        <button type="button" className={`admin-chip${open === 'senha' ? ' is-active' : ''}`} onClick={() => toggle('senha')}>
+          <FiKey aria-hidden="true" /> Alterar minha senha
+        </button>
+        {isOwner && (
+          <button type="button" className={`admin-chip${open === 'contas' ? ' is-active' : ''}`} onClick={() => toggle('contas')}>
+            <FiUsers aria-hidden="true" /> Contas
+          </button>
+        )}
+      </div>
+      {open === 'senha' && <ChangeOwnPassword onDone={() => setOpen('')} />}
+      {open === 'contas' && isOwner && <ManageAccounts />}
+    </section>
+  );
+};
+
 // Tela de entrada neutra: não mostra marca nenhuma, porque cada conta abre o painel da própria marca.
 const LoginScreen = ({ onSession, initialError }) => {
   const [recovery] = useState(readRecovery);
@@ -386,6 +560,7 @@ const LoginScreen = ({ onSession, initialError }) => {
       : { ok: false, status: 400, result: {} };
     if (auth.ok && auth.result.access_token) {
       await openSession({ Authorization: `Bearer ${auth.result.access_token}` });
+      rememberEmail(typed);
     } else if (auth.status === 400 || auth.status === 401) {
       // A senha antiga do painel (ADMIN_PASSWORD) continua valendo enquanto as contas são criadas.
       await openSession({ 'X-Admin-Password': password });
@@ -560,6 +735,8 @@ const Admin = () => {
           <FiLogOut aria-hidden="true" /> Sair
         </button>
       </header>
+
+      <AccountTools isOwner={data.marca === 'agtv'} />
 
       {brand.siteLinks && (
       <section className="admin-panel admin-links" aria-label="Links para enviar">

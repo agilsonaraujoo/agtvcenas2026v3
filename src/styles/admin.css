@@ -362,3 +362,73 @@
     height: 45vh;
   }
 }
+
+/* Conta: alterar a própria senha e, para o dono, as senhas das contas do painel. */
+.admin-account {
+  margin-top: 1rem;
+}
+
+.admin-account .admin-controls {
+  margin: 0;
+}
+
+.admin-account-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-width: 40rem;
+  margin-top: 1rem;
+}
+
+.admin-account-form h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.admin-account-form input,
+.admin-account-row input {
+  width: 100%;
+  border: 1px solid rgb(154 123 255 / 35%);
+  border-radius: 0.6rem;
+  background: var(--agtv-surface-raised);
+  padding: 0.65rem 0.8rem;
+  color: #fff;
+  font: inherit;
+}
+
+.admin-account-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 12rem) auto;
+  align-items: center;
+  gap: 0.6rem;
+  border-top: 1px solid rgb(255 255 255 / 8%);
+  padding-top: 0.6rem;
+}
+
+.admin-account-row > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.admin-account-row strong {
+  overflow: hidden;
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+}
+
+.admin-account-row span {
+  color: var(--agtv-muted);
+  font-size: 0.8rem;
+}
+
+.admin-account-row p {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .admin-account-row {
+    grid-template-columns: 1fr;
+  }
+}

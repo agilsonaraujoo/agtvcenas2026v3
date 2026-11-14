@@ -106,6 +106,75 @@ const highlights = async (req, res) => {
 
 const wait = (ms) => new Promise((resolve) => { setTimeout(resolve, ms); });
 
+// O dono do painel (conta AGTV) define a senha nova de uma conta sem depender de e-mail.
+// Usa a chave secreta do Supabase (SUPABASE_SERVICE_ROLE_KEY na Vercel), que nunca sai do servidor.
+const MIN_ACCOUNT_PASSWORD = 8;
+const passwordLimiter = createLimiter({ limit: 10, windowMs: 15 * 60 * 1000 });
+
+const findUserId = async (email, serviceKey) => {
+  const headers = { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` };
+  for (let page = 1; page <= 10; page += 1) {
+    const response = await fetch(`${PAINEL_SUPABASE_URL}/auth/v1/admin/users?page=${page}&per_page=100`, { headers });
+    if (!response.ok) throw new Error(`Supabase ${response.status}`);
+    const { users = [] } = await response.json();
+    const found = users.find((user) => String(user.email || '').toLowerCase() === email);
+    if (found) return found.id;
+    if (users.length < 100) return null;
+  }
+  return null;
+};
+
+const accountsList = (res) => {
+  const accounts = [...parseAccounts(process.env.ADMIN_CONTAS)].map(([email, marca]) => ({ email, marca }));
+  return sendJson(res, 200, { accounts, ready: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY) });
+};
+
+const setAccountPassword = async (req, res) => {
+  const limitedFor = passwordLimiter.hit(clientIp(req));
+  if (limitedFor) return tooMany(res, limitedFor);
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceKey) {
+    return sendJson(res, 503, { error: { message: 'Falta configurar SUPABASE_SERVICE_ROLE_KEY na Vercel.' } });
+  }
+  let body;
+  try {
+    body = await readBody(req);
+  } catch {
+    return sendJson(res, 400, { error: { message: 'Pedido inválido.' } });
+  }
+  const email = String(body.email || '').trim().toLowerCase();
+  const newPassword = String(body.password || '');
+  // Só contas do painel (ADMIN_CONTAS): nada de mexer em outros usuários do Supabase, como o da Central de Ajuda.
+  if (!parseAccounts(process.env.ADMIN_CONTAS).has(email)) {
+    return sendJson(res, 400, { error: { message: 'Essa conta não está no painel.' } });
+  }
+  if (newPassword.length < MIN_ACCOUNT_PASSWORD || newPassword.length > 72) {
+    return sendJson(res, 400, { error: { message: `A senha precisa ter de ${MIN_ACCOUNT_PASSWORD} a 72 caracteres.` } });
+  }
+  try {
+    const id = await findUserId(email, serviceKey);
+    if (!id) return sendJson(res, 404, { error: { message: 'Essa conta ainda não foi criada no Supabase.' } });
+    const response = await fetch(`${PAINEL_SUPABASE_URL}/auth/v1/admin/users/${id}`, {
+      method: 'PUT',
+      headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: newPassword }),
+    });
+    if (!response.ok) {
+      const detail = await response.json().catch(() => ({}));
+      console.error('[admin] troca de senha recusada:', response.status, detail.msg || detail.error_code || '');
+      const weak = /weak|password/i.test(String(detail.msg || detail.error_code || ''));
+      return sendJson(res, weak ? 400 : 502, {
+        error: { message: weak ? 'Senha fraca demais. Use letras e números.' : 'Não consegui trocar a senha agora.' },
+      });
+    }
+    console.warn('[admin] senha de uma conta do painel foi redefinida pelo dono');
+    return sendJson(res, 200, { ok: true });
+  } catch (error) {
+    console.error('[admin] troca de senha falhou:', error.message);
+    return sendJson(res, 502, { error: { message: 'Não consegui trocar a senha agora.' } });
+  }
+};
+
 const tooMany = (res, seconds) => {
   res.setHeader('Retry-After', String(seconds));
   const minutes = Math.ceil(seconds / 60);
@@ -183,6 +252,15 @@ module.exports = async function handler(req, res) {
   }
 
   // POST com a sessão e o cabeçalho de ação pede os destaques à IA; sem ele, é o login.
+  const acao = req.headers['x-admin-acao'];
+  if (acao === 'contas' || acao === 'senha') {
+    const owner = validSession(readSession(req), password);
+    if (!owner) return sendJson(res, 401, { error: { message: 'Entre de novo.' } });
+    if (owner !== 'agtv') return sendJson(res, 403, { error: { message: 'Só o dono do painel pode fazer isso.' } });
+    if (req.method === 'POST' && acao === 'senha') return setAccountPassword(req, res);
+    if (req.method === 'GET' && acao === 'contas') return accountsList(res);
+    return sendJson(res, 405, { error: { message: 'Método não permitido.' } });
+  }
   if (req.method === 'POST' && req.headers['x-admin-acao'] === 'destaques') {
     if (!validSession(readSession(req), password)) {
       return sendJson(res, 401, { error: { message: 'Entre de novo.' } });
