@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { FiCheck, FiCopy, FiDownload, FiImage, FiLink, FiLogOut, FiRefreshCw, FiShare } from 'react-icons/fi';
 import { API_CONFIG } from '../utils/api';
 import { SCHEDULE_TABS, scheduleTabPath } from '../utils/routes';
+import { PAINEL_SUPABASE_KEY, PAINEL_SUPABASE_URL } from '../utils/painelConfig';
+import { brandFor } from '../utils/painelBrands';
 import {
   ART_FORMATS, PRIME_END, PRIME_START, formatDay, formatTime, gameEnded, gamesArt, gamesCaption,
   movieCandidates, movieRowsFor, moviesArt, moviesCaption, simpleRanking, upcomingGames,
@@ -315,9 +317,163 @@ const CopyPanel = ({ title, text, empty, children, art }) => {
   );
 };
 
-const Admin = () => {
+// Contas do painel no Supabase: login, "esqueci a senha" e senha nova, direto na API de autenticação.
+const supabaseAuth = async (path, { method = 'POST', token, body } = {}) => {
+  const response = await fetch(`${PAINEL_SUPABASE_URL}/auth/v1/${path}`, {
+    method,
+    headers: {
+      apikey: PAINEL_SUPABASE_KEY,
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const result = await response.json().catch(() => ({}));
+  return { ok: response.ok, status: response.status, result };
+};
+
+// O link do e-mail de "esqueci a senha" volta para /admin com o token no endereço (#access_token=...&type=recovery).
+const readRecovery = () => {
+  const params = new URLSearchParams(window.location.hash.slice(1));
+  if (params.get('type') === 'recovery' && params.get('access_token')) return { token: params.get('access_token') };
+  if (params.get('error_description')) return { error: 'O link expirou ou já foi usado. Peça outro em "Esqueci a senha".' };
+  return null;
+};
+
+// Tela de entrada neutra: não mostra marca nenhuma, porque cada conta abre o painel da própria marca.
+const LoginScreen = ({ onSession, initialError }) => {
+  const [recovery] = useState(readRecovery);
+  const [mode, setMode] = useState(recovery && recovery.token ? 'nova-senha' : 'entrar');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [state, setState] = useState({ status: 'checking', error: null, data: null });
+  const [confirm, setConfirm] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState({ error: initialError || (recovery && recovery.error) || '', info: '' });
+
+  // Tira o token do endereço para ele não ficar no histórico nem ser compartilhado sem querer.
+  useEffect(() => {
+    if (window.location.hash) window.history.replaceState(null, '', window.location.pathname);
+  }, []);
+
+  const goTo = (next) => {
+    setMode(next);
+    setMessage({ error: '', info: '' });
+  };
+
+  const openSession = async (headers) => {
+    const response = await fetch(API_CONFIG.ADMIN.URL, { method: 'POST', headers });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error ? data.error.message : 'Não foi possível entrar.');
+  };
+
+  const run = (task) => async (event) => {
+    event.preventDefault();
+    setBusy(true);
+    setMessage({ error: '', info: '' });
+    try {
+      await task();
+    } catch (error) {
+      setMessage({ error: error.message, info: '' });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const signIn = run(async () => {
+    const typed = email.trim();
+    const auth = typed
+      ? await supabaseAuth('token?grant_type=password', { body: { email: typed, password } })
+      : { ok: false, status: 400, result: {} };
+    if (auth.ok && auth.result.access_token) {
+      await openSession({ Authorization: `Bearer ${auth.result.access_token}` });
+    } else if (auth.status === 400 || auth.status === 401) {
+      // A senha antiga do painel (ADMIN_PASSWORD) continua valendo enquanto as contas são criadas.
+      await openSession({ 'X-Admin-Password': password });
+    } else if (auth.status === 429) {
+      throw new Error('Muitas tentativas. Espere alguns minutos e tente de novo.');
+    } else {
+      throw new Error('Não foi possível entrar agora. Tente de novo.');
+    }
+    setPassword('');
+    onSession();
+  });
+
+  const sendReset = run(async () => {
+    const redirect = `${window.location.origin}/admin`;
+    const auth = await supabaseAuth(`recover?redirect_to=${encodeURIComponent(redirect)}`, { body: { email: email.trim() } });
+    if (auth.status === 429) throw new Error('Já enviamos um e-mail há pouco. Espere alguns minutos para pedir outro.');
+    if (!auth.ok) throw new Error('Não foi possível enviar o e-mail agora. Tente de novo.');
+    setMessage({ error: '', info: 'Se esse e-mail tiver conta, chega um link para criar a senha nova. Confira também o spam.' });
+  });
+
+  const saveNewPassword = run(async () => {
+    if (password.length < 8) throw new Error('A senha precisa ter pelo menos 8 caracteres.');
+    if (password !== confirm) throw new Error('As duas senhas não são iguais.');
+    const auth = await supabaseAuth('user', { method: 'PUT', token: recovery.token, body: { password } });
+    if (!auth.ok) {
+      if (/different from the old/i.test((auth.result && auth.result.msg) || '')) throw new Error('A senha nova precisa ser diferente da antiga.');
+      throw new Error('O link expirou. Peça outro em "Esqueci a senha".');
+    }
+    await openSession({ Authorization: `Bearer ${recovery.token}` });
+    setPassword('');
+    setConfirm('');
+    onSession();
+  });
+
+  const feedback = (
+    <>
+      {message.error && <p className="admin-error" role="alert">{message.error}</p>}
+      {message.info && <p className="admin-count" role="status">{message.info}</p>}
+    </>
+  );
+
+  return (
+    <main className="admin-page admin-login admin-neutral">
+      {mode === 'entrar' && (
+        <form className="admin-panel" onSubmit={signIn}>
+          <h1>Painel de artes</h1>
+          <label htmlFor="admin-email">E-mail</label>
+          <input id="admin-email" type="email" autoComplete="username" value={email} onChange={(event) => setEmail(event.target.value)} />
+          <label htmlFor="admin-password">Senha</label>
+          <input id="admin-password" type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required />
+          {feedback}
+          <button type="submit" className="admin-copy" disabled={busy}>{busy ? 'Entrando...' : 'Entrar'}</button>
+          <button type="button" className="admin-text-button" onClick={() => goTo('esqueci')}>Esqueci a senha</button>
+        </form>
+      )}
+      {mode === 'esqueci' && (
+        <form className="admin-panel" onSubmit={sendReset}>
+          <h1>Esqueci a senha</h1>
+          <p className="admin-count">Digite o e-mail da sua conta. Vamos mandar um link para você criar uma senha nova.</p>
+          <label htmlFor="admin-reset-email">E-mail</label>
+          <input id="admin-reset-email" type="email" autoComplete="username" value={email} onChange={(event) => setEmail(event.target.value)} required />
+          {feedback}
+          <button type="submit" className="admin-copy" disabled={busy}>{busy ? 'Enviando...' : 'Enviar link'}</button>
+          <button type="button" className="admin-text-button" onClick={() => goTo('entrar')}>Voltar para entrar</button>
+        </form>
+      )}
+      {mode === 'nova-senha' && (
+        <form className="admin-panel" onSubmit={saveNewPassword}>
+          <h1>Criar senha nova</h1>
+          <label htmlFor="admin-new-password">Senha nova</label>
+          <input id="admin-new-password" type="password" autoComplete="new-password" minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} required />
+          <label htmlFor="admin-confirm-password">Repita a senha nova</label>
+          <input id="admin-confirm-password" type="password" autoComplete="new-password" minLength={8} value={confirm} onChange={(event) => setConfirm(event.target.value)} required />
+          {feedback}
+          <button type="submit" className="admin-copy" disabled={busy}>{busy ? 'Salvando...' : 'Salvar e entrar'}</button>
+          <button type="button" className="admin-text-button" onClick={() => goTo('esqueci')}>Pedir outro link</button>
+        </form>
+      )}
+    </main>
+  );
+};
+
+const Admin = () => {
+  // Quem chega pelo link de senha nova vê a tela de senha nova mesmo se já estiver logado.
+  const [fromRecoveryLink] = useState(() => Boolean(readRecovery()));
+  const [state, setState] = useState(() => (
+    fromRecoveryLink ? { status: 'locked', error: null, data: null } : { status: 'checking', error: null, data: null }
+  ));
   const [onlyUpcoming, setOnlyUpcoming] = useState(true);
   const [artWindow, setArtWindow] = useState({ start: PRIME_START, end: PRIME_END });
   const [useAi, setUseAi] = useState(true);
@@ -331,7 +487,7 @@ const Admin = () => {
   const [channel, setChannel] = useState('');
 
   useEffect(() => {
-    document.title = 'Admin | AGTV';
+    document.title = 'Painel';
     const robots = document.createElement('meta');
     robots.name = 'robots';
     robots.content = 'noindex, nofollow';
@@ -366,24 +522,8 @@ const Admin = () => {
   }, []);
 
   useEffect(() => {
-    load();
-  }, [load]);
-
-  const login = async () => {
-    setState((previous) => ({ ...previous, status: 'loading', error: null }));
-    try {
-      const response = await fetch(API_CONFIG.ADMIN.URL, {
-        method: 'POST',
-        headers: { 'X-Admin-Password': password },
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error ? data.error.message : 'Não foi possível entrar.');
-      setPassword('');
-      await load();
-    } catch (error) {
-      setState({ status: 'locked', error: error.message, data: null });
-    }
-  };
+    if (!fromRecoveryLink) load();
+  }, [load, fromRecoveryLink]);
 
   const logout = async () => {
     await fetch(API_CONFIG.ADMIN.URL, { method: 'DELETE' }).catch(() => {});
@@ -397,46 +537,23 @@ const Admin = () => {
     [data, group, channel, onlyUpcoming],
   );
 
-  if (state.status === 'checking' || (!data && state.status === 'loading' && !password)) {
-    return <main className="admin-page admin-login" aria-busy="true" />;
+  if (state.status === 'checking' || (!data && state.status === 'loading')) {
+    return <main className="admin-page admin-login admin-neutral" aria-busy="true" />;
   }
 
   if (!data) {
-    return (
-      <main className="admin-page admin-login">
-        <form
-          className="admin-panel"
-          onSubmit={(event) => {
-            event.preventDefault();
-            login();
-          }}
-        >
-          <h1>Admin AGTV</h1>
-          <label htmlFor="admin-password">Senha</label>
-          <input
-            id="admin-password"
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            required
-          />
-          {state.error && <p className="admin-error" role="alert">{state.error}</p>}
-          <button type="submit" className="admin-copy" disabled={state.status === 'loading'}>
-            {state.status === 'loading' ? 'Entrando...' : 'Entrar'}
-          </button>
-        </form>
-      </main>
-    );
+    return <LoginScreen onSession={() => load()} initialError={state.error} />;
   }
 
+  const brand = brandFor(data.marca);
   const channels = data.channels.filter((item) => !group || item.group === group);
 
   return (
-    <main className="admin-page">
+    <main className="admin-page" style={{ '--agtv-green': brand.ui }}>
       <header className="admin-head">
-        <div>
-          <h1>Admin AGTV</h1>
+        <div className="admin-brand">
+          <img src={brand.logo} alt="" className={brand.round ? 'is-round' : ''} />
+          <h1>Painel {brand.name}</h1>
           <p>{formatDay(data.date)} · atualizado às {formatTime(data.now)}</p>
         </div>
         <button type="button" className="admin-chip" onClick={logout}>
@@ -444,6 +561,7 @@ const Admin = () => {
         </button>
       </header>
 
+      {brand.siteLinks && (
       <section className="admin-panel admin-links" aria-label="Links para enviar">
         <LinkRow label="Jogos do dia" url={`${window.location.origin}/jogos`} />
         <LinkRow label="Programação da TV" url={`${window.location.origin}/programacao`} />
@@ -451,6 +569,7 @@ const Admin = () => {
           <LinkRow key={tab.key} label={`Programação: ${tab.label}`} url={`${window.location.origin}${scheduleTabPath(tab.key)}`} />
         ))}
       </section>
+      )}
 
       <div className="admin-controls">
         {[[data.today, 'Hoje'], [data.tomorrow, 'Amanhã']].map(([key, label]) => (
@@ -487,12 +606,12 @@ const Admin = () => {
           empty="Nenhum jogo para mostrar."
           art={(
             <ArtMaker
-              key={`jogos-${data.date}`}
+              key={`jogos-${data.marca}-${data.date}`}
               label="Gerar imagem dos jogos"
-              fileName={`AGTV_jogos_${data.date}`}
+              fileName={`${brand.name}_jogos_${data.date}`}
               prepare={() => pickGames(data, { onlyUpcoming, useAi: useAiGames })}
-              draw={(format, picks) => gamesArt(data, { onlyUpcoming, now: Date.now(), format, ranked: picks && picks.ranked })}
-              caption={(picks) => gamesCaption(data, { onlyUpcoming, now: Date.now(), ranked: picks && picks.ranked })}
+              draw={(format, picks) => gamesArt(data, { onlyUpcoming, now: Date.now(), format, ranked: picks && picks.ranked, brand })}
+              caption={(picks) => gamesCaption(data, { onlyUpcoming, now: Date.now(), ranked: picks && picks.ranked, brand })}
               controls={(
                 <div className="admin-art-window">
                   <label className="admin-check">
@@ -510,12 +629,12 @@ const Admin = () => {
           empty="Nenhum programa para mostrar."
           art={(
             <ArtMaker
-              key={`filmes-${data.date}`}
+              key={`filmes-${data.marca}-${data.date}`}
               label="Gerar imagem de filmes e séries"
-              fileName={`AGTV_filmes_series_${data.date}`}
+              fileName={`${brand.name}_filmes_series_${data.date}`}
               prepare={() => pickMovies(data, { ...artWindow, onlyUpcoming, useAi })}
-              draw={(format, picks) => moviesArt(data, { ...picks, format })}
-              caption={(picks) => moviesCaption(data, picks)}
+              draw={(format, picks) => moviesArt(data, { ...picks, format, brand })}
+              caption={(picks) => moviesCaption(data, { ...picks, brand })}
               controls={(
                 <div className="admin-art-window">
                   <label>

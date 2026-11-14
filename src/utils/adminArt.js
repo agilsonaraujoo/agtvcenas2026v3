@@ -1,3 +1,5 @@
+import { BRANDS } from './painelBrands';
+
 // Artes de Stories (1080x1920) e feed (1080x1080) desenhadas no navegador com os dados reais do site: nenhum nome ou
 // horário é gerado por IA. A área útil respeita as margens que o Instagram cobre em cima e embaixo.
 const TIMEZONE = 'America/Sao_Paulo';
@@ -9,10 +11,12 @@ export const ART_FORMATS = [
   { key: '9x16', label: '9:16', height: 1920, top: 170, contentTop: 440, contentBottom: 1570, footerY: 1590 },
   { key: '1x1', label: '1:1', height: 1080, top: 48, contentTop: 196, contentBottom: 966, footerY: 972, compact: true },
 ];
-const GREEN = '#b7ff4a';
 const INK = '#10130a';
 const MUTED = '#a7a9b4';
-const SURFACE = '#101116';
+
+// Marca da arte que está sendo pintada. Cada arte define a marca logo antes de pintar e pinta tudo
+// de uma vez, sem esperar nada no meio, então duas artes nunca misturam cores.
+let theme = BRANDS.agtv;
 const DISPLAY = 'Manrope, sans-serif';
 const UI = '"DM Sans", sans-serif';
 
@@ -74,9 +78,9 @@ const ellipsis = (ctx, text, maxWidth) => {
 
 const paintBackground = (ctx, format) => {
   const { height } = format;
-  ctx.fillStyle = '#07080b';
+  ctx.fillStyle = theme.background;
   ctx.fillRect(0, 0, WIDTH, height);
-  const glows = [[120, 160, 760, 'rgba(183,255,74,0.16)'], [980, height - 200, 900, 'rgba(154,123,255,0.22)']];
+  const glows = [[120, 160, 760, theme.glows[0]], [980, height - 200, 900, theme.glows[1]]];
   for (const [x, y, radius, color] of glows) {
     const glow = ctx.createRadialGradient(x, y, 0, x, y, radius);
     glow.addColorStop(0, color);
@@ -89,7 +93,8 @@ const paintBackground = (ctx, format) => {
 const paintLogo = (ctx, logo, x, y) => {
   if (!logo) return;
   ctx.save();
-  roundRect(ctx, x, y, 88, 88, 20);
+  // Selo redondo (CSPLAY) fica redondo; as outras logos ganham cantos arredondados.
+  roundRect(ctx, x, y, 88, 88, theme.round ? 44 : 20);
   ctx.clip();
   ctx.drawImage(logo, x, y, 88, 88);
   ctx.restore();
@@ -101,7 +106,7 @@ const paintHeader = (ctx, logo, title, subtitle, format) => {
     // No quadrado a altura é curta: logo à direita, na mesma faixa do título.
     paintLogo(ctx, logo, WIDTH - PAD - 88, top);
     ctx.textBaseline = 'alphabetic';
-    ctx.fillStyle = GREEN;
+    ctx.fillStyle = theme.accent;
     ctx.font = `800 72px ${DISPLAY}`;
     ctx.fillText(title, PAD, top + 66);
     ctx.fillStyle = '#e4e5ec';
@@ -113,8 +118,8 @@ const paintHeader = (ctx, logo, title, subtitle, format) => {
   ctx.textBaseline = 'alphabetic';
   ctx.fillStyle = '#fff';
   ctx.font = `800 40px ${DISPLAY}`;
-  ctx.fillText('AGTV', PAD + (logo ? 106 : 0), top + 38);
-  ctx.fillStyle = GREEN;
+  ctx.fillText(theme.name, PAD + (logo ? 106 : 0), top + 38);
+  ctx.fillStyle = theme.accent;
   ctx.font = `800 88px ${DISPLAY}`;
   ctx.fillText(title, PAD, top + 170);
   ctx.fillStyle = '#e4e5ec';
@@ -122,12 +127,15 @@ const paintHeader = (ctx, logo, title, subtitle, format) => {
   ctx.fillText(subtitle, PAD, top + 226);
 };
 
-const paintFooter = (ctx, label, url, { footerY }) => {
+const paintFooter = (ctx, [label, url], { footerY }) => {
   const height = 82;
   roundRect(ctx, PAD, footerY, WIDTH - PAD * 2, height, 41);
-  ctx.fillStyle = GREEN;
+  const pill = ctx.createLinearGradient(PAD, 0, WIDTH - PAD, 0);
+  pill.addColorStop(0, theme.pill[0]);
+  pill.addColorStop(1, theme.pill[1]);
+  ctx.fillStyle = pill;
   ctx.fill();
-  ctx.fillStyle = INK;
+  ctx.fillStyle = theme.pillInk;
   ctx.textAlign = 'center';
   fitFont(ctx, `${label} ${url}`, WIDTH - PAD * 2 - 60, 800, 34, 24, UI);
   ctx.fillText(`${label} ${url}`, WIDTH / 2, footerY + 53);
@@ -135,7 +143,7 @@ const paintFooter = (ctx, label, url, { footerY }) => {
 };
 
 const paintSectionTitle = (ctx, text, y) => {
-  ctx.fillStyle = GREEN;
+  ctx.fillStyle = theme.accent;
   ctx.fillRect(PAD, y + 6, 8, 36);
   fitFont(ctx, text, WIDTH - PAD * 2 - 30, 800, 36, 26, DISPLAY);
   ctx.fillText(text, PAD + 24, y + 37);
@@ -143,12 +151,12 @@ const paintSectionTitle = (ctx, text, y) => {
 
 const paintRowBox = (ctx, y, height, time) => {
   roundRect(ctx, PAD, y, WIDTH - PAD * 2, height, 22);
-  ctx.fillStyle = SURFACE;
+  ctx.fillStyle = theme.surface;
   ctx.fill();
-  ctx.strokeStyle = 'rgba(154,123,255,0.28)';
+  ctx.strokeStyle = theme.stroke;
   ctx.lineWidth = 2;
   ctx.stroke();
-  ctx.fillStyle = GREEN;
+  ctx.fillStyle = theme.accent;
   ctx.font = `800 36px ${DISPLAY}`;
   ctx.fillText(time, PAD + 24, y + height / 2 + 13);
 };
@@ -189,7 +197,7 @@ const paintGameRow = (ctx, game, crests, y) => {
   if (game.score) {
     const width = ctx.measureText(middle).width + 20;
     roundRect(ctx, x - 6, baseline - size + 1, width, size + 8, 8);
-    ctx.fillStyle = GREEN;
+    ctx.fillStyle = theme.accent;
     ctx.fill();
     ctx.fillStyle = INK;
     ctx.fillText(middle, x + 4, baseline);
@@ -269,7 +277,7 @@ const toBlob = (canvas) => new Promise((resolve) => { canvas.toBlob(resolve, 'im
 
 export const upcomingGames = (data, { onlyUpcoming, now }) => data.games.filter((game) => !onlyUpcoming || !gameEnded(game, now));
 
-export const gamesArt = async (data, { onlyUpcoming, now, format, ranked }) => {
+export const gamesArt = async (data, { onlyUpcoming, now, format, ranked, brand = BRANDS.agtv }) => {
   const games = ranked || upcomingGames(data, { onlyUpcoming, now });
   if (!games.length) return null;
   const fitted = fitGames(games, format, ranked);
@@ -282,12 +290,13 @@ export const gamesArt = async (data, { onlyUpcoming, now, format, ranked }) => {
     .flatMap((game) => [game.homeCrest, game.awayCrest])
     .filter((src) => src && src.startsWith('/')))];
   const [logo, images] = await Promise.all([
-    loadImage('/marca/favicon-192.png'),
+    loadImage(brand.logo),
     Promise.all(sources.map(loadImage)),
     loadFonts(),
   ]);
   const crests = new Map(sources.map((src, index) => [src, images[index]]).filter(([, image]) => image));
 
+  theme = brand;
   const [canvas, ctx] = createCanvas(format);
   paintBackground(ctx, format);
   paintHeader(ctx, logo, 'JOGOS DO DIA', `${formatDay(data.date)} · horários de Brasília`, format);
@@ -305,10 +314,10 @@ export const gamesArt = async (data, { onlyUpcoming, now, format, ranked }) => {
     ctx.fillStyle = '#e4e5ec';
     ctx.font = `700 30px ${UI}`;
     ctx.textAlign = 'center';
-    ctx.fillText(`+ ${hidden} ${hidden === 1 ? 'jogo' : 'jogos'} no site`, WIDTH / 2, format.contentBottom - 8);
+    ctx.fillText(`+ ${hidden} ${hidden === 1 ? 'jogo' : 'jogos'} ${brand.moreGames}`, WIDTH / 2, format.contentBottom - 8);
     ctx.textAlign = 'left';
   }
-  paintFooter(ctx, 'Placar ao vivo:', 'agtvcenas.com.br/jogos', format);
+  paintFooter(ctx, brand.gamesFooter, format);
   return toBlob(canvas);
 };
 
@@ -382,11 +391,12 @@ const paintMovieRow = (ctx, item, y) => {
   ctx.fillText(item.channel, TEXT_X, y + 78);
 };
 
-export const moviesArt = async (data, { ranked, window, format }) => {
+export const moviesArt = async (data, { ranked, window, format, brand = BRANDS.agtv }) => {
   const items = picksFor(ranked, movieRowsFor(format));
   if (!items.length) return null;
 
-  const [logo] = await Promise.all([loadImage('/marca/favicon-192.png'), loadFonts()]);
+  const [logo] = await Promise.all([loadImage(brand.logo), loadFonts()]);
+  theme = brand;
   const [canvas, ctx] = createCanvas(format);
   paintBackground(ctx, format);
   paintHeader(ctx, logo, 'FILMES E SÉRIES', `${formatDay(data.date)} · ${windowLabel(window)}`, format);
@@ -395,16 +405,15 @@ export const moviesArt = async (data, { ranked, window, format }) => {
     paintMovieRow(ctx, item, y);
     y += MOVIE_ROW + ROW_GAP;
   }
-  paintFooter(ctx, 'Grade completa:', 'agtvcenas.com.br/programacao', format);
+  paintFooter(ctx, brand.moviesFooter, format);
   return toBlob(canvas);
 };
 
-// Legendas que acompanham as imagens: só dados do dia, mais o link do site.
-const SITE = 'agtvcenas.com.br';
+// Legendas que acompanham as imagens: só dados do dia, mais o contato da marca.
 const dayWord = (data) => (data.date === data.today ? 'hoje' : 'amanhã');
 const CAPTION_LINES = 5;
 
-export const gamesCaption = (data, { onlyUpcoming, now, ranked }) => {
+export const gamesCaption = (data, { onlyUpcoming, now, ranked, brand = BRANDS.agtv }) => {
   const all = upcomingGames(data, { onlyUpcoming, now });
   if (!all.length) return '';
   // Com a IA, a legenda traz só os escolhidos por ela, na ordem do horário.
@@ -414,24 +423,24 @@ export const gamesCaption = (data, { onlyUpcoming, now, ranked }) => {
   const lines = top.map((game) => `${formatTime(game.start)} • ${game.home} x ${game.away}`);
   const more = all.length - lines.length;
   return [
-    `⚽ Jogos de ${dayWord(data)} na AGTV, ${formatDay(data.date)}`,
+    `⚽ Jogos de ${dayWord(data)} na ${brand.name}, ${formatDay(data.date)}`,
     '',
     ...lines,
     ...(more > 0 ? [`+ ${more} ${more === 1 ? 'jogo' : 'jogos'}`] : []),
     '',
-    `📺 Horários e onde assistir, em tempo real: ${SITE}/jogos`,
+    brand.gamesCta,
   ].join('\n');
 };
 
-export const moviesCaption = (data, { ranked, window }) => {
+export const moviesCaption = (data, { ranked, window, brand = BRANDS.agtv }) => {
   const picks = picksFor(ranked, CAPTION_LINES);
   if (!picks.length) return '';
   const lines = picks.map((item) => `${formatTime(item.start)} • ${item.title}`);
   return [
-    `🎬🍿 Filmes e séries de ${dayWord(data)} na AGTV, ${windowLabel(window)}`,
+    `🎬🍿 Filmes e séries de ${dayWord(data)} na ${brand.name}, ${windowLabel(window)}`,
     '',
     ...lines,
     '',
-    `📺 Grade completa, em tempo real: ${SITE}/programacao`,
+    brand.moviesCta,
   ].join('\n');
 };

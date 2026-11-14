@@ -7,8 +7,9 @@ const { loadDataset } = require('../lib/epg/store');
 const { withScores } = require('../lib/epg/scores');
 const {
   MIN_PASSWORD_LENGTH, SESSION_MS, clientIp, createLimiter, createSession,
-  readSession, safeEqual, sessionCookie, validSession,
+  parseAccounts, readSession, safeEqual, sessionCookie, validSession,
 } = require('../lib/adminAuth');
+const { PAINEL_SUPABASE_KEY, PAINEL_SUPABASE_URL } = require('../src/utils/painelConfig');
 
 const LOCK_MS = 15 * 60 * 1000;
 const FAIL_DELAY_MS = 500;
@@ -113,21 +114,52 @@ const tooMany = (res, seconds) => {
   });
 };
 
+// Confere no Supabase quem é o dono do token de login e devolve o e-mail (ou '' se não valer).
+const emailFromToken = async (token) => {
+  if (!token || token.length > 4000) return '';
+  try {
+    const response = await fetch(`${PAINEL_SUPABASE_URL}/auth/v1/user`, {
+      headers: { apikey: PAINEL_SUPABASE_KEY, Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) return '';
+    const user = await response.json();
+    return String((user && user.email) || '').trim().toLowerCase();
+  } catch (error) {
+    console.error('[admin] Supabase indisponível no login:', error.message);
+    return '';
+  }
+};
+
+// Login por conta (e-mail e senha no Supabase, cada e-mail ligado a uma marca em ADMIN_CONTAS)
+// ou, enquanto as contas não existem, pela senha antiga de ADMIN_PASSWORD, que entra como AGTV.
 const login = async (req, res, password) => {
   const ip = clientIp(req);
   const lockedFor = Math.max(failuresByIp.blocked(ip), failuresTotal.blocked(ALL_CLIENTS));
   if (lockedFor) return tooMany(res, lockedFor);
 
-  if (!safeEqual(req.headers['x-admin-password'] || '', password)) {
+  let brand = null;
+  const bearer = String(req.headers.authorization || '').match(/^Bearer\s+(\S+)$/i);
+  if (bearer) {
+    const email = await emailFromToken(bearer[1]);
+    brand = email ? parseAccounts(process.env.ADMIN_CONTAS).get(email) || null : null;
+    if (email && !brand) {
+      console.warn('[admin] conta sem marca em ADMIN_CONTAS tentou entrar');
+      return sendJson(res, 403, { error: { message: 'Esta conta ainda não foi liberada no painel.' } });
+    }
+  } else if (safeEqual(req.headers['x-admin-password'] || '', password)) {
+    brand = 'agtv';
+  }
+
+  if (!brand) {
     failuresTotal.hit(ALL_CLIENTS);
     if (failuresByIp.hit(ip)) console.warn('[admin] login bloqueado por excesso de tentativas');
     await wait(FAIL_DELAY_MS);
-    return sendJson(res, 401, { error: { message: 'Senha incorreta.' } });
+    return sendJson(res, 401, { error: { message: 'E-mail ou senha incorretos.' } });
   }
 
   failuresByIp.reset(ip);
-  res.setHeader('Set-Cookie', sessionCookie(req, createSession(password), SESSION_MS));
-  return sendJson(res, 200, { ok: true });
+  res.setHeader('Set-Cookie', sessionCookie(req, createSession(password, brand), SESSION_MS));
+  return sendJson(res, 200, { ok: true, marca: brand });
 };
 
 // Programação e jogos de um dia para a página /admin. A senha vem de ADMIN_PASSWORD na Vercel;
@@ -153,7 +185,7 @@ module.exports = async function handler(req, res) {
   // POST com a sessão e o cabeçalho de ação pede os destaques à IA; sem ele, é o login.
   if (req.method === 'POST' && req.headers['x-admin-acao'] === 'destaques') {
     if (!validSession(readSession(req), password)) {
-      return sendJson(res, 401, { error: { message: 'Entre com a senha.' } });
+      return sendJson(res, 401, { error: { message: 'Entre de novo.' } });
     }
     return highlights(req, res);
   }
@@ -163,8 +195,9 @@ module.exports = async function handler(req, res) {
     return sendJson(res, 200, { ok: true });
   }
 
-  if (!validSession(readSession(req), password)) {
-    return sendJson(res, 401, { error: { message: 'Entre com a senha.' } });
+  const brand = validSession(readSession(req), password);
+  if (!brand) {
+    return sendJson(res, 401, { error: { message: 'Entre de novo.' } });
   }
   const limitedFor = reads.hit(clientIp(req));
   if (limitedFor) return tooMany(res, limitedFor);
@@ -208,6 +241,7 @@ module.exports = async function handler(req, res) {
   });
 
   return sendJson(res, 200, {
+    marca: brand,
     timezone: TIMEZONE,
     now: new Date(now).toISOString(),
     today,

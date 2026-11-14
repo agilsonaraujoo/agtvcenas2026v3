@@ -76,6 +76,55 @@
   flex-shrink: 0;
 }
 
+/* Tela de entrada neutra: sem cor de marca nenhuma. */
+.admin-neutral {
+  --agtv-green: #f1f2f6;
+  background: #0b0c10;
+}
+
+.admin-neutral .admin-panel {
+  border-color: rgb(255 255 255 / 12%);
+}
+
+.admin-neutral input[type='password'],
+.admin-neutral input[type='email'] {
+  border-color: rgb(255 255 255 / 18%);
+}
+
+.admin-text-button {
+  align-self: center;
+  border: 0;
+  background: none;
+  padding: 0.35rem;
+  color: var(--agtv-muted);
+  font-size: 0.9rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.admin-text-button:hover {
+  color: #fff;
+}
+
+.admin-brand {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 0.75rem;
+}
+
+.admin-brand img {
+  grid-row: span 2;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.7rem;
+  object-fit: cover;
+}
+
+.admin-brand img.is-round {
+  border-radius: 50%;
+}
+
 .admin-head p {
   margin: 0.2rem 0 0;
   color: var(--agtv-muted);
@@ -83,6 +132,7 @@
 }
 
 .admin-page input[type='password'],
+.admin-page input[type='email'],
 .admin-page select {
   width: 100%;
   border: 1px solid rgb(154 123 255 / 35%);
