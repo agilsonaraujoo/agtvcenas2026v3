@@ -576,8 +576,7 @@ const LoginScreen = ({ onSession, initialError }) => {
   const sendReset = run(async () => {
     const redirect = `${window.location.origin}/admin`;
     const auth = await supabaseAuth(`recover?redirect_to=${encodeURIComponent(redirect)}`, { body: { email: email.trim() } });
-    if (auth.status === 429) throw new Error('Já enviamos um e-mail há pouco. Espere alguns minutos para pedir outro.');
-    if (!auth.ok) throw new Error('Não foi possível enviar o e-mail agora. Tente de novo.');
+    if (!auth.ok) throw new Error('Não foi possível enviar o e-mail agora. Peça ao administrador do painel para redefinir sua senha.');
     setMessage({ error: '', info: 'Se esse e-mail tiver conta, chega um link para criar a senha nova. Confira também o spam.' });
   });
 
