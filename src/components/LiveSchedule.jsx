@@ -80,6 +80,10 @@ const fetchJson = async (url) => {
   return { ok: response.ok, data };
 };
 
+// A capa aparece com uns 40 px de largura: a versão w92 do catálogo (~5 KB) basta até em tela de alta
+// resolução. A w500 que vem da API pesa uns 100 KB cada e deixava a lista lenta no celular.
+const thumbnailUrl = (url) => url.replace('/t/p/w500/', '/t/p/w92/');
+
 // Capa do programa, quando o catálogo tem; sem capa (ou se a imagem falhar), o card fica só com o texto.
 const Artwork = ({ program, variant }) => {
   const [failed, setFailed] = useState(false);
@@ -87,9 +91,12 @@ const Artwork = ({ program, variant }) => {
   return (
     <img
       className={`epg-artwork epg-artwork--${variant}`}
-      src={program.posterUrl}
+      src={thumbnailUrl(program.posterUrl)}
       alt=""
+      width="92"
+      height="138"
       loading="lazy"
+      decoding="async"
       onError={() => setFailed(true)}
     />
   );

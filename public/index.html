@@ -44,6 +44,18 @@
     <link rel="icon" type="image/png" sizes="192x192" href="/marca/favicon-192.png?v=20261113" />
     <link rel="icon" type="image/png" sizes="512x512" href="/marca/favicon-512.png?v=20261113" />
     <link rel="apple-touch-icon" href="/marca/favicon-180.png?v=20261113" />
+  <script>
+    // Na programação, a grade começa a baixar junto com o site, sem esperar o JavaScript carregar.
+    (function () {
+      if (!/^\/programacao(\/[^/]+)?\/?$/.test(location.pathname) || /[?&]date=/.test(location.search)) return;
+      var link = document.createElement('link');
+      link.rel = 'preload';
+      link.as = 'fetch';
+      link.href = '/api/programacao';
+      link.crossOrigin = 'anonymous';
+      document.head.appendChild(link);
+    })();
+  </script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>

@@ -65,9 +65,17 @@ const posterForTitle = async (title) => {
 // Canais abertos e de esporte ficam sem capa (jornal, programa local e jogo quase nunca têm,
 // e capa só em alguns cards fica desigual); o resto busca no catálogo de filmes e séries.
 const NO_POSTER_GROUPS = ['abertos', 'esportes'];
+// A grade não espera o catálogo: se a capa demorar (servidor recém-ligado, com o cache de capas vazio),
+// a lista sai sem ela e a busca continua por trás, enchendo o cache para as próximas respostas.
+const POSTER_WAIT_MS = 700;
+const withinWait = (promise) => Promise.race([
+  promise,
+  new Promise((resolve) => { setTimeout(() => resolve(null), POSTER_WAIT_MS); }),
+]);
+
 const enrichProgram = async (program, group) => {
   if (!program || NO_POSTER_GROUPS.includes(group) || /\sx\s/i.test(program.title)) return program;
-  const posterUrl = await posterForTitle(program.title);
+  const posterUrl = await withinWait(posterForTitle(program.title));
   return posterUrl ? { ...program, posterUrl } : program;
 };
 

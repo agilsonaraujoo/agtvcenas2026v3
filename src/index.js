@@ -1,14 +1,17 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
 import './styles/agtv-theme.css';
-import App from './App';
-import ThankYou from './components/ThankYou';
-import Admin from './components/Admin';
-import { GamesPage, SchedulePage } from './components/SectionPage';
 import { currentPath, isSchedulePath, movedSectionUrl } from './utils/routes';
 
 // O site não tem roteador: /obrigado é a volta do pagamento do Mercado Pago e /admin é a página do dono.
+// Cada página vem num arquivo próprio: quem abre /programacao no celular não baixa a página de vendas inteira.
+const App = lazy(() => import('./App'));
+const ThankYou = lazy(() => import('./components/ThankYou'));
+const Admin = lazy(() => import('./components/Admin'));
+const GamesPage = lazy(() => import('./components/SectionPage').then((module) => ({ default: module.GamesPage })));
+const SchedulePage = lazy(() => import('./components/SectionPage').then((module) => ({ default: module.SchedulePage })));
+
 const PAGES = {
   '/obrigado': ThankYou,
   '/admin': Admin,
@@ -23,7 +26,9 @@ if (moved) {
 } else {
   createRoot(document.getElementById('root')).render(
     <React.StrictMode>
-      <Page />
+      <Suspense fallback={null}>
+        <Page />
+      </Suspense>
     </React.StrictMode>
   );
 }
