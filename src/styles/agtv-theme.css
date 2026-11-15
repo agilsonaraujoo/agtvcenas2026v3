@@ -218,7 +218,6 @@ section:not(#home) h2 {
     linear-gradient(180deg, #0b0c11, #101116 52%, #0b0c11) !important;
 }
 
-#servicos .grid > div,
 #trending .bg-gray-800,
 #recomendacoes .bg-gray-900,
 #planos .plan-card,
@@ -233,38 +232,18 @@ section:not(#home) h2 {
   box-shadow: 0 16px 42px rgb(0 0 0 / 24%), inset 0 1px 0 rgb(255 255 255 / 3%);
 }
 
-#servicos .grid > div,
 #planos .plan-card,
 #recomendacoes .grid > div,
 #depoimentos .bg-gradient-to-r {
   transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
 }
 
-#servicos .grid > div:hover,
 #planos .plan-card:hover,
 #recomendacoes .grid > div:hover,
 #depoimentos .bg-gradient-to-r:hover {
   transform: translateY(-5px);
   border-color: rgb(183 255 74 / 42%);
   box-shadow: 0 22px 54px rgb(0 0 0 / 34%), 0 0 30px rgb(154 123 255 / 9%);
-}
-
-#servicos .grid > div > div:first-child {
-  display: inline-flex;
-  width: 4.75rem;
-  height: 4.75rem;
-  align-items: center;
-  justify-content: center;
-  margin-inline: auto;
-  border: 1px solid rgb(154 123 255 / 24%);
-  border-radius: 1.25rem;
-  background: linear-gradient(145deg, rgb(154 123 255 / 14%), rgb(183 255 74 / 5%));
-  filter: drop-shadow(0 0 20px rgb(154 123 255 / 12%));
-}
-
-#servicos .grid > div > div:first-child svg {
-  width: 2rem;
-  height: 2rem;
 }
 
 #trending .flex-none img,
@@ -355,8 +334,6 @@ footer {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-
-  #servicos .grid > div:hover,
   #planos .plan-card:hover,
   #recomendacoes .grid > div:hover,
   #depoimentos .bg-gradient-to-r:hover {

@@ -6,6 +6,7 @@ import {
   useMotionTemplate,
   useMotionValue,
   useReducedMotion,
+  useScroll,
   useSpring,
   useTransform,
 } from 'framer-motion';
@@ -154,6 +155,20 @@ const Hero = () => {
     glareOpacity.set(0);
   };
 
+  // Ao rolar para baixo, o texto sobe e some e a TV se aproxima, passando a vez para a próxima seção.
+  const heroRef = useRef(null);
+  const { scrollYProgress: heroScroll } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
+  const exitText = {
+    y: useTransform(heroScroll, [0.3, 1], [0, -70]),
+    opacity: useTransform(heroScroll, [0.5, 0.95], [1, 0]),
+    filter: useMotionTemplate`blur(${useTransform(heroScroll, [0.55, 0.95], [0, 8])}px)`,
+  };
+  const exitTv = {
+    y: useTransform(heroScroll, [0, 1], [0, 70]),
+    scale: useTransform(heroScroll, [0, 1], [1, 1.12]),
+    opacity: useTransform(heroScroll, [0.35, 0.85], [1, 0]),
+  };
+
   const togglePreview = () => {
     setIsPreviewPlaying((playing) => !playing);
   };
@@ -161,6 +176,7 @@ const Hero = () => {
   return (
     <section
       id="home"
+      ref={heroRef}
       onPointerMove={handleHeroPointerMove}
       onPointerLeave={handleHeroPointerLeave}
       className="relative flex min-h-screen items-start overflow-hidden px-4 pb-10 pt-16 text-white sm:px-6 sm:pt-28 lg:items-center lg:pt-32"
@@ -169,7 +185,7 @@ const Hero = () => {
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/25 via-black/15 to-[#07080b]/90" />
 
       <div className="container relative z-10 mx-auto grid max-w-7xl items-center gap-6 py-4 sm:gap-10 sm:py-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
-        <div className="relative z-10 order-2 text-center lg:order-1 lg:text-left">
+        <motion.div style={prefersReducedMotion ? undefined : exitText} className="relative z-10 order-2 text-center lg:order-1 lg:text-left">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -283,13 +299,14 @@ const Hero = () => {
               </div>
             ))}
           </motion.div>
-        </div>
+        </motion.div>
 
+        <motion.div style={prefersReducedMotion ? undefined : exitTv} className="relative z-0 order-1 lg:order-2">
         <motion.div
           initial={{ opacity: 0, scale: 0.96, y: 18 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.75, delay: 0.25 }}
-          className="relative z-0 order-1 mx-auto w-[min(88vw,420px)] sm:w-[min(82vw,520px)] lg:order-2 lg:w-full lg:max-w-[470px]"
+          className="relative mx-auto w-[min(88vw,420px)] sm:w-[min(82vw,520px)] lg:w-full lg:max-w-[470px]"
         >
           <motion.div
             ref={tvRef}
@@ -418,6 +435,7 @@ const Hero = () => {
             )}
           </AnimatePresence>
           </motion.div>
+        </motion.div>
         </motion.div>
       </div>
 

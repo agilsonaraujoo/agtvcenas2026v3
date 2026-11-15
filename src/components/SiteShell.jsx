@@ -3,6 +3,7 @@ import Header from './Header';
 import Footer from './Footer';
 import CookieBanner from './CookieBanner';
 import ScrollReveal from './ScrollReveal';
+import ScrollProgress from './ScrollProgress';
 import BackToTop from './BackToTop';
 import ChatAssistant from './ChatAssistant';
 
@@ -30,6 +31,7 @@ const SiteShell = ({ children }) => {
   return (
     <div className="relative min-h-screen">
       <ScrollReveal />
+      <ScrollProgress />
       <div className="absolute inset-0 bg-gradient-to-r from-gray-900/50 to-black/50" />
       <div className="relative pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-0">
         <Header />

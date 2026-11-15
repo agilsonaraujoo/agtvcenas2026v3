@@ -25,7 +25,7 @@ const ScrollReveal = () => {
       elements.push(...root.querySelectorAll(revealSelector));
 
       elements.forEach((element) => {
-        if (observed.has(element)) return;
+        if (observed.has(element) || element.closest('[data-no-reveal]')) return;
         observed.add(element);
         element.classList.add('agtv-reveal');
 
