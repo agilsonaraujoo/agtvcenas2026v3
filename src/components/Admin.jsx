@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  FiCheck, FiCopy, FiDownload, FiImage, FiKey, FiLink, FiLogOut, FiRefreshCw, FiShare, FiUsers,
+  FiCheck, FiCopy, FiDownload, FiImage, FiKey, FiLink, FiLogOut, FiRefreshCw, FiSend, FiShare, FiUsers,
 } from 'react-icons/fi';
 import { API_CONFIG } from '../utils/api';
 import { SCHEDULE_TABS, scheduleTabPath } from '../utils/routes';
@@ -8,11 +8,27 @@ import { PAINEL_SUPABASE_KEY, PAINEL_SUPABASE_URL } from '../utils/painelConfig'
 import { brandFor } from '../utils/painelBrands';
 import {
   ART_FORMATS, PRIME_END, PRIME_START, formatDay, formatTime, gameEnded, gamesArt, gamesCaption,
-  movieCandidates, movieRowsFor, moviesArt, moviesCaption, simpleRanking, upcomingGames,
+  movieCandidates, movieRowsFor, moviesArt, moviesCaption, preloadArt, simpleRanking, upcomingGames,
 } from '../utils/adminArt';
 import '../styles/admin.css';
 
 const WHATSAPP_LIMIT = 65000;
+
+// Links para mandar aos clientes apontam sempre para o site público, mesmo quando o painel abre
+// dentro do AGTV Automação (painel.agtvcenas.com.br). Em desenvolvimento ficam no próprio endereço.
+const SITE_ORIGIN = 'https://agtvcenas.com.br';
+const inIframe = () => {
+  try {
+    return window.top !== window;
+  } catch {
+    return true;
+  }
+};
+const shareOrigin = () => {
+  const { hostname, origin } = window.location;
+  if (hostname === 'localhost' || hostname === '127.0.0.1') return origin;
+  return inIframe() || hostname.startsWith('painel.') ? SITE_ORIGIN : origin;
+};
 
 const gameLine = (game) => {
   const channels = game.channels.map((channel) => channel.name).join(', ');
@@ -159,8 +175,6 @@ const ArtPreview = ({ file, label, caption }) => {
   );
 };
 
-// Desenha os dois tamanhos e deixa as prévias na tela, cada uma com Copiar, Enviar e Baixar.
-// No computador também baixa os PNGs na hora.
 // Horário padrão da arte de filmes: hoje, da próxima meia hora até 3 horas depois; outro dia, 20h às 23h.
 const defaultArtWindow = (data) => {
   if (data.date !== data.today) return { start: PRIME_START, end: PRIME_END };
@@ -216,15 +230,87 @@ const pickMovies = async (data, { start, end, onlyUpcoming, useAi }) => {
   return { ...automatic, note: 'A IA não respondeu agora; usei a seleção automática (um por canal).' };
 };
 
-const ArtMaker = ({ label, fileName, draw, caption, prepare, controls }) => {
+// As duas categorias de arte, com o mesmo nome que o AGTV Automação usa.
+const CATEGORIES = { GAMES: 'jogos-do-dia', MOVIES: 'filmes-series' };
+
+// Tudo o que uma arte precisa: escolher os itens (prepare), desenhar cada formato e montar a legenda.
+const artSpec = (categoria, data, brand, { onlyUpcoming, useAi, window }) => {
+  if (categoria === CATEGORIES.GAMES) {
+    return {
+      categoria,
+      date: data.date,
+      label: 'Gerar imagem dos jogos',
+      fileName: `${brand.name}_jogos_${data.date}`,
+      empty: 'Nenhum jogo para mostrar nesse dia.',
+      prepare: () => pickGames(data, { onlyUpcoming, useAi }),
+      draw: (format, picks) => gamesArt(data, { onlyUpcoming, now: Date.now(), format, ranked: picks && picks.ranked, brand }),
+      caption: (picks) => gamesCaption(data, { onlyUpcoming, now: Date.now(), ranked: picks && picks.ranked, brand }),
+    };
+  }
+  return {
+    categoria,
+    date: data.date,
+    label: 'Gerar imagem de filmes e séries',
+    fileName: `${brand.name}_filmes_series_${data.date}`,
+    empty: 'Nenhum filme ou série nesse horário.',
+    prepare: () => pickMovies(data, { ...window, onlyUpcoming, useAi }),
+    draw: (format, picks) => moviesArt(data, { ...picks, format, brand }),
+    caption: (picks) => moviesCaption(data, { ...picks, brand }),
+  };
+};
+
+// Gera os dois PNGs (9:16 e 1:1) e a legenda. null quando não há nada no período.
+const buildArt = async (spec) => {
+  // prepare() roda uma vez (ex.: a IA escolhe os destaques) e vale para os dois formatos e a legenda.
+  const context = await spec.prepare();
+  const blobs = await Promise.all(ART_FORMATS.map((format) => spec.draw(format, context)));
+  if (blobs.some((blob) => !blob)) return null;
+  return {
+    files: blobs.map((blob, index) => ({
+      blob,
+      name: `${spec.fileName}_${ART_FORMATS[index].key}.png`,
+      label: ART_FORMATS[index].label,
+    })),
+    caption: spec.caption(context) || '',
+    note: (context && context.note) || '',
+  };
+};
+
+const toDataUrl = (blob) => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => resolve(reader.result);
+  reader.onerror = () => reject(reader.error);
+  reader.readAsDataURL(blob);
+});
+
+// Formato combinado com o AGTV Automação (o mesmo do botão "Mandar" e do modo automático).
+const automationPayload = async (spec, files, caption) => ({
+  categoria: spec.categoria,
+  data: spec.date,
+  legenda: caption,
+  itens: await Promise.all(files.map(async (file) => ({
+    formato: file.label,
+    nome: file.name,
+    dataUrl: await toDataUrl(file.blob),
+  }))),
+});
+
+const ArtMaker = ({ spec, controls, embedded }) => {
   const [art, setArt] = useState({ status: 'idle', files: [] });
   const [captionCopied, setCaptionCopied] = useState(false);
+  const [sent, setSent] = useState('');
 
   useEffect(() => {
     if (!captionCopied) return undefined;
     const timer = setTimeout(() => setCaptionCopied(false), 2500);
     return () => clearTimeout(timer);
   }, [captionCopied]);
+
+  useEffect(() => {
+    if (!sent || sent === 'sending') return undefined;
+    const timer = setTimeout(() => setSent(''), 3000);
+    return () => clearTimeout(timer);
+  }, [sent]);
 
   const copyCaption = async () => {
     setCaptionCopied(await copyText(art.caption));
@@ -234,27 +320,23 @@ const ArtMaker = ({ label, fileName, draw, caption, prepare, controls }) => {
     art.files.forEach((file) => URL.revokeObjectURL(file.url));
   }, [art.files]);
 
-  const generate = async () => {
+  // Desenha os dois tamanhos e deixa as prévias na tela, cada uma com Copiar, Enviar e Baixar.
+  // No computador também baixa os PNGs na hora (menos quando é só para mandar à Automação).
+  const generate = async ({ download = !isTouchDevice() } = {}) => {
     setArt((previous) => ({ ...previous, status: 'working' }));
     try {
-      // prepare() roda uma vez (ex.: a IA escolhe os destaques) e vale para os dois formatos e a legenda.
-      const context = prepare ? await prepare() : undefined;
-      const blobs = await Promise.all(ART_FORMATS.map((format) => draw(format, context)));
-      if (blobs.some((blob) => !blob)) {
-        setArt({ status: 'empty', files: [] });
-        return;
+      const built = await buildArt(spec);
+      if (!built) {
+        const next = { status: 'empty', files: [] };
+        setArt(next);
+        return next;
       }
-      const files = blobs.map((blob, index) => {
-        const name = `${fileName}_${ART_FORMATS[index].key}.png`;
-        return {
-          blob,
-          shareFile: new File([blob], name, { type: 'image/png' }),
-          url: URL.createObjectURL(blob),
-          name,
-          label: ART_FORMATS[index].label,
-        };
-      });
-      if (!isTouchDevice()) {
+      const files = built.files.map((file) => ({
+        ...file,
+        shareFile: new File([file.blob], file.name, { type: 'image/png' }),
+        url: URL.createObjectURL(file.blob),
+      }));
+      if (download) {
         files.forEach((file) => {
           const link = document.createElement('a');
           link.href = file.url;
@@ -262,25 +344,55 @@ const ArtMaker = ({ label, fileName, draw, caption, prepare, controls }) => {
           link.click();
         });
       }
-      const text = typeof caption === 'function' ? caption(context) : caption;
-      setArt({ status: 'ready', files, caption: text || '', note: (context && context.note) || '' });
+      const next = { status: 'ready', files, caption: built.caption, note: built.note };
+      setArt(next);
+      return next;
     } catch {
-      setArt({ status: 'error', files: [] });
+      const next = { status: 'error', files: [] };
+      setArt(next);
+      return next;
     }
   };
+
+  // Dentro do AGTV Automação: manda os dois PNGs e a legenda para a página de fora (mesma origem).
+  const sendToAutomation = async () => {
+    setSent('sending');
+    try {
+      const current = art.status === 'ready' ? art : await generate({ download: false });
+      if (current.status !== 'ready') {
+        setSent('');
+        return;
+      }
+      const payload = await automationPayload(spec, current.files, current.caption);
+      window.parent.postMessage({ tipo: 'agtv-artes', versao: 1, ...payload }, window.location.origin);
+      setSent('Enviado para a Automação.');
+    } catch {
+      setSent('Não deu para mandar para a Automação.');
+    }
+  };
+
+  const busy = art.status === 'working' || sent === 'sending';
 
   return (
     <div className="admin-art">
       {controls}
-      <button type="button" className="admin-chip" onClick={generate} disabled={art.status === 'working'}>
-        <FiImage aria-hidden="true" /> {art.status === 'working' ? 'Gerando...' : label}
-      </button>
+      <div className="admin-art-buttons">
+        <button type="button" className="admin-chip" onClick={() => generate()} disabled={busy}>
+          <FiImage aria-hidden="true" /> {art.status === 'working' ? 'Gerando...' : spec.label}
+        </button>
+        {embedded && (
+          <button type="button" className="admin-chip" onClick={sendToAutomation} disabled={busy}>
+            <FiSend aria-hidden="true" /> {sent === 'sending' ? 'Mandando...' : '📤 Mandar para a Automação'}
+          </button>
+        )}
+      </div>
+      {sent && sent !== 'sending' && <p className="admin-count" role="status">{sent}</p>}
       {art.status === 'empty' && <p className="admin-count">Nada para mostrar nesse período.</p>}
       {art.status === 'error' && <p className="admin-error" role="alert">Não foi possível gerar a imagem.</p>}
       {art.files.length > 0 && art.note && <p className="admin-count">{art.note}</p>}
       {art.files.length > 0 && (
         <div className="admin-art-previews">
-          {art.files.map((file) => <ArtPreview key={file.name} file={file} label={label} caption={art.caption} />)}
+          {art.files.map((file) => <ArtPreview key={file.name} file={file} label={spec.label} caption={art.caption} />)}
         </div>
       )}
       {art.files.length > 0 && art.caption && (
@@ -294,6 +406,51 @@ const ArtMaker = ({ label, fileName, draw, caption, prepare, controls }) => {
       )}
     </div>
   );
+};
+
+// Modo automático do AGTV Automação (Playwright): /admin?automacao=jogos-do-dia ou filmes-series,
+// com &data=AAAA-MM-DD e, para filmes, &de=19:00&ate=22:00. Expõe window.__agtvAutomacao.
+const readAutomation = () => {
+  const params = new URLSearchParams(window.location.search);
+  const categoria = params.get('automacao');
+  if (!Object.values(CATEGORIES).includes(categoria)) return null;
+  const pick = (key, pattern) => (pattern.test(params.get(key) || '') ? params.get(key) : '');
+  return {
+    categoria,
+    date: pick('data', /^\d{4}-\d{2}-\d{2}$/),
+    start: pick('de', /^([01]\d|2[0-3]):[0-5]\d$/),
+    end: pick('ate', /^([01]\d|2[0-3]):[0-5]\d$/),
+  };
+};
+
+// Um só gancho por página (o StrictMode do React monta duas vezes em desenvolvimento).
+let automationHook = null;
+const getAutomationHook = (categoria) => {
+  if (automationHook) return automationHook;
+  let resolve;
+  let reject;
+  let run = null;
+  const pronto = new Promise((ok, fail) => {
+    resolve = ok;
+    reject = fail;
+  });
+  pronto.catch(() => {});
+  window.__agtvAutomacao = {
+    categoria,
+    pronto,
+    gerar: async () => {
+      await pronto;
+      return run();
+    },
+  };
+  automationHook = {
+    ready: (value) => resolve(value),
+    fail: (error) => reject(error),
+    setRun: (fn) => {
+      run = fn;
+    },
+  };
+  return automationHook;
 };
 
 const CopyPanel = ({ title, text, empty, children, art }) => {
@@ -574,7 +731,7 @@ const LoginScreen = ({ onSession, initialError }) => {
   });
 
   const sendReset = run(async () => {
-    const redirect = `${window.location.origin}/admin`;
+    const redirect = `${shareOrigin()}/admin`;
     const auth = await supabaseAuth(`recover?redirect_to=${encodeURIComponent(redirect)}`, { body: { email: email.trim() } });
     if (!auth.ok) throw new Error('Não foi possível enviar o e-mail agora. Peça ao administrador do painel para redefinir sua senha.');
     setMessage({ error: '', info: 'Se esse e-mail tiver conta, chega um link para criar a senha nova. Confira também o spam.' });
@@ -659,6 +816,11 @@ const Admin = () => {
   }, [loadedDate, loadedToday]);
   const [group, setGroup] = useState('');
   const [channel, setChannel] = useState('');
+  // Dentro do AGTV Automação (iframe) aparece o botão "Mandar para a Automação".
+  const [embedded] = useState(inIframe);
+  const [automation] = useState(readAutomation);
+  // Quem está logado, segundo /api/admin/eu. origem 'automacao' = entrou pelo proxy, sem senha.
+  const [me, setMe] = useState(null);
 
   useEffect(() => {
     document.title = 'Painel';
@@ -695,9 +857,65 @@ const Admin = () => {
     }
   }, []);
 
+  // Pergunta antes quem está logado: pelo AGTV Automação a conta já vem pronta e entra direto, sem
+  // tela de login. 401/403 mostram o login; outro erro (ex.: proxy antigo sem /api/admin/eu) segue
+  // o caminho de sempre, carregando a grade.
   useEffect(() => {
-    if (!fromRecoveryLink) load();
-  }, [load, fromRecoveryLink]);
+    if (fromRecoveryLink) return undefined;
+    let active = true;
+    const start = async () => {
+      let response = null;
+      let result = {};
+      try {
+        response = await fetch(`${API_CONFIG.ADMIN.URL}/eu`);
+        result = await response.json().catch(() => ({}));
+      } catch {
+        response = null;
+      }
+      if (!active) return;
+      if (response && (response.status === 401 || response.status === 403)) {
+        const error = response.status === 403 && result.error ? result.error.message : null;
+        setState({ status: 'locked', error, data: null });
+        return;
+      }
+      if (response && response.ok) setMe(result);
+      load(automation ? automation.date : undefined);
+    };
+    start();
+    return () => { active = false; };
+  }, [load, fromRecoveryLink, automation]);
+
+  // Modo automático: avisa quando dados, logo, escudos e fontes estão prontos e deixa gerar() pronto.
+  const automationData = state.status === 'ready' ? state.data : null;
+  const automationLocked = state.status === 'locked';
+  const automationError = state.error;
+  useEffect(() => {
+    if (!automation) return;
+    const hook = getAutomationHook(automation.categoria);
+    if (automationLocked) {
+      hook.fail(new Error(automationError || 'Sem acesso ao painel.'));
+      return;
+    }
+    if (!automationData) return;
+    const brand = brandFor(automationData.marca);
+    const defaults = defaultArtWindow(automationData);
+    const spec = artSpec(automation.categoria, automationData, brand, {
+      onlyUpcoming: true,
+      useAi: true,
+      window: { start: automation.start || defaults.start, end: automation.end || defaults.end },
+    });
+    hook.setRun(async () => {
+      const built = await buildArt(spec);
+      if (!built) {
+        return { categoria: spec.categoria, data: spec.date, legenda: '', itens: [], mensagem: spec.empty };
+      }
+      const payload = await automationPayload(spec, built.files, built.caption);
+      return built.note ? { ...payload, nota: built.note } : payload;
+    });
+    preloadArt(automationData, brand)
+      .then(() => hook.ready({ categoria: spec.categoria, data: spec.date, marca: automationData.marca }))
+      .catch((error) => hook.fail(error));
+  }, [automation, automationData, automationLocked, automationError]);
 
   const logout = async () => {
     await fetch(API_CONFIG.ADMIN.URL, { method: 'DELETE' }).catch(() => {});
@@ -730,19 +948,21 @@ const Admin = () => {
           <h1>Painel {brand.name}</h1>
           <p>{formatDay(data.date)} · atualizado às {formatTime(data.now)}</p>
         </div>
-        <button type="button" className="admin-chip" onClick={logout}>
-          <FiLogOut aria-hidden="true" /> Sair
-        </button>
+        {!(me && me.origem === 'automacao') && (
+          <button type="button" className="admin-chip" onClick={logout}>
+            <FiLogOut aria-hidden="true" /> Sair
+          </button>
+        )}
       </header>
 
       <AccountTools isOwner={data.marca === 'agtv'} />
 
       {brand.siteLinks && (
       <section className="admin-panel admin-links" aria-label="Links para enviar">
-        <LinkRow label="Jogos do dia" url={`${window.location.origin}/jogos`} />
-        <LinkRow label="Programação da TV" url={`${window.location.origin}/programacao`} />
+        <LinkRow label="Jogos do dia" url={`${shareOrigin()}/jogos`} />
+        <LinkRow label="Programação da TV" url={`${shareOrigin()}/programacao`} />
         {SCHEDULE_TABS.map((tab) => (
-          <LinkRow key={tab.key} label={`Programação: ${tab.label}`} url={`${window.location.origin}${scheduleTabPath(tab.key)}`} />
+          <LinkRow key={tab.key} label={`Programação: ${tab.label}`} url={`${shareOrigin()}${scheduleTabPath(tab.key)}`} />
         ))}
       </section>
       )}
@@ -789,11 +1009,8 @@ const Admin = () => {
           art={(
             <ArtMaker
               key={`jogos-${data.marca}-${data.date}`}
-              label="Gerar imagem dos jogos"
-              fileName={`${brand.name}_jogos_${data.date}`}
-              prepare={() => pickGames(data, { onlyUpcoming, useAi: useAiGames })}
-              draw={(format, picks) => gamesArt(data, { onlyUpcoming, now: Date.now(), format, ranked: picks && picks.ranked, brand })}
-              caption={(picks) => gamesCaption(data, { onlyUpcoming, now: Date.now(), ranked: picks && picks.ranked, brand })}
+              embedded={embedded}
+              spec={artSpec(CATEGORIES.GAMES, data, brand, { onlyUpcoming, useAi: useAiGames })}
               controls={(
                 <div className="admin-art-window">
                   <label className="admin-check">
@@ -812,11 +1029,8 @@ const Admin = () => {
           art={(
             <ArtMaker
               key={`filmes-${data.marca}-${data.date}`}
-              label="Gerar imagem de filmes e séries"
-              fileName={`${brand.name}_filmes_series_${data.date}`}
-              prepare={() => pickMovies(data, { ...artWindow, onlyUpcoming, useAi })}
-              draw={(format, picks) => moviesArt(data, { ...picks, format, brand })}
-              caption={(picks) => moviesCaption(data, { ...picks, brand })}
+              embedded={embedded}
+              spec={artSpec(CATEGORIES.MOVIES, data, brand, { onlyUpcoming, useAi, window: artWindow })}
               controls={(
                 <div className="admin-art-window">
                   <label>

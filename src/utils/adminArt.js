@@ -53,6 +53,16 @@ const loadFonts = () => Promise.all([
   document.fonts.load(`500 28px ${UI}`),
 ]).catch(() => {});
 
+// Deixa no cache do navegador a logo da marca, os escudos do dia e as fontes das artes
+// (o modo automático do AGTV Automação espera isso antes de gerar).
+export const preloadArt = (data, brand = BRANDS.agtv) => {
+  const crests = [...new Set((data.games || [])
+    .flatMap((game) => [game.homeCrest, game.awayCrest])
+    .filter((src) => src && src.startsWith('/')))];
+  const fontsReady = document.fonts && document.fonts.ready ? document.fonts.ready.catch(() => {}) : null;
+  return Promise.all([loadImage(brand.logo), ...crests.map(loadImage), loadFonts(), fontsReady]);
+};
+
 const roundRect = (ctx, x, y, width, height, radius) => {
   ctx.beginPath();
   ctx.roundRect(x, y, width, height, radius);

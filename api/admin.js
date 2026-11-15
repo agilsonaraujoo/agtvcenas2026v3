@@ -6,7 +6,7 @@ const { hasUpcomingData, programsForDate } = require('../lib/epg/schedule');
 const { loadDataset } = require('../lib/epg/store');
 const { withScores } = require('../lib/epg/scores');
 const {
-  MIN_PASSWORD_LENGTH, SESSION_MS, clientIp, createLimiter, createSession,
+  MIN_PASSWORD_LENGTH, SESSION_MS, automacaoAccount, clientIp, createLimiter, createSession,
   parseAccounts, readSession, safeEqual, sessionCookie, validSession,
 } = require('../lib/adminAuth');
 const { PAINEL_SUPABASE_KEY, PAINEL_SUPABASE_URL } = require('../src/utils/painelConfig');
@@ -20,6 +20,8 @@ const failuresByIp = createLimiter({ limit: 5, windowMs: LOCK_MS });
 const failuresTotal = createLimiter({ limit: 30, windowMs: LOCK_MS });
 // Cada leitura consulta o placar, que tem cota de 10 chamadas por minuto.
 const reads = createLimiter({ limit: 30, windowMs: 60 * 1000 });
+// Token errado do AGTV Automação: o token é longo e aleatório, mas ainda assim trava quem insiste.
+const automacaoFailures = createLimiter({ limit: 10, windowMs: LOCK_MS });
 
 // A IA escolhe só entre os programas da grade que o admin manda; os nomes da arte nunca vêm dela.
 const MAX_CANDIDATES = 150;
@@ -105,6 +107,12 @@ const highlights = async (req, res) => {
 };
 
 const wait = (ms) => new Promise((resolve) => { setTimeout(resolve, ms); });
+
+// /api/admin/eu chega aqui pelo vercel.json (?rota=eu) ou direto, no servidor de desenvolvimento.
+const isMeRoute = (req) => {
+  const url = new URL(req.url, 'http://local');
+  return /^\/api\/admin\/eu\/?$/.test(url.pathname) || url.searchParams.get('rota') === 'eu';
+};
 
 // O dono do painel (conta AGTV) define a senha nova de uma conta sem depender de e-mail.
 // Usa a chave secreta do Supabase (SUPABASE_SERVICE_ROLE_KEY na Vercel), que nunca sai do servidor.
@@ -251,10 +259,45 @@ module.exports = async function handler(req, res) {
     });
   }
 
+  // Pelo proxy do AGTV Automação a conta vem nos cabeçalhos (sem cookie); sem eles, vale o cookie da sessão.
+  const ip = clientIp(req);
+  const automacao = automacaoAccount(req, {
+    token: process.env.AUTOMACAO_TOKEN,
+    accounts: parseAccounts(process.env.ADMIN_CONTAS),
+  });
+  if (automacao && automacao.status) {
+    const lockedFor = automacaoFailures.blocked(ip);
+    if (lockedFor) return tooMany(res, lockedFor);
+    if (automacao.status === 401) {
+      automacaoFailures.hit(ip);
+      console.warn('[admin] token do AGTV Automação recusado');
+      await wait(FAIL_DELAY_MS);
+    }
+    const messages = {
+      401: 'Token do AGTV Automação inválido.',
+      403: 'Esta conta não tem acesso ao painel.',
+      503: 'Configure AUTOMACAO_TOKEN na Vercel.',
+    };
+    return sendJson(res, automacao.status, { error: { message: messages[automacao.status] } });
+  }
+  const sessionBrand = () => (automacao ? automacao.brand : validSession(readSession(req), password));
+
+  // GET /api/admin/eu: diz quem está logado (pelo cookie ou pelo AGTV Automação), sem carregar a grade.
+  if (isMeRoute(req)) {
+    if (req.method !== 'GET') {
+      res.setHeader('Allow', 'GET');
+      return sendJson(res, 405, { error: { message: 'Método não permitido.' } });
+    }
+    if (automacao) return sendJson(res, 200, { ok: true, marca: automacao.brand, email: automacao.email, origem: 'automacao' });
+    const brand = sessionBrand();
+    if (!brand) return sendJson(res, 401, { error: { message: 'Entre de novo.' } });
+    return sendJson(res, 200, { ok: true, marca: brand, email: null, origem: 'sessao' });
+  }
+
   // POST com a sessão e o cabeçalho de ação pede os destaques à IA; sem ele, é o login.
   const acao = req.headers['x-admin-acao'];
   if (acao === 'contas' || acao === 'senha') {
-    const owner = validSession(readSession(req), password);
+    const owner = sessionBrand();
     if (!owner) return sendJson(res, 401, { error: { message: 'Entre de novo.' } });
     if (owner !== 'agtv') return sendJson(res, 403, { error: { message: 'Só o dono do painel pode fazer isso.' } });
     if (req.method === 'POST' && acao === 'senha') return setAccountPassword(req, res);
@@ -262,7 +305,7 @@ module.exports = async function handler(req, res) {
     return sendJson(res, 405, { error: { message: 'Método não permitido.' } });
   }
   if (req.method === 'POST' && req.headers['x-admin-acao'] === 'destaques') {
-    if (!validSession(readSession(req), password)) {
+    if (!sessionBrand()) {
       return sendJson(res, 401, { error: { message: 'Entre de novo.' } });
     }
     return highlights(req, res);
@@ -273,11 +316,11 @@ module.exports = async function handler(req, res) {
     return sendJson(res, 200, { ok: true });
   }
 
-  const brand = validSession(readSession(req), password);
+  const brand = sessionBrand();
   if (!brand) {
     return sendJson(res, 401, { error: { message: 'Entre de novo.' } });
   }
-  const limitedFor = reads.hit(clientIp(req));
+  const limitedFor = reads.hit(ip);
   if (limitedFor) return tooMany(res, limitedFor);
 
   const now = Date.now();

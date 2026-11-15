@@ -4,6 +4,10 @@
   "outputDirectory": "build",
   "rewrites": [
     {
+      "source": "/api/admin/eu",
+      "destination": "/api/admin?rota=eu"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/api/$1"
     },

@@ -274,6 +274,12 @@
   margin-top: 0.75rem;
 }
 
+.admin-art-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 .admin-art-previews {
   display: flex;
   flex-wrap: wrap;
