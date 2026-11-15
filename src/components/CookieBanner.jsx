@@ -40,7 +40,7 @@ const CookieBanner = () => {
     <div
       role="region"
       aria-label="Aviso de cookies"
-      className="cookie-banner fixed inset-x-0 z-[60] px-3 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] md:bottom-4"
+      className="cookie-banner fixed inset-x-0 z-[60] px-3 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] md:bottom-24"
     >
       <div className="mx-auto flex max-w-3xl flex-col gap-3 rounded-2xl border border-white/10 bg-[#101116]/95 p-4 text-white shadow-[0_12px_40px_rgba(0,0,0,0.55)] backdrop-blur-lg sm:flex-row sm:items-center sm:gap-5 sm:p-5">
         <div className="flex items-start gap-3">

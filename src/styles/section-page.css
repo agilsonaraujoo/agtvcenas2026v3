@@ -1,6 +1,13 @@
-/* O menu é fixo: o conteúdo começa abaixo dele. */
+/* No celular o menu fica fixo no topo: o conteúdo começa abaixo dele.
+   No computador ele fica embaixo, então basta um respiro. */
 .section-page {
   padding-top: 4.5rem;
+}
+
+@media (min-width: 768px) {
+  .section-page {
+    padding-top: 1.5rem;
+  }
 }
 
 .section-page-cta {

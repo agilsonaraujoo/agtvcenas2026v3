@@ -113,7 +113,7 @@ const FAQ = () => {
         </div>
 
         {/* cartão de ajuda */}
-        <aside className="h-fit rounded-3xl border border-[#b7ff4a]/25 bg-gradient-to-br from-[#16201a] via-[#101116] to-[#1a1530] p-6 lg:sticky lg:top-28">
+        <aside className="h-fit rounded-3xl border border-[#b7ff4a]/25 bg-gradient-to-br from-[#16201a] via-[#101116] to-[#1a1530] p-6 lg:sticky lg:top-8">
           <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#25d366]/15 text-[#25d366]">
             <FaWhatsapp aria-hidden="true" className="h-6 w-6" />
           </span>

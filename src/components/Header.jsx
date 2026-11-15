@@ -102,16 +102,19 @@ const Header = () => {
   return (
     <>
       {/* ------------------------------------------------ Desktop: floating glass pill */}
-      {/* always fixed at the top */}
+      {/* sempre fixo embaixo da tela, como uma barra de atalhos */}
       <motion.header
-        className="fixed inset-x-0 top-0 z-50 hidden px-4 transition-[padding] duration-300 md:block"
-        style={{ paddingTop: compact ? 8 : 14 }}
+        initial={reduce ? false : { y: 90, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ type: 'spring', stiffness: 260, damping: 30, delay: 0.2 }}
+        className="fixed inset-x-0 bottom-0 z-50 hidden px-4 transition-[padding] duration-300 md:block"
+        style={{ paddingBottom: compact ? 10 : 16 }}
       >
         <nav
           ref={navRef}
           onMouseMove={onMove}
           aria-label="Navegação principal"
-          className={`group/nav relative mx-auto flex max-w-7xl items-center justify-between gap-3 overflow-hidden rounded-full border border-white/10 bg-[#0b0c12]/75 shadow-[0_18px_50px_rgba(0,0,0,0.45)] backdrop-blur-xl transition-all duration-300 ${compact ? 'px-3 py-1.5' : 'px-4 py-2.5'}`}
+          className={`group/nav relative mx-auto flex max-w-7xl items-center justify-between gap-3 overflow-hidden rounded-full border border-white/10 bg-[#0b0c12]/75 shadow-[0_-12px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl transition-all duration-300 ${compact ? 'px-3 py-1.5' : 'px-4 py-2.5'}`}
         >
           {/* mouse spotlight */}
           <span
@@ -119,8 +122,8 @@ const Header = () => {
             className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover/nav:opacity-100"
             style={{ background: 'radial-gradient(220px circle at var(--mx, 50%) var(--my, 50%), rgba(183,255,74,0.12), transparent 70%)' }}
           />
-          {/* reading progress along the bottom edge */}
-          <span aria-hidden="true" className="pointer-events-none absolute bottom-0 left-0 h-[2px] bg-gradient-to-r from-[#b7ff4a] to-[#9a7bff]" style={{ width: `${progress * 100}%` }} />
+          {/* reading progress along the top edge */}
+          <span aria-hidden="true" className="pointer-events-none absolute top-0 left-0 h-[2px] bg-gradient-to-r from-[#b7ff4a] to-[#9a7bff]" style={{ width: `${progress * 100}%` }} />
 
           <a href={urlOf('#home')} onClick={() => go('#home')} className="relative flex shrink-0 items-center gap-3" aria-label="AGTV - Início">
             <motion.img

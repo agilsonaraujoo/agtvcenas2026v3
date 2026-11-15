@@ -143,7 +143,7 @@ const ChatAssistant = () => {
   return (
     <>
       {/* área onde a bolinha pode ser arrastada */}
-      <div ref={areaRef} aria-hidden="true" className="pointer-events-none fixed inset-x-2 bottom-[calc(4rem+env(safe-area-inset-bottom))] top-20 md:inset-x-4 md:bottom-4" />
+      <div ref={areaRef} aria-hidden="true" className="pointer-events-none fixed inset-x-2 bottom-[calc(4rem+env(safe-area-inset-bottom))] top-20 md:inset-x-4 md:bottom-24 md:top-4" />
 
       {/* aba na borda: traz a bolinha de volta */}
       <AnimatePresence>
@@ -165,7 +165,7 @@ const ChatAssistant = () => {
             animate={{ opacity: 1 }}
             exit={reduce ? undefined : { opacity: 0 }}
             style={{ y: tabY, touchAction: 'none' }}
-            className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-0 z-50 flex h-14 w-8 items-center justify-center rounded-l-2xl bg-[#b7ff4a] text-[#10130a] shadow-[0_6px_20px_rgba(0,0,0,0.45),0_0_18px_rgba(183,255,74,0.35)] md:bottom-10"
+            className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-0 z-50 flex h-14 w-8 items-center justify-center rounded-l-2xl bg-[#b7ff4a] text-[#10130a] shadow-[0_6px_20px_rgba(0,0,0,0.45),0_0_18px_rgba(183,255,74,0.35)] md:bottom-[7.5rem]"
           >
             <FiChevronLeft aria-hidden="true" className="h-5 w-5" />
             <span aria-hidden="true" className="absolute -left-1 -top-1 h-3 w-3 rounded-full border-2 border-[#07080b] bg-[#ff4d4d]" />
@@ -183,7 +183,7 @@ const ChatAssistant = () => {
         onDragStart={() => { draggedRef.current = true; setNudge(false); }}
         onDragEnd={onDragEnd}
         style={{ x: bx, y: by, touchAction: 'none' }}
-        className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] right-4 z-50 md:bottom-6 md:right-6"
+        className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] right-4 z-50 md:bottom-[6.5rem] md:right-6"
       >
         <motion.button
           type="button"
@@ -259,7 +259,7 @@ const ChatAssistant = () => {
             animate={isPhone ? { y: 0 } : { opacity: 1, y: 0, scale: 1 }}
             exit={reduce ? undefined : (isPhone ? { y: '100%' } : { opacity: 0, y: 24, scale: 0.98 })}
             transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed inset-x-0 bottom-0 top-[10vh] z-[70] flex flex-col overflow-hidden rounded-t-3xl border border-white/10 bg-[#0d0e14] pb-[env(safe-area-inset-bottom)] text-white shadow-[0_-20px_60px_rgba(0,0,0,0.6)] md:inset-x-auto md:bottom-24 md:right-6 md:top-auto md:z-50 md:h-[min(38rem,calc(100vh-8rem))] md:w-[25rem] md:rounded-3xl md:bg-[#0d0e14]/[0.98] md:pb-0 md:shadow-[0_24px_80px_rgba(0,0,0,0.6)] md:backdrop-blur-xl"
+            className="fixed inset-x-0 bottom-0 top-[10vh] z-[70] flex flex-col overflow-hidden rounded-t-3xl border border-white/10 bg-[#0d0e14] pb-[env(safe-area-inset-bottom)] text-white shadow-[0_-20px_60px_rgba(0,0,0,0.6)] md:inset-x-auto md:bottom-[10.5rem] md:right-6 md:top-auto md:z-50 md:h-[min(38rem,calc(100vh-13rem))] md:w-[25rem] md:rounded-3xl md:bg-[#0d0e14]/[0.98] md:pb-0 md:shadow-[0_24px_80px_rgba(0,0,0,0.6)] md:backdrop-blur-xl"
           >
             <div
               className="flex justify-center pb-1 pt-2 md:hidden"
