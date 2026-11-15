@@ -53,11 +53,15 @@ export const BRANDS = {
     pillInk: '#ffffff',
     glows: ['rgba(252,43,0,0.26)', 'rgba(142,3,0,0.36)'],
     stroke: 'rgba(252,43,0,0.32)',
-    gamesFooter: ['Peça seu teste grátis', 'no WhatsApp da Valk'],
-    moviesFooter: ['Peça seu teste grátis', 'no WhatsApp da Valk'],
-    moreGames: 'hoje',
-    gamesCta: '📲 Chama no WhatsApp e peça seu teste grátis!',
-    moviesCta: '📲 Chama no WhatsApp e peça seu teste grátis!',
+    gamesFooter: ['Onde assistir:', 'valk-site-nine.vercel.app/jogos'],
+    moviesFooter: ['Ao vivo:', 'valk-site-nine.vercel.app/#ao-vivo'],
+    moreGames: 'no site',
+    gamesCta: '📺 Horários e onde assistir, em tempo real: https://valk-site-nine.vercel.app/jogos\n📲 Chama no WhatsApp e peça seu teste grátis!',
+    moviesCta: '📺 Passando agora, em tempo real: https://valk-site-nine.vercel.app/#ao-vivo\n📲 Chama no WhatsApp e peça seu teste grátis!',
+    links: [
+      { label: 'Jogos do dia', url: 'https://valk-site-nine.vercel.app/jogos' },
+      { label: 'Programação ao vivo', url: 'https://valk-site-nine.vercel.app/#ao-vivo' },
+    ],
   },
 };
 

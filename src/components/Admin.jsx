@@ -747,6 +747,12 @@ const Admin = () => {
       </section>
       )}
 
+      {brand.links && (
+      <section className="admin-panel admin-links" aria-label="Links para enviar">
+        {brand.links.map((link) => <LinkRow key={link.url} label={link.label} url={link.url} />)}
+      </section>
+      )}
+
       <div className="admin-controls">
         {[[data.today, 'Hoje'], [data.tomorrow, 'Amanhã']].map(([key, label]) => (
           <button
