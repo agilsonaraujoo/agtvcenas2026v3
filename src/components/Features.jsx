@@ -9,6 +9,7 @@ import {
 } from 'framer-motion';
 import {
   FiCheck,
+  FiChevronsDown,
   FiFilm,
   FiHeadphones,
   FiMessageCircle,
@@ -286,7 +287,7 @@ const ScrollSteps = () => {
                 <div className="mt-5 hidden md:block"><TrialButton id="como_funciona_teste" /></div>
               </div>
 
-              <div className="relative mx-auto h-[min(15.5rem,34svh)] w-full max-w-[19rem] md:h-[22rem] md:max-w-[24rem]">
+              <div className="relative mx-auto h-[clamp(8rem,calc(100svh-32.5rem),15.5rem)] w-full max-w-[19rem] md:h-[22rem] md:max-w-[24rem]">
                 <AnimatePresence mode="wait" initial={false}>
                   <motion.div
                     key={active}
@@ -328,6 +329,21 @@ const ScrollSteps = () => {
                 ))}
               </ol>
             </nav>
+
+            {/* aviso pra quem acha que a tela travou: a seção segura a tela enquanto os passos trocam */}
+            <p
+              aria-hidden="true"
+              className="mt-2.5 flex items-center justify-center gap-1.5 text-xs font-semibold text-white md:mt-3 md:text-sm"
+            >
+              <motion.span
+                className="inline-flex text-[#b7ff4a]"
+                animate={{ y: [0, 5, 0] }}
+                transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+              >
+                <FiChevronsDown className="h-4 w-4" />
+              </motion.span>
+              {active < STEPS.length - 1 ? `Deslize pra ver o passo ${active + 2}` : 'Continue deslizando'}
+            </p>
           </div>
         </div>
       </div>
