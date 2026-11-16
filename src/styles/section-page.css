@@ -1,5 +1,5 @@
 /* No celular o menu fica fixo no topo: o conteúdo começa abaixo dele.
-   No computador ele fica embaixo, então basta um respiro. */
+   No computador ele fica na lateral esquerda, então basta um respiro. */
 .section-page {
   padding-top: 4.5rem;
 }

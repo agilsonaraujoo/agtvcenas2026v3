@@ -39,7 +39,7 @@ const Header = () => {
   const reduce = useReducedMotion();
   const [isOpen, setIsOpen] = useState(false);
   const [activeId, setActiveId] = useState(currentPath() || '#home');
-  const [compact, setCompact] = useState(false);     // shrinks once the page is scrolled
+  const [railOpen, setRailOpen] = useState(false);   // barra lateral do computador aberta (mouse em cima)
   const [progress, setProgress] = useState(0);       // page reading progress, 0..1
   const navRef = useRef(null);
 
@@ -53,7 +53,6 @@ const Header = () => {
         const y = window.scrollY;
         const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
         setProgress(Math.min(1, y / max));
-        setCompact(y > 60);
 
         // Só a página inicial tem seções; nas outras, o item aceso é a própria página.
         if (currentPath()) return;
@@ -101,61 +100,81 @@ const Header = () => {
 
   return (
     <>
-      {/* ------------------------------------------------ Desktop: floating glass pill */}
-      {/* sempre fixo embaixo da tela, como uma barra de atalhos */}
+      {/* ------------------------------------------------ Desktop: barra lateral de vidro, à esquerda */}
+      {/* fechada mostra só os ícones; com o mouse em cima ela se abre e mostra os nomes */}
       <motion.header
-        initial={reduce ? false : { y: 90, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
+        initial={reduce ? false : { x: -110, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 260, damping: 30, delay: 0.2 }}
-        className="fixed inset-x-0 bottom-0 z-50 hidden px-4 transition-[padding] duration-300 md:block"
-        style={{ paddingBottom: compact ? 10 : 16 }}
+        className="pointer-events-none fixed inset-y-0 left-0 z-50 hidden items-center pl-4 md:flex"
       >
-        <nav
+        <motion.nav
           ref={navRef}
           onMouseMove={onMove}
+          onMouseEnter={() => setRailOpen(true)}
+          onMouseLeave={() => setRailOpen(false)}
+          onFocus={() => setRailOpen(true)}
+          onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setRailOpen(false); }}
           aria-label="Navegação principal"
-          className={`group/nav relative mx-auto flex max-w-7xl items-center justify-between gap-3 overflow-hidden rounded-full border border-white/10 bg-[#0b0c12]/75 shadow-[0_-12px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl transition-all duration-300 ${compact ? 'px-3 py-1.5' : 'px-4 py-2.5'}`}
+          animate={{ width: railOpen ? 232 : 68 }}
+          transition={reduce ? { duration: 0 } : { type: 'spring', stiffness: 380, damping: 34 }}
+          className="group/nav pointer-events-auto relative flex max-h-[calc(100vh-2rem)] flex-col gap-1 overflow-hidden rounded-[28px] border border-white/10 bg-[#0b0c12]/80 p-2 shadow-[12px_0_50px_rgba(0,0,0,0.5)] backdrop-blur-xl"
         >
-          {/* mouse spotlight */}
+          {/* luz que segue o mouse */}
           <span
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover/nav:opacity-100"
-            style={{ background: 'radial-gradient(220px circle at var(--mx, 50%) var(--my, 50%), rgba(183,255,74,0.12), transparent 70%)' }}
+            style={{ background: 'radial-gradient(200px circle at var(--mx, 50%) var(--my, 50%), rgba(183,255,74,0.12), transparent 70%)' }}
           />
-          {/* reading progress along the top edge */}
-          <span aria-hidden="true" className="pointer-events-none absolute top-0 left-0 h-[2px] bg-gradient-to-r from-[#b7ff4a] to-[#9a7bff]" style={{ width: `${progress * 100}%` }} />
+          {/* progresso da leitura descendo pela borda direita */}
+          <span aria-hidden="true" className="pointer-events-none absolute right-0 top-0 w-[2px] bg-gradient-to-b from-[#b7ff4a] to-[#9a7bff]" style={{ height: `${progress * 100}%` }} />
 
-          <a href={urlOf('#home')} onClick={() => go('#home')} className="relative flex shrink-0 items-center gap-3" aria-label="AGTV - Início">
+          <a href={urlOf('#home')} onClick={() => go('#home')} className="relative mb-1 flex h-12 shrink-0 items-center overflow-hidden px-1.5" aria-label="AGTV - Início">
+            <motion.img
+              src="/marca/agtv-icone.svg"
+              alt=""
+              animate={{ opacity: railOpen ? 0 : 1, scale: railOpen ? 0.6 : 1 }}
+              className="absolute left-[11px] block h-9 w-9"
+            />
             <motion.img
               src="/marca/agtv-horizontal-slogan.svg"
               alt="AGTV: entretenimento sem limites"
-              whileHover={reduce ? undefined : { scale: 1.04 }}
-              className={`block w-auto transition-all duration-300 ${compact ? 'h-9' : 'h-11'}`}
+              animate={{ opacity: railOpen ? 1 : 0, x: railOpen ? 0 : -16 }}
+              className="block h-10 w-auto max-w-none"
             />
           </a>
 
-          <ul className="relative flex items-center gap-0.5 lg:gap-1">
-            {MENU.filter((m) => m.desktop !== false).map(({ href, text, Icon, live }) => {
+          <ul className="relative flex min-h-0 flex-col gap-1">
+            {MENU.filter((m) => m.desktop !== false).map(({ href, text, Icon, live }, i) => {
               const active = activeId === href;
               return (
                 <li key={href} className="relative">
                   <a
                     href={urlOf(href)}
                     onClick={() => go(href)}
-                    title={text}
+                    title={railOpen ? undefined : text}
+                    aria-label={text}
                     aria-current={active ? 'location' : undefined}
-                    className={`group relative flex items-center gap-2 whitespace-nowrap rounded-full px-3 py-2 text-sm font-semibold transition-colors xl:px-2.5 ${active ? 'text-[#10130a]' : 'text-gray-300 hover:text-white'}`}
+                    className={`group relative flex h-11 items-center gap-3 whitespace-nowrap rounded-2xl px-[15px] text-sm font-semibold transition-colors ${active ? 'text-[#10130a]' : 'text-gray-300 hover:bg-white/[0.06] hover:text-white'}`}
                   >
                     {active && (
                       <motion.span
                         layoutId="nav-active-pill"
                         transition={reduce ? { duration: 0 } : pill}
-                        className="absolute inset-0 -z-0 rounded-full bg-gradient-to-r from-[#b7ff4a] to-[#d4ff96] shadow-[0_0_22px_rgba(183,255,74,0.35)]"
+                        className="absolute inset-0 -z-0 rounded-2xl bg-gradient-to-r from-[#b7ff4a] to-[#d4ff96] shadow-[0_0_22px_rgba(183,255,74,0.35)]"
                       />
                     )}
-                    <Icon aria-hidden="true" className="relative h-4 w-4 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110" />
-                    <span className="relative hidden xl:inline">{text}</span>
-                    {live && <LiveDot className="relative -ml-0.5" />}
+                    <span className="relative inline-flex shrink-0">
+                      <Icon aria-hidden="true" className="h-[1.15rem] w-[1.15rem] transition-transform duration-300 group-hover:scale-110" />
+                      {live && <span className="absolute -right-1.5 -top-1 flex"><LiveDot /></span>}
+                    </span>
+                    <motion.span
+                      className="relative"
+                      animate={{ opacity: railOpen ? 1 : 0, x: railOpen ? 0 : -10 }}
+                      transition={{ duration: 0.2, delay: railOpen && !reduce ? 0.04 + i * 0.025 : 0 }}
+                    >
+                      {text}
+                    </motion.span>
                   </a>
                 </li>
               );
@@ -167,13 +186,14 @@ const Header = () => {
             target="_blank"
             rel="noreferrer"
             data-analytics="cta_trial_desktop"
-            className="relative inline-flex shrink-0 items-center gap-2 overflow-hidden rounded-full bg-[#b7ff4a] px-4 py-2 text-sm font-extrabold text-[#10130a] shadow-[0_0_22px_rgba(183,255,74,0.25)] transition hover:scale-[1.04] hover:bg-[#ceff83]"
+            aria-label="Teste grátis"
+            className="relative mt-2 flex h-12 shrink-0 items-center gap-3 overflow-hidden whitespace-nowrap rounded-2xl bg-[#b7ff4a] px-[15px] text-sm font-extrabold text-[#10130a] shadow-[0_0_22px_rgba(183,255,74,0.25)] transition hover:bg-[#ceff83]"
           >
             {!reduce && <span aria-hidden="true" className="agtv-shine pointer-events-none absolute inset-y-0 -left-1/2 w-1/3 skew-x-[-20deg] bg-white/50" />}
-            <FiStar aria-hidden="true" className="relative" />
-            <span className="relative">Teste grátis</span>
+            <FiStar aria-hidden="true" className="relative h-[1.15rem] w-[1.15rem] shrink-0" />
+            <motion.span className="relative" animate={{ opacity: railOpen ? 1 : 0 }}>Teste grátis</motion.span>
           </a>
-        </nav>
+        </motion.nav>
       </motion.header>
 
       {/* ------------------------------------------------ Mobile: top bar */}

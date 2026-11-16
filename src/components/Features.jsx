@@ -242,7 +242,7 @@ const ScrollSteps = () => {
   return (
     <>
       <div ref={trackRef} className="relative h-[300svh]">
-        <div className="sticky top-0 flex h-[100svh] flex-col overflow-hidden px-4 pb-[calc(4.5rem+env(safe-area-inset-bottom))] pt-[4.5rem] md:pb-28 md:pt-10">
+        <div className="sticky top-0 flex h-[100svh] flex-col overflow-hidden px-4 pb-[calc(4.5rem+env(safe-area-inset-bottom))] pt-[4.5rem] md:pb-8 md:pt-10">
           {/* brilho que muda de lado a cada passo */}
           <motion.div
             aria-hidden="true"

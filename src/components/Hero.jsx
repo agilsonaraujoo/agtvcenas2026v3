@@ -179,7 +179,7 @@ const Hero = () => {
       ref={heroRef}
       onPointerMove={handleHeroPointerMove}
       onPointerLeave={handleHeroPointerLeave}
-      className="relative flex min-h-screen items-start overflow-hidden px-4 pb-10 pt-16 text-white sm:px-6 sm:pt-28 md:pb-28 md:pt-12 lg:items-center lg:pt-10"
+      className="relative flex min-h-screen items-start overflow-hidden px-4 pb-10 pt-16 text-white sm:px-6 sm:pt-28 md:pb-10 md:pt-12 lg:items-center lg:pt-10"
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_18%_48%,rgba(154,123,255,0.14),transparent_42%),radial-gradient(ellipse_at_78%_52%,rgba(183,255,74,0.08),transparent_35%)]" />
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/25 via-black/15 to-[#07080b]/90" />

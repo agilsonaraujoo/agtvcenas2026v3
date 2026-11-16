@@ -33,7 +33,7 @@ const SiteShell = ({ children }) => {
       <ScrollReveal />
       <ScrollProgress />
       <div className="absolute inset-0 bg-gradient-to-r from-gray-900/50 to-black/50" />
-      <div className="relative pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-24">
+      <div className="relative pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-0 md:pl-[6.25rem]">
         <Header />
         {children}
         <Footer />
