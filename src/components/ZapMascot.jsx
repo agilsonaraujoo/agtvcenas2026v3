@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 
 // Zap, o mascote da AGTV: a TV da logo com rosto em pixel. Mesmo desenho da ficha do personagem
 // (video-ads/catalogo/mascote.html). A animação (aceno, antenas e piscada) é só CSS e respeita
@@ -17,7 +18,7 @@ const pix = (rows, cx, cy, size, prefix) => {
 const EYE = ['.##.', '####', '####', '####', '.##.'];
 const MOUTH = ['#######', '#.....#', '.#...#.', '..###..'];
 
-const ZapMascot = ({ className = '', waving = true, title }) => (
+const ZapMascot = ({ className = '', waving = true, title, eyeX, eyeY }) => (
   <svg viewBox="-125 -110 250 240" className={`zap-mascot ${waving ? 'is-waving' : ''} ${className}`} role={title ? 'img' : undefined} aria-label={title} aria-hidden={title ? undefined : true}>
     <defs>
       <radialGradient id="zap-tela" cx=".35" cy=".25" r=".9">
@@ -41,10 +42,13 @@ const ZapMascot = ({ className = '', waving = true, title }) => (
     <rect x="-62" y="-46" width="124" height="96" rx="26" fill="#0d0f15" stroke={GREEN} strokeWidth="12" />
     <rect x="-50" y="-34" width="100" height="72" rx="16" fill="url(#zap-tela)" />
     <path d="M-40 -28 Q-20 -32 6 -30" stroke="#fff" strokeOpacity=".12" strokeWidth="5" strokeLinecap="round" fill="none" />
-    <g className="zap-eyes">
-      {pix(EYE, -20, -6, 5, 'l')}
-      {pix(EYE, 20, -6, 5, 'r')}
-    </g>
+    {/* eyeX/eyeY (opcionais) fazem o olhar seguir alguma coisa; a piscada continua por dentro */}
+    <motion.g style={eyeX || eyeY ? { x: eyeX, y: eyeY } : undefined}>
+      <g className="zap-eyes">
+        {pix(EYE, -20, -6, 5, 'l')}
+        {pix(EYE, 20, -6, 5, 'r')}
+      </g>
+    </motion.g>
     {pix(MOUTH, 0, 20, 4, 'm')}
     <rect x="-42" y="8" width="10" height="5" fill="#ff7ab6" opacity=".7" />
     <rect x="32" y="8" width="10" height="5" fill="#ff7ab6" opacity=".7" />

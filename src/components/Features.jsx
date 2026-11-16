@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   AnimatePresence,
   motion,
@@ -20,6 +20,7 @@ import {
   FiTv,
 } from 'react-icons/fi';
 import { WHATSAPP_NUMBER } from '../utils/whatsapp';
+import ZapMascot from './ZapMascot';
 
 const trialMessage = 'Olá, vim pelo site AGTV CENAS e quero fazer o teste grátis.';
 const trialLink = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(trialMessage)}`;
@@ -218,6 +219,74 @@ const StaticSteps = () => (
 // A seção fica presa na tela por 3 "telas" de rolagem; cada terço da rolagem é um passo.
 // A barra de etapas embaixo mostra o progresso e leva direto ao passo tocado.
 
+// O Zap no fundo da seção: os olhos e a cabeça seguem o mouse. No celular (sem mouse),
+// ele olha pra baixo ou pra cima conforme a pessoa desliza e volta ao centro quando ela para.
+const ZapWatcher = ({ step }) => {
+  const ref = useRef(null);
+  const eyeX = useSpring(0, { stiffness: 220, damping: 20 });
+  const eyeY = useSpring(0, { stiffness: 220, damping: 20 });
+  const tilt = useSpring(0, { stiffness: 120, damping: 16 });
+
+  useEffect(() => {
+    const clamp = (value, max) => Math.max(-max, Math.min(max, value));
+    let pointer = null;
+    let lastY = window.scrollY;
+    let idle = null;
+
+    const aim = () => {
+      const el = ref.current;
+      if (!el || !pointer) return;
+      const r = el.getBoundingClientRect();
+      const dx = pointer.x - (r.left + r.width / 2);
+      const dy = pointer.y - (r.top + r.height * 0.42);
+      const dist = Math.hypot(dx, dy) || 1;
+      const reach = Math.min(1, dist / 260);
+      eyeX.set((dx / dist) * 13 * reach);
+      eyeY.set((dy / dist) * 11 * reach);
+      tilt.set(clamp(dx / 60, 9));
+    };
+
+    const onMove = (event) => {
+      if (event.pointerType !== 'mouse') return;
+      pointer = { x: event.clientX, y: event.clientY };
+      aim();
+    };
+
+    const onScroll = () => {
+      if (pointer) { aim(); return; }
+      const speed = window.scrollY - lastY;
+      lastY = window.scrollY;
+      eyeY.set(clamp(speed * 0.9, 11));
+      tilt.set(clamp(speed * -0.25, 5));
+      clearTimeout(idle);
+      idle = setTimeout(() => { eyeY.set(0); tilt.set(0); }, 260);
+    };
+
+    window.addEventListener('pointermove', onMove, { passive: true });
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('scroll', onScroll);
+      clearTimeout(idle);
+    };
+  }, [eyeX, eyeY, tilt]);
+
+  return (
+    <motion.div
+      ref={ref}
+      aria-hidden="true"
+      className="pointer-events-none absolute -right-7 top-[4.25rem] w-28 sm:w-36 md:bottom-8 md:left-[4%] md:right-auto md:top-auto md:w-64 xl:left-[7%] xl:w-72"
+      style={{ rotate: tilt }}
+      initial={{ y: 60, opacity: 0 }}
+      whileInView={{ y: 0, opacity: 1 }}
+      viewport={{ once: true }}
+      transition={{ type: 'spring', stiffness: 140, damping: 18 }}
+    >
+      <ZapMascot waving={step === STEPS.length - 1} eyeX={eyeX} eyeY={eyeY} className="h-auto w-full opacity-25 md:opacity-40 drop-shadow-[0_0_40px_rgba(183,255,74,0.25)]" />
+    </motion.div>
+  );
+};
+
 const ScrollSteps = () => {
   const trackRef = useRef(null);
   const [active, setActive] = useState(0);
@@ -256,6 +325,7 @@ const ScrollSteps = () => {
             }}
             transition={{ duration: 0.8 }}
           />
+          <ZapWatcher step={active} />
 
           <div className="container relative mx-auto flex min-h-0 max-w-5xl flex-1 flex-col">
             <p className="text-center text-[11px] font-bold uppercase tracking-[0.25em] text-[#b7ff4a] sm:text-xs">

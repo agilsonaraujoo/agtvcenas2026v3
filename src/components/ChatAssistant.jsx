@@ -143,7 +143,7 @@ const ChatAssistant = () => {
   return (
     <>
       {/* área onde a bolinha pode ser arrastada */}
-      <div ref={areaRef} aria-hidden="true" className="pointer-events-none fixed inset-x-2 bottom-[calc(4rem+env(safe-area-inset-bottom))] top-20 md:inset-x-4 md:bottom-4 md:left-[6.25rem]" />
+      <div ref={areaRef} aria-hidden="true" className="pointer-events-none fixed inset-x-2 bottom-[calc(4rem+env(safe-area-inset-bottom))] top-20 md:inset-x-4 md:bottom-4 md:left-[7rem]" />
 
       {/* aba na borda: traz a bolinha de volta */}
       <AnimatePresence>

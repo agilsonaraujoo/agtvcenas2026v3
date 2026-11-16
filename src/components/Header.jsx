@@ -116,7 +116,7 @@ const Header = () => {
           onFocus={() => setRailOpen(true)}
           onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setRailOpen(false); }}
           aria-label="Navegação principal"
-          animate={{ width: railOpen ? 232 : 68 }}
+          animate={{ width: railOpen ? 264 : 80 }}
           transition={reduce ? { duration: 0 } : { type: 'spring', stiffness: 380, damping: 34 }}
           className="group/nav pointer-events-auto relative flex max-h-[calc(100vh-2rem)] flex-col gap-1 overflow-hidden rounded-[28px] border border-white/10 bg-[#0b0c12]/80 p-2 shadow-[12px_0_50px_rgba(0,0,0,0.5)] backdrop-blur-xl"
         >
@@ -129,18 +129,18 @@ const Header = () => {
           {/* progresso da leitura descendo pela borda direita */}
           <span aria-hidden="true" className="pointer-events-none absolute right-0 top-0 w-[2px] bg-gradient-to-b from-[#b7ff4a] to-[#9a7bff]" style={{ height: `${progress * 100}%` }} />
 
-          <a href={urlOf('#home')} onClick={() => go('#home')} className="relative mb-1 flex h-12 shrink-0 items-center overflow-hidden px-1.5" aria-label="AGTV - Início">
+          <a href={urlOf('#home')} onClick={() => go('#home')} className="relative mb-1 flex h-14 shrink-0 items-center overflow-hidden px-1.5" aria-label="AGTV - Início">
             <motion.img
               src="/marca/agtv-icone.svg"
               alt=""
               animate={{ opacity: railOpen ? 0 : 1, scale: railOpen ? 0.6 : 1 }}
-              className="absolute left-[11px] block h-9 w-9"
+              className="absolute left-[9px] block h-11 w-11"
             />
             <motion.img
               src="/marca/agtv-horizontal-slogan.svg"
               alt="AGTV: entretenimento sem limites"
               animate={{ opacity: railOpen ? 1 : 0, x: railOpen ? 0 : -16 }}
-              className="block h-10 w-auto max-w-none"
+              className="block h-11 w-auto max-w-none"
             />
           </a>
 
@@ -155,7 +155,7 @@ const Header = () => {
                     title={railOpen ? undefined : text}
                     aria-label={text}
                     aria-current={active ? 'location' : undefined}
-                    className={`group relative flex h-11 items-center gap-3 whitespace-nowrap rounded-2xl px-[15px] text-sm font-semibold transition-colors ${active ? 'text-[#10130a]' : 'text-gray-300 hover:bg-white/[0.06] hover:text-white'}`}
+                    className={`group relative flex h-12 items-center gap-3.5 whitespace-nowrap rounded-2xl px-5 text-[15px] font-semibold transition-colors ${active ? 'text-[#10130a]' : 'text-gray-300 hover:bg-white/[0.06] hover:text-white'}`}
                   >
                     {active && (
                       <motion.span
@@ -165,7 +165,7 @@ const Header = () => {
                       />
                     )}
                     <span className="relative inline-flex shrink-0">
-                      <Icon aria-hidden="true" className="h-[1.15rem] w-[1.15rem] transition-transform duration-300 group-hover:scale-110" />
+                      <Icon aria-hidden="true" className="h-[1.35rem] w-[1.35rem] transition-transform duration-300 group-hover:scale-110" />
                       {live && <span className="absolute -right-1.5 -top-1 flex"><LiveDot /></span>}
                     </span>
                     <motion.span
@@ -187,10 +187,10 @@ const Header = () => {
             rel="noreferrer"
             data-analytics="cta_trial_desktop"
             aria-label="Teste grátis"
-            className="relative mt-2 flex h-12 shrink-0 items-center gap-3 overflow-hidden whitespace-nowrap rounded-2xl bg-[#b7ff4a] px-[15px] text-sm font-extrabold text-[#10130a] shadow-[0_0_22px_rgba(183,255,74,0.25)] transition hover:bg-[#ceff83]"
+            className="relative mt-2 flex h-14 shrink-0 items-center gap-3.5 overflow-hidden whitespace-nowrap rounded-2xl bg-[#b7ff4a] px-5 text-[15px] font-extrabold text-[#10130a] shadow-[0_0_22px_rgba(183,255,74,0.25)] transition hover:bg-[#ceff83]"
           >
             {!reduce && <span aria-hidden="true" className="agtv-shine pointer-events-none absolute inset-y-0 -left-1/2 w-1/3 skew-x-[-20deg] bg-white/50" />}
-            <FiStar aria-hidden="true" className="relative h-[1.15rem] w-[1.15rem] shrink-0" />
+            <FiStar aria-hidden="true" className="relative h-[1.35rem] w-[1.35rem] shrink-0" />
             <motion.span className="relative" animate={{ opacity: railOpen ? 1 : 0 }}>Teste grátis</motion.span>
           </a>
         </motion.nav>
