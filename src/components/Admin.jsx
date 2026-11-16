@@ -217,9 +217,9 @@ const pickGames = async (data, { onlyUpcoming, useAi }) => {
 
 // Destaques de filmes e séries do horário: a IA ordena os programas da grade (nunca inventa nome);
 // sem resposta dela, um por canal.
-const pickMovies = async (data, { start, end, onlyUpcoming, useAi }) => {
-  const window = { start, end };
-  const candidates = movieCandidates(data, { start, end, onlyUpcoming, now: Date.now() });
+const pickMovies = async (data, { start, end, onlyUpcoming, useAi, only = null }) => {
+  const window = { start, end, only };
+  const candidates = movieCandidates(data, { start, end, onlyUpcoming, now: Date.now(), only });
   if (!candidates.length) return { ranked: [], window, note: '' };
   const automatic = { ranked: simpleRanking(candidates), window, note: 'Seleção automática: um destaque por canal.' };
   if (!useAi) return automatic;
@@ -234,7 +234,7 @@ const pickMovies = async (data, { start, end, onlyUpcoming, useAi }) => {
 const CATEGORIES = { GAMES: 'jogos-do-dia', MOVIES: 'filmes-series' };
 
 // Tudo o que uma arte precisa: escolher os itens (prepare), desenhar cada formato e montar a legenda.
-const artSpec = (categoria, data, brand, { onlyUpcoming, useAi, window }) => {
+const artSpec = (categoria, data, brand, { onlyUpcoming, useAi, window, only = null }) => {
   if (categoria === CATEGORIES.GAMES) {
     return {
       categoria,
@@ -253,9 +253,9 @@ const artSpec = (categoria, data, brand, { onlyUpcoming, useAi, window }) => {
     label: 'Gerar imagem de filmes e séries',
     fileName: `${brand.name}_filmes_series_${data.date}`,
     empty: 'Nenhum filme ou série nesse horário.',
-    prepare: () => pickMovies(data, { ...window, onlyUpcoming, useAi }),
-    draw: (format, picks) => moviesArt(data, { ...picks, format, brand }),
-    caption: (picks) => moviesCaption(data, { ...picks, brand }),
+    prepare: () => pickMovies(data, { ...window, onlyUpcoming, useAi, only }),
+    draw: (format, picks) => moviesArt(data, { ...picks, format, only, brand }),
+    caption: (picks) => moviesCaption(data, { ...picks, only, brand }),
   };
 };
 
@@ -420,6 +420,8 @@ const readAutomation = () => {
     date: pick('data', /^\d{4}-\d{2}-\d{2}$/),
     start: pick('de', /^([01]\d|2[0-3]):[0-5]\d$/),
     end: pick('ate', /^([01]\d|2[0-3]):[0-5]\d$/),
+    // &grupo=filmes (ou series): só essa categoria da Programação na arte de filmes.
+    only: ['filmes', 'series'].includes(params.get('grupo')) ? params.get('grupo') : null,
   };
 };
 
@@ -903,6 +905,7 @@ const Admin = () => {
       onlyUpcoming: true,
       useAi: true,
       window: { start: automation.start || defaults.start, end: automation.end || defaults.end },
+      only: automation.only,
     });
     hook.setRun(async () => {
       const built = await buildArt(spec);

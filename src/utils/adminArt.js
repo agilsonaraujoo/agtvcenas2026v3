@@ -24,6 +24,8 @@ const UI = '"DM Sans", sans-serif';
 export const PRIME_START = '20:00';
 export const PRIME_END = '23:00';
 const MOVIE_GROUPS = ['filmes', 'series'];
+// Só uma categoria da Programação (ex.: só "filmes", como no envio automático da Automação).
+export const MOVIE_ONLY = { filmes: { title: 'FILMES', caption: 'Filmes' }, series: { title: 'SÉRIES', caption: 'Séries' } };
 
 const timeFormatter = new Intl.DateTimeFormat('pt-BR', { timeZone: TIMEZONE, hour: '2-digit', minute: '2-digit' });
 export const formatTime = (iso) => timeFormatter.format(new Date(iso));
@@ -355,12 +357,13 @@ export const windowLabel = ({ start, end }) => `das ${hourLabel(start)} às ${ho
 
 // Filmes e séries que começam dentro do horário pedido, sem vinhetas e sem repetir título. São os únicos
 // nomes que vão para a arte: a IA só ordena esta lista, nunca inventa programa.
-export const movieCandidates = (data, { start, end, onlyUpcoming, now }) => {
+export const movieCandidates = (data, { start, end, onlyUpcoming, now, only = null }) => {
   const from = toMinutes(start);
   const until = toMinutes(end) > from ? toMinutes(end) : 24 * 60;
   const seen = new Set();
   const list = [];
-  for (const channel of data.channels.filter((item) => MOVIE_GROUPS.includes(item.group))) {
+  const groups = only && MOVIE_ONLY[only] ? [only] : MOVIE_GROUPS;
+  for (const channel of data.channels.filter((item) => groups.includes(item.group))) {
     for (const program of channel.programs) {
       const minute = toMinutes(formatTime(program.start));
       if (minute < from || minute >= until || FILLER.test(program.title)) continue;
@@ -401,7 +404,7 @@ const paintMovieRow = (ctx, item, y) => {
   ctx.fillText(item.channel, TEXT_X, y + 78);
 };
 
-export const moviesArt = async (data, { ranked, window, format, brand = BRANDS.agtv }) => {
+export const moviesArt = async (data, { ranked, window, format, only = null, brand = BRANDS.agtv }) => {
   const items = picksFor(ranked, movieRowsFor(format));
   if (!items.length) return null;
 
@@ -409,7 +412,8 @@ export const moviesArt = async (data, { ranked, window, format, brand = BRANDS.a
   theme = brand;
   const [canvas, ctx] = createCanvas(format);
   paintBackground(ctx, format);
-  paintHeader(ctx, logo, 'FILMES E SÉRIES', `${formatDay(data.date)} · ${windowLabel(window)}`, format);
+  const title = only && MOVIE_ONLY[only] ? MOVIE_ONLY[only].title : 'FILMES E SÉRIES';
+  paintHeader(ctx, logo, title, `${formatDay(data.date)} · ${windowLabel(window)}`, format);
   let y = format.contentTop;
   for (const item of items) {
     paintMovieRow(ctx, item, y);
@@ -442,12 +446,12 @@ export const gamesCaption = (data, { onlyUpcoming, now, ranked, brand = BRANDS.a
   ].join('\n');
 };
 
-export const moviesCaption = (data, { ranked, window, brand = BRANDS.agtv }) => {
+export const moviesCaption = (data, { ranked, window, only = null, brand = BRANDS.agtv }) => {
   const picks = picksFor(ranked, CAPTION_LINES);
   if (!picks.length) return '';
   const lines = picks.map((item) => `${formatTime(item.start)} • ${item.title}`);
   return [
-    `🎬🍿 Filmes e séries de ${dayWord(data)} na ${brand.name}, ${windowLabel(window)}`,
+    `🎬🍿 ${only && MOVIE_ONLY[only] ? MOVIE_ONLY[only].caption : 'Filmes e séries'} de ${dayWord(data)} na ${brand.name}, ${windowLabel(window)}`,
     '',
     ...lines,
     '',
