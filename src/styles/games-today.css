@@ -146,6 +146,15 @@
   font-weight: 800;
 }
 
+.games-tags {
+  margin: 0.2rem 0 0;
+  color: #b7ff4a;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
 .games-desc {
   margin: 0.2rem 0 0;
   overflow: hidden;

@@ -7,7 +7,7 @@ import { SCHEDULE_TABS, scheduleTabPath } from '../utils/routes';
 import { PAINEL_SUPABASE_KEY, PAINEL_SUPABASE_URL } from '../utils/painelConfig';
 import { brandFor } from '../utils/painelBrands';
 import {
-  ART_FORMATS, PRIME_END, PRIME_START, formatDay, formatTime, gameEnded, gamesArt, gamesCaption,
+  ART_FORMATS, PRIME_END, PRIME_START, formatDay, formatTime, gameEnded, gameTagsText, gamesArt, gamesCaption,
   movieCandidates, movieRowsFor, moviesArt, moviesCaption, preloadArt, simpleRanking, upcomingGames,
 } from '../utils/adminArt';
 import '../styles/admin.css';
@@ -33,9 +33,10 @@ const shareOrigin = () => {
 const gameLine = (game) => {
   const channels = game.channels.map((channel) => channel.name).join(', ');
   const { score } = game;
-  if (!score) return `${formatTime(game.start)} • ${game.home} x ${game.away} • ${channels}`;
+  const tags = gameTagsText(game, { inGroup: true }) ? ` (${gameTagsText(game, { inGroup: true })})` : '';
+  if (!score) return `${formatTime(game.start)} • ${game.home} x ${game.away}${tags} • ${channels}`;
   const status = score.status === 'finished' ? 'encerrado' : 'ao vivo';
-  return `${formatTime(game.start)} • ${game.home} ${score.home} x ${score.away} ${game.away} (${status}) • ${channels}`;
+  return `${formatTime(game.start)} • ${game.home} ${score.home} x ${score.away} ${game.away}${tags} (${status}) • ${channels}`;
 };
 
 const gamesText = (data, onlyUpcoming, now) => {
@@ -207,7 +208,7 @@ const pickGames = async (data, { onlyUpcoming, useAi }) => {
   const ids = await askAiRanking('jogos', games.map((game, id) => ({
     id,
     time: formatTime(game.start),
-    title: `${game.home} x ${game.away} (${game.competition.name})`,
+    title: `${game.home} x ${game.away}${gameTagsText(game) ? ` ${gameTagsText(game)}` : ''} (${game.competition.name})`,
     channel: game.channels.map((channel) => channel.name).join(', '),
   })), 16);
   if (!ids) return { ranked: null, note: 'A IA não respondeu agora; usei a ordem por campeonato.' };

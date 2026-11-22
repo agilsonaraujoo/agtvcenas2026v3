@@ -9,6 +9,12 @@ const REFRESH_MS = 60 * 1000;
 const timeFormatter = new Intl.DateTimeFormat('pt-BR', { timeZone: TIMEZONE, hour: '2-digit', minute: '2-digit' });
 const formatTime = (iso) => timeFormatter.format(new Date(iso));
 
+// Modalidade (Futsal · Feminino · Sub-20), sem repetir o que o título do campeonato já diz.
+const plain = (value) => value.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const tagsText = (game, inGroup) => (game.tags || [])
+  .filter((tag) => !inGroup || !plain(game.competition.name).includes(plain(tag)))
+  .join(' · ');
+
 // O placar, quando existe, manda no status; sem placar vale o horário da transmissão.
 export const statusOf = (game, now) => {
   if (game.score) return game.score.status === 'finished' ? 'done' : 'live';
@@ -29,8 +35,10 @@ const liveLabel = (score) => {
   return score.minute ? `${score.minute}'` : null;
 };
 
-export const GameRow = ({ game, now }) => {
+// `inGroup`: a linha fica sob o título do campeonato (página /jogos); na home não tem título.
+export const GameRow = ({ game, now, inGroup = false }) => {
   const status = statusOf(game, now);
+  const tags = tagsText(game, inGroup);
   const { score } = game;
   return (
     <li className={`games-row games-row--${status}`}>
@@ -53,6 +61,7 @@ export const GameRow = ({ game, now }) => {
           )}
           <span className="games-team"><Crest src={game.awayCrest} />{game.away}</span>
         </p>
+        {tags && <p className="games-tags">{tags}</p>}
         {game.description && <p className="games-desc">{game.description}</p>}
       </div>
       <ul className="games-channels" aria-label="Onde passa">
@@ -228,7 +237,7 @@ const GamesToday = () => {
                     </div>
                     {group.table && openTable === group.table && <Standings code={group.table} name={group.name} />}
                     <ul className="games-list">
-                      {group.games.map((game) => <GameRow key={game.id} game={game} now={now} />)}
+                      {group.games.map((game) => <GameRow key={game.id} game={game} now={now} inGroup />)}
                     </ul>
                   </section>
                 ))}

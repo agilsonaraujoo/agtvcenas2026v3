@@ -184,6 +184,14 @@ const CREST = 44;
 
 const scoreText = (score) => `${score.home} x ${score.away}`;
 
+// Modalidade do jogo. `inGroup`: a linha fica sob o título do campeonato, então some o que
+// ele já diz ("Paulistão Feminino" não precisa de outro "Feminino").
+const plain = (value) => value.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+export const gameTagsText = (game, { inGroup = false } = {}) => (game.tags || [])
+  .filter((tag) => !inGroup || !plain(game.competition.name).includes(plain(tag)))
+  .join(' · ');
+const withTags = (game) => (gameTagsText(game) ? ` (${gameTagsText(game)})` : '');
+
 const paintGameRow = (ctx, game, crests, y) => {
   paintRowBox(ctx, y, GAME_ROW, formatTime(game.start));
   const home = crests.get(game.homeCrest);
@@ -227,11 +235,21 @@ const paintGameRow = (ctx, game, crests, y) => {
   ctx.fillStyle = '#fff';
   ctx.fillText(game.away, x, baseline);
 
+  // Modalidade (Futsal · Feminino · Sub-20) em destaque antes do canal, pra não confundir com o
+  // jogo profissional masculino.
+  let infoX = TEXT_X;
+  const tags = gameTagsText(game, { inGroup: true });
+  if (tags) {
+    ctx.font = `800 25px ${UI}`;
+    ctx.fillStyle = theme.accent;
+    ctx.fillText(tags, infoX, y + 88);
+    infoX += ctx.measureText(tags).width;
+  }
   ctx.fillStyle = MUTED;
   ctx.font = `500 25px ${UI}`;
   const status = game.score ? `${game.score.status === 'finished' ? 'Encerrado' : 'Ao vivo'} · ` : '';
   const channels = game.channels.map((channel) => channel.name).join(', ');
-  ctx.fillText(ellipsis(ctx, `${status}${channels}`, TEXT_WIDTH), TEXT_X, y + 88);
+  ctx.fillText(ellipsis(ctx, `${tags ? ' · ' : ''}${status}${channels}`, TEXT_X + TEXT_WIDTH - infoX), infoX, y + 88);
 };
 
 const byCompetition = (a, b) => (
@@ -434,7 +452,7 @@ export const gamesCaption = (data, { onlyUpcoming, now, ranked, brand = BRANDS.a
   const top = ranked && ranked.length
     ? ranked.slice(0, CAPTION_LINES).sort((a, b) => Date.parse(a.start) - Date.parse(b.start))
     : all.slice(0, CAPTION_LINES);
-  const lines = top.map((game) => `${formatTime(game.start)} • ${game.home} x ${game.away}`);
+  const lines = top.map((game) => `${formatTime(game.start)} • ${game.home} x ${game.away}${withTags(game)}`);
   const more = all.length - lines.length;
   return [
     `⚽ Jogos de ${dayWord(data)} na ${brand.name}, ${formatDay(data.date)}`,
